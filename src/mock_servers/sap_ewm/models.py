@@ -5,6 +5,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class AssignOrderPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    EWMResource: str = Field(min_length=1)
+
 
 def _odata_number(value: Decimal) -> int | float:
     return int(value) if value == value.to_integral_value() else float(value)

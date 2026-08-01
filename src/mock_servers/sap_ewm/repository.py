@@ -2,16 +2,19 @@
 
 from __future__ import annotations
 
+import asyncio
 from copy import deepcopy
 from decimal import Decimal
 
 from .models import OrderRecord, StockRecord, TaskRecord
+from .odata import ODataRequestError
 
 
 class MockRepository:
     """Own seeded state and return copies at every read boundary."""
 
     def __init__(self) -> None:
+        self._write_lock = asyncio.Lock()
         self.reset()
 
     def reset(self) -> None:
@@ -118,6 +121,58 @@ class MockRepository:
         record = self.tasks.get((warehouse, task_id, task_item))
         return deepcopy(record.to_odata()) if record else None
 
+    async def assign_order(
+        self,
+        warehouse: str,
+        order_id: str,
+        resource: str,
+        if_match: str,
+    ) -> dict[str, object]:
+        async with self._write_lock:
+            order = self.orders.get((warehouse, order_id))
+            if order is None:
+                raise ODataRequestError(
+                    "ENTITY_NOT_FOUND", "WarehouseOrder was not found", 404
+                )
+            _verify_etag(order.etag, if_match)
+            if resource not in self.resources:
+                raise ODataRequestError(
+                    "RESOURCE_NOT_FOUND",
+                    "The requested EWM resource does not exist",
+                    409,
+                )
+            if order.executing_resource != resource:
+                order.executing_resource = resource
+                order.version += 1
+                for task in self.tasks.values():
+                    if (
+                        task.warehouse == warehouse
+                        and task.order_id == order_id
+                        and task.executing_resource != resource
+                    ):
+                        task.executing_resource = resource
+                        task.version += 1
+            return deepcopy(order.to_odata())
+
+    async def confirm_task_exact(
+        self,
+        warehouse: str,
+        task_id: str,
+        task_item: str,
+        if_match: str,
+    ) -> dict[str, object]:
+        async with self._write_lock:
+            task = self.tasks.get((warehouse, task_id, task_item))
+            if task is None:
+                raise ODataRequestError(
+                    "ENTITY_NOT_FOUND", "WarehouseTask was not found", 404
+                )
+            _verify_etag(task.etag, if_match)
+            if task.status != "C":
+                task.status = "C"
+                task.version += 1
+            return deepcopy(task.to_odata())
+
 
 def _matching(
     rows: list[dict[str, object]], filters: dict[str, str]
@@ -127,3 +182,10 @@ def _matching(
         for row in rows
         if all(str(row.get(field, "")) == value for field, value in filters.items())
     ]
+
+
+def _verify_etag(current: str, supplied: str) -> None:
+    if supplied != current:
+        raise ODataRequestError(
+            "ETAG_MISMATCH", "The entity changed after it was read", 412
+        )
