@@ -253,6 +253,7 @@ class MCPAdapter(ABC):
                 tool_type=MCPToolType.FUNCTION,
                 parameters=tool_config.parameters,
                 handler=tool_config.handler,
+                metadata=tool_config.metadata or {},
             )
 
             self.tools[tool_config.name] = tool

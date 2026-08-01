@@ -334,6 +334,7 @@ class ToolDiscoveryService:
                     parameters=tool.parameters,
                     capabilities=self._extract_capabilities(tool),
                     metadata={
+                        **(tool.metadata or {}),
                         "tool_type": tool.tool_type.value,
                         "adapter_type": adapter.config.adapter_type.value,
                         "handler_available": tool.handler is not None,

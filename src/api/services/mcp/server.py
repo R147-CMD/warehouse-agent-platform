@@ -24,7 +24,7 @@ import asyncio
 import json
 import logging
 from typing import Dict, List, Any, Optional, Callable, Union
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass, field
 from enum import Enum
 import uuid
 from datetime import datetime
@@ -58,6 +58,7 @@ class MCPTool:
     parameters: Dict[str, Any]
     handler: Optional[Callable] = None
     id: str = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         if self.id is None:
