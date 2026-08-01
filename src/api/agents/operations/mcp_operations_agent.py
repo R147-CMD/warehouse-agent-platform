@@ -27,6 +27,9 @@ import json
 from datetime import datetime, timedelta
 import asyncio
 
+from langgraph.errors import GraphInterrupt
+
+from src.adapters.wms.sap_ewm_errors import SAPEWMError
 from src.api.services.llm.nim_client import get_nim_client, LLMResponse
 from src.retrieval.hybrid_retriever import get_hybrid_retriever, SearchContext
 from src.memory.memory_manager import get_memory_manager
@@ -307,6 +310,8 @@ class MCPOperationsCoordinationAgent:
 
             return response
 
+        except GraphInterrupt:
+            raise
         except Exception as e:
             logger.error(f"Error processing operations query: {e}")
             return self._create_error_response(str(e), "processing your request")
@@ -1015,6 +1020,25 @@ Return only valid JSON.""",
                     }
                 )
                 
+                return (tool_id, result_dict)
+
+            except GraphInterrupt:
+                # LangGraph must own pause/checkpoint/resume semantics.
+                raise
+
+            except SAPEWMError as e:
+                logger.warning(
+                    "SAP EWM tool %s failed with %s", tool_name, e.code.value
+                )
+                result_dict = {
+                    "tool_name": tool_name,
+                    "success": False,
+                    "error": str(e),
+                    "error_code": e.code.value,
+                    "retriable": e.retriable,
+                    "outcome_unknown": e.outcome_unknown,
+                    "execution_time": datetime.utcnow().isoformat(),
+                }
                 return (tool_id, result_dict)
 
             except Exception as e:

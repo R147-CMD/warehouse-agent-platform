@@ -80,7 +80,7 @@ This repository implements a production-grade Multi-Agent-Intelligent-Warehouse 
 - **AI-Powered Demand Forecasting** - Multi-model ensemble (XGBoost, Random Forest, Gradient Boosting, Ridge, SVR) with NVIDIA RAPIDS GPU acceleration
 - **Real-Time Monitoring** - Equipment status, telemetry, Prometheus metrics, Grafana dashboards, and system health
 - **Enterprise Security** - JWT authentication + RBAC with 5 user roles, NeMo Guardrails for content safety, and comprehensive user management
-- **System Integrations** - WMS (SAP EWM, Manhattan, Oracle), ERP (SAP ECC, Oracle), IoT sensors, RFID/Barcode scanners, Time Attendance systems
+- **Integration Framework** - Adapter/MCP boundaries for WMS, ERP, IoT, RFID/Barcode, and attendance; SAP EWM currently provides a protocol-compatible Mock and replaceable pre-integration, not a claimed production tenant connection
 - **Advanced Features** - Redis caching, conversation memory, evidence scoring, intelligent query classification, automated reorder recommendations, business intelligence dashboards
 
 ## System Architecture
@@ -154,11 +154,30 @@ The architecture consists of:
 - **Business Intelligence Dashboard** - Comprehensive analytics and performance monitoring
 
 ### System Integrations
-- **WMS Integration** - SAP EWM, Manhattan, Oracle WMS
-- **ERP Integration** - SAP ECC, Oracle ERP
-- **IoT Integration** - Equipment monitoring, environmental sensors, safety systems
-- **RFID/Barcode Scanning** - Honeywell, Zebra, generic scanners
-- **Time Attendance** - Biometric systems, card readers, mobile apps
+- **SAP EWM** - 协议兼容 Mock/可替换型预集成 with OData V4 paths,
+  Basic/OAuth2 configuration, CSRF, ETag, pagination, typed errors, bounded read
+  retries, approval-gated writes, metrics, and end-to-end Agent tests. It has not
+  been verified against a real customer SAP landscape.
+- **Other WMS/ERP systems** - Manhattan, Oracle WMS, SAP ECC, and Oracle ERP
+  adapter skeletons; validate their current implementation before describing
+  them as connected systems.
+- **IoT, RFID/Barcode, attendance** - local adapters and simulated/demo data
+  paths for equipment, sensors, scanners, and workforce systems; vendor-specific
+  production rollout requires credentials, field mapping, and acceptance tests.
+
+#### SAP EWM local quick start
+
+```bash
+docker compose -f deploy/compose/docker-compose.dev.yaml up -d sap-ewm-mock backend
+curl http://localhost:8010/health
+pytest tests/integration/test_sap_ewm_agent_workflow.py -q
+```
+
+The Agent exposes exactly four SAP tools: physical-stock query, order/task
+query, warehouse-order assignment, and exact warehouse-task confirmation. The
+two write tools pause for human approval and use checkpoint/replay protection.
+Configuration, fault injection, error semantics, and the real-SAP cutover
+checklist are documented in [docs/wms-integration.md](docs/wms-integration.md).
 
 ### Enterprise Security & Monitoring
 - **Authentication** - JWT authentication + RBAC with 5 user roles
@@ -687,6 +706,7 @@ pytest tests/integration/
 
 - **Architecture**: [docs/architecture/](docs/architecture/)
 - **MCP Integration**: [docs/architecture/mcp-integration.md](docs/architecture/mcp-integration.md)
+- **WMS and SAP EWM pre-integration**: [docs/wms-integration.md](docs/wms-integration.md)
 - **Forecasting**: [docs/forecasting/](docs/forecasting/)
 - **Deployment**: [DEPLOYMENT.md](DEPLOYMENT.md) - Complete deployment guide with Docker and Kubernetes options
 
