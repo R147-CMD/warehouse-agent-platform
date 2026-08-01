@@ -22,14 +22,19 @@ to help with setup and integration.
 
 # SAP EWM Configuration Example
 SAP_EWM_CONFIG = {
-    "host": "sap-ewm.company.com",
-    "port": 8000,
+    "enabled": True,
+    "connection_id": "sap-ewm-default",
+    "mock_mode": False,
+    "base_url": "https://sap-ewm.company.com",
     "client": "100",
-    "user": "WMS_USER",
+    "auth_mode": "basic",
+    "username": "WMS_USER",
     "password": "secure_password",
-    "system_id": "EWM",
-    "warehouse_number": "1000",
-    "use_rfc": False  # Use REST API instead of RFC
+    "warehouse": "EW01",
+    "verify_tls": True,
+    "connect_timeout_seconds": 5,
+    "read_timeout_seconds": 15,
+    "max_read_attempts": 3,
 }
 
 # Manhattan WMS Configuration Example
@@ -64,12 +69,33 @@ ORACLE_CONFIG = {
 # Configuration validation schemas
 WMS_CONFIG_SCHEMAS = {
     "sap_ewm": {
-        "required": ["host", "user", "password", "warehouse_number"],
-        "optional": ["port", "client", "system_id", "use_rfc"],
+        "required": ["base_url", "warehouse", "auth_mode"],
+        "optional": [
+            "enabled",
+            "connection_id",
+            "mock_mode",
+            "client",
+            "username",
+            "password",
+            "token_url",
+            "client_id",
+            "client_secret",
+            "scope",
+            "verify_tls",
+            "connect_timeout_seconds",
+            "read_timeout_seconds",
+            "max_read_attempts",
+        ],
         "defaults": {
-            "port": 8000,
-            "use_rfc": False
-        }
+            "enabled": False,
+            "connection_id": "sap-ewm-default",
+            "mock_mode": False,
+            "client": "100",
+            "verify_tls": True,
+            "connect_timeout_seconds": 5,
+            "read_timeout_seconds": 15,
+            "max_read_attempts": 3,
+        },
     },
     "manhattan": {
         "required": ["host", "username", "password", "facility_id"],
