@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hashlib
+import hmac
+import json
 import logging
 from collections.abc import Awaitable, Callable
 from time import monotonic
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 from uuid import uuid4
 
 import httpx
@@ -21,11 +24,12 @@ from src.api.services.monitoring.sap_ewm_metrics import (
 from .sap_ewm_config import SAPAuthMode, SAPEWMConfig
 from .sap_ewm_errors import SAPEWMError, SAPEWMErrorCode
 
-
 logger = logging.getLogger(__name__)
 
 _RETRIABLE_READ_STATUSES = {429, 500, 502, 503, 504}
 _CSRF_ERROR_CODES = {"CSRF_TOKEN_INVALID", "CSRF_TOKEN_MISSING"}
+_CURSOR_VERSION = 1
+_MAX_CURSOR_LENGTH = 16_384
 
 
 class SAPEWMODataClient:
@@ -116,9 +120,7 @@ class SAPEWMODataClient:
         expected_service: str,
         correlation_id: str | None = None,
     ) -> dict[str, Any]:
-        absolute_url = self.decode_cursor(
-            cursor, expected_service=expected_service
-        )
+        absolute_url = self.decode_cursor(cursor, expected_service=expected_service)
         return await self._read_with_metrics(
             _read_operation(expected_service),
             absolute_url,
@@ -150,13 +152,9 @@ class SAPEWMODataClient:
             )
             raise
         except Exception:
-            self._metrics.observe_request(
-                operation, "error", monotonic() - started_at
-            )
+            self._metrics.observe_request(operation, "error", monotonic() - started_at)
             raise
-        self._metrics.observe_request(
-            operation, "success", monotonic() - started_at
-        )
+        self._metrics.observe_request(operation, "success", monotonic() - started_at)
 
     async def _post_action(
         self,
@@ -213,28 +211,75 @@ class SAPEWMODataClient:
             status_code=403,
         )
 
-    def encode_cursor(self, absolute_url: str) -> str:
-        encoded = base64.urlsafe_b64encode(absolute_url.encode("utf-8"))
-        return encoded.decode("ascii").rstrip("=")
+    def encode_cursor(self, absolute_url: str, expected_service: str) -> str:
+        """Return an integrity-protected cursor bound to this SAP connection."""
+
+        self._validate_next_link(absolute_url, expected_service)
+        payload = {
+            "client": self.config.client,
+            "connection_id": self.config.connection_id,
+            "service": expected_service,
+            "url": absolute_url,
+            "version": _CURSOR_VERSION,
+            "warehouse": self.config.warehouse,
+        }
+        encoded_payload = _b64url_encode(
+            json.dumps(
+                payload,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode("utf-8")
+        )
+        signature = hmac.new(
+            self._cursor_signing_key(),
+            encoded_payload.encode("ascii"),
+            hashlib.sha256,
+        ).digest()
+        return f"{encoded_payload}.{_b64url_encode(signature)}"
 
     def encode_next_link(
         self, next_link: str | None, expected_service: str
     ) -> str | None:
         if next_link is None:
             return None
-        self._validate_next_link(next_link, expected_service)
-        return self.encode_cursor(next_link)
+        normalized_link = self._normalize_next_link(next_link)
+        return self.encode_cursor(normalized_link, expected_service)
 
     def decode_cursor(self, cursor: str, expected_service: str) -> str:
         try:
-            padding = "=" * (-len(cursor) % 4)
-            absolute_url = base64.urlsafe_b64decode(
-                (cursor + padding).encode("ascii")
-            ).decode("utf-8")
-        except (ValueError, UnicodeDecodeError) as exc:
+            if len(cursor) > _MAX_CURSOR_LENGTH:
+                raise ValueError("cursor is too long")
+            encoded_payload, encoded_signature = cursor.split(".")
+            expected_signature = hmac.new(
+                self._cursor_signing_key(),
+                encoded_payload.encode("ascii"),
+                hashlib.sha256,
+            ).digest()
+            supplied_signature = _b64url_decode(encoded_signature)
+            if not hmac.compare_digest(supplied_signature, expected_signature):
+                raise ValueError("cursor signature mismatch")
+            payload = json.loads(_b64url_decode(encoded_payload).decode("utf-8"))
+            if not isinstance(payload, dict):
+                raise ValueError("cursor payload is not an object")
+            expected_context = {
+                "client": self.config.client,
+                "connection_id": self.config.connection_id,
+                "service": expected_service,
+                "version": _CURSOR_VERSION,
+                "warehouse": self.config.warehouse,
+            }
+            if any(
+                payload.get(key) != value for key, value in expected_context.items()
+            ):
+                raise ValueError("cursor context mismatch")
+            absolute_url = payload.get("url")
+            if not isinstance(absolute_url, str) or not absolute_url:
+                raise ValueError("cursor URL is missing")
+        except (UnicodeError, ValueError, TypeError, json.JSONDecodeError) as exc:
             raise SAPEWMError(
                 SAPEWMErrorCode.SAP_RESPONSE_INVALID,
-                "SAP pagination cursor is malformed",
+                "SAP pagination cursor is invalid",
             ) from exc
         self._validate_next_link(absolute_url, expected_service)
         return absolute_url
@@ -260,13 +305,9 @@ class SAPEWMODataClient:
             )
             raise
         except Exception:
-            self._metrics.observe_request(
-                operation, "error", monotonic() - started_at
-            )
+            self._metrics.observe_request(operation, "error", monotonic() - started_at)
             raise
-        self._metrics.observe_request(
-            operation, "success", monotonic() - started_at
-        )
+        self._metrics.observe_request(operation, "success", monotonic() - started_at)
         return payload
 
     async def _read_json(
@@ -381,8 +422,7 @@ class SAPEWMODataClient:
         )
         if (
             response.status_code == 401
-            and self.config.auth_mode
-            is SAPAuthMode.OAUTH2_CLIENT_CREDENTIALS
+            and self.config.auth_mode is SAPAuthMode.OAUTH2_CLIENT_CREDENTIALS
         ):
             await self._oauth_token(force_refresh=True)
             request_headers = {
@@ -403,8 +443,7 @@ class SAPEWMODataClient:
             assert self.config.username is not None
             assert self.config.password is not None
             raw = (
-                f"{self.config.username}:"
-                f"{self.config.password.get_secret_value()}"
+                f"{self.config.username}:" f"{self.config.password.get_secret_value()}"
             ).encode("utf-8")
             token = base64.b64encode(raw).decode("ascii")
             return {"Authorization": f"Basic {token}"}
@@ -461,9 +500,7 @@ class SAPEWMODataClient:
                 status_code=response.status_code,
             )
         self._access_token = token
-        self._access_token_expires_at = self._clock() + max(
-            0.0, expires_in - 30.0
-        )
+        self._access_token_expires_at = self._clock() + max(0.0, expires_in - 30.0)
         return token
 
     def _response_error(self, response: httpx.Response) -> SAPEWMError:
@@ -523,10 +560,11 @@ class SAPEWMODataClient:
 
         candidate = urlsplit(absolute_url)
         configured = urlsplit(str(self.config.base_url))
+        query = parse_qs(candidate.query, keep_blank_values=True)
+        sap_clients = query.get("sap-client", [])
         if (
             candidate.scheme.lower() != configured.scheme.lower()
-            or (candidate.hostname or "").lower()
-            != (configured.hostname or "").lower()
+            or (candidate.hostname or "").lower() != (configured.hostname or "").lower()
             or _effective_port(candidate) != _effective_port(configured)
             or not (
                 candidate.path == expected_root
@@ -534,15 +572,55 @@ class SAPEWMODataClient:
             )
             or candidate.username is not None
             or candidate.password is not None
+            or candidate.fragment
+            or sap_clients != [self.config.client]
         ):
             raise SAPEWMError(
                 SAPEWMErrorCode.SAP_RESPONSE_INVALID,
                 "SAP pagination link is outside the configured service",
             )
 
-    def _backoff(
-        self, attempt: int, response: httpx.Response | None
-    ) -> float:
+    def _normalize_next_link(self, absolute_url: str) -> str:
+        """Add the configured SAP client when a trusted nextLink omits it."""
+
+        candidate = urlsplit(absolute_url)
+        query = parse_qs(candidate.query, keep_blank_values=True)
+        sap_clients = query.get("sap-client", [])
+        if sap_clients and sap_clients != [self.config.client]:
+            raise SAPEWMError(
+                SAPEWMErrorCode.SAP_RESPONSE_INVALID,
+                "SAP pagination link contains an unexpected client",
+            )
+        if sap_clients:
+            return absolute_url
+
+        separator = "&" if candidate.query else ""
+        normalized_query = f"{candidate.query}{separator}" + urlencode(
+            {"sap-client": self.config.client}
+        )
+        return urlunsplit(candidate._replace(query=normalized_query))
+
+    def _cursor_signing_key(self) -> bytes:
+        """Derive a stable per-connection key without exposing credentials."""
+
+        if self.config.auth_mode is SAPAuthMode.BASIC:
+            assert self.config.password is not None
+            secret = self.config.password.get_secret_value()
+        else:
+            assert self.config.client_secret is not None
+            secret = self.config.client_secret.get_secret_value()
+        context = "\x00".join(
+            (
+                "sap-ewm-cursor-v1",
+                self.config.connection_id,
+                str(self.config.base_url).rstrip("/"),
+                self.config.warehouse,
+                self.config.client,
+            )
+        ).encode("utf-8")
+        return hmac.new(secret.encode("utf-8"), context, hashlib.sha256).digest()
+
+    def _backoff(self, attempt: int, response: httpx.Response | None) -> float:
         if response is not None:
             retry_after = response.headers.get("Retry-After")
             if retry_after:
@@ -573,6 +651,19 @@ def _effective_port(parts) -> int | None:
     if parts.scheme.lower() == "http":
         return 80
     return None
+
+
+def _b64url_encode(value: bytes) -> str:
+    return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
+
+
+def _b64url_decode(value: str) -> bytes:
+    padding = "=" * (-len(value) % 4)
+    return base64.b64decode(
+        (value + padding).encode("ascii"),
+        altchars=b"-_",
+        validate=True,
+    )
 
 
 def _read_operation(service: str) -> str:

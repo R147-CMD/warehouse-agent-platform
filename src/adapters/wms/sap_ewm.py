@@ -79,19 +79,13 @@ class SAPEWMAdapter(BaseWMSAdapter):
         self._require_connected()
         _validate_limit(limit)
         if cursor:
-            payload = await self.client.get_cursor_page(
-                cursor, "stock", correlation_id
-            )
+            payload = await self.client.get_cursor_page(cursor, "stock", correlation_id)
         else:
-            filters = [
-                f"EWMWarehouse eq {_odata_literal(self.sap_config.warehouse)}"
-            ]
+            filters = [f"EWMWarehouse eq {_odata_literal(self.sap_config.warehouse)}"]
             if product:
                 filters.append(f"Product eq {_odata_literal(product)}")
             if storage_bin:
-                filters.append(
-                    f"EWMStorageBin eq {_odata_literal(storage_bin)}"
-                )
+                filters.append(f"EWMStorageBin eq {_odata_literal(storage_bin)}")
             payload = await self.client.get_collection(
                 "stock",
                 "/WarehousePhysicalStockProducts",
@@ -120,9 +114,7 @@ class SAPEWMAdapter(BaseWMSAdapter):
         _validate_limit(limit)
 
         if order_id:
-            order_rows = [
-                await self._get_order_entity(order_id, correlation_id)
-            ]
+            order_rows = [await self._get_order_entity(order_id, correlation_id)]
             next_cursor = None
         elif cursor:
             payload = await self.client.get_cursor_page(
@@ -133,13 +125,9 @@ class SAPEWMAdapter(BaseWMSAdapter):
                 payload.get("@odata.nextLink"), "orders"
             )
         else:
-            filters = [
-                f"EWMWarehouse eq {_odata_literal(self.sap_config.warehouse)}"
-            ]
+            filters = [f"EWMWarehouse eq {_odata_literal(self.sap_config.warehouse)}"]
             if resource:
-                filters.append(
-                    f"ExecutingResource eq {_odata_literal(resource)}"
-                )
+                filters.append(f"ExecutingResource eq {_odata_literal(resource)}")
             payload = await self.client.get_collection(
                 "orders",
                 "/WarehouseOrder",
@@ -160,9 +148,7 @@ class SAPEWMAdapter(BaseWMSAdapter):
                     f"WarehouseTaskStatus eq {_odata_literal(task_status)}"
                 )
             if resource:
-                task_filters.append(
-                    f"ExecutingResource eq {_odata_literal(resource)}"
-                )
+                task_filters.append(f"ExecutingResource eq {_odata_literal(resource)}")
             task_params = {"$top": "100"}
             if task_filters:
                 task_params["$filter"] = " and ".join(task_filters)
@@ -202,8 +188,7 @@ class SAPEWMAdapter(BaseWMSAdapter):
         try:
             await self.client.post_action(
                 "orders",
-                self._order_path(warehouse_order)
-                + "/SAP__self.AssignWarehouseOrder",
+                self._order_path(warehouse_order) + "/SAP__self.AssignWarehouseOrder",
                 {"EWMResource": resource},
                 _etag(order),
                 correlation_id,
@@ -211,9 +196,12 @@ class SAPEWMAdapter(BaseWMSAdapter):
         except SAPEWMError as exc:
             if exc.code is not SAPEWMErrorCode.SAP_OUTCOME_UNKNOWN:
                 raise
-            current = await self._get_order_entity(
-                warehouse_order, correlation_id
-            )
+            try:
+                current = await self._get_order_entity(warehouse_order, correlation_id)
+            except SAPEWMError as readback_error:
+                raise SAPEWMError.unknown_outcome(
+                    "SAP warehouse order assignment could not be verified"
+                ) from readback_error
             if (current.get("ExecutingResource") or None) != resource:
                 raise
             return SAPWriteResult(
@@ -259,9 +247,14 @@ class SAPEWMAdapter(BaseWMSAdapter):
         except SAPEWMError as exc:
             if exc.code is not SAPEWMErrorCode.SAP_OUTCOME_UNKNOWN:
                 raise
-            current = await self._get_task_entity(
-                warehouse_task, warehouse_task_item, correlation_id
-            )
+            try:
+                current = await self._get_task_entity(
+                    warehouse_task, warehouse_task_item, correlation_id
+                )
+            except SAPEWMError as readback_error:
+                raise SAPEWMError.unknown_outcome(
+                    "SAP warehouse task confirmation could not be verified"
+                ) from readback_error
             if current.get("WarehouseTaskStatus") != "C":
                 raise
             return SAPWriteResult(
@@ -423,9 +416,7 @@ class SAPEWMAdapter(BaseWMSAdapter):
                 warehouse=str(row["EWMWarehouse"]),
                 order_id=str(row["WarehouseOrder"]),
                 status=str(row["WarehouseOrderStatus"]),
-                executing_resource=(
-                    str(row.get("ExecutingResource") or "") or None
-                ),
+                executing_resource=(str(row.get("ExecutingResource") or "") or None),
                 etag=_etag(row),
             )
         except (KeyError, TypeError, ValueError) as exc:
@@ -441,12 +432,8 @@ class SAPEWMAdapter(BaseWMSAdapter):
                 status=str(row["WarehouseTaskStatus"]),
                 product=str(row.get("Product") or "") or None,
                 source_bin=str(row.get("SourceStorageBin") or "") or None,
-                destination_bin=(
-                    str(row.get("DestinationStorageBin") or "") or None
-                ),
-                executing_resource=(
-                    str(row.get("ExecutingResource") or "") or None
-                ),
+                destination_bin=(str(row.get("DestinationStorageBin") or "") or None),
+                executing_resource=(str(row.get("ExecutingResource") or "") or None),
                 etag=_etag(row),
             )
         except (KeyError, TypeError, ValueError) as exc:
@@ -554,9 +541,7 @@ def _validate_limit(limit: int) -> None:
 
 
 def _unsupported(operation: str) -> WMSDataError:
-    return WMSDataError(
-        f"{operation} is not supported by the SAP EWM pre-integration"
-    )
+    return WMSDataError(f"{operation} is not supported by the SAP EWM pre-integration")
 
 
 def _invalid_response(entity: str) -> SAPEWMError:

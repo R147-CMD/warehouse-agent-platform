@@ -32,8 +32,9 @@ The SAP path is:
 This is a replaceable pre-integration. The local Mock follows the SAP OData V4
 service paths and protocol behavior used by the adapter: Basic/OAuth2
 authentication, CSRF token and session cookie handling, ETag concurrency,
-pagination, typed error mapping, bounded read retries, write timeout ambiguity,
-and result readback. Replacing the Mock with real SAP requires environment and
+integrity-signed pagination cursors bound to the configured connection,
+warehouse and SAP client, typed error mapping, bounded read retries, write
+timeout ambiguity, and result readback. Replacing the Mock with real SAP requires environment and
 field-mapping changes plus SAP-side validation; it does not justify saying the
 project is already live on SAP EWM.
 
@@ -76,6 +77,10 @@ Mock-only variables are `SAP_EWM_MOCK_CONTROL_ENABLED`,
 `SAP_EWM_MOCK_USERNAME`, `SAP_EWM_MOCK_PASSWORD`,
 `SAP_EWM_MOCK_CLIENT_ID`, and `SAP_EWM_MOCK_CLIENT_SECRET`. Never enable Mock
 control endpoints on an Internet-facing deployment.
+
+When `SAP_EWM_MOCK_MODE=false`, both `SAP_EWM_BASE_URL` and an OAuth2
+`SAP_EWM_TOKEN_URL` must use HTTPS. Pagination cursors are opaque HMAC-signed
+values; callers must not construct or modify them.
 
 ### Start and verify the local chain
 

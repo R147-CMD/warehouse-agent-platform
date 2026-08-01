@@ -108,9 +108,7 @@ async def test_stock_cursor_uses_validated_cursor_page(adapter_and_client) -> No
 
     page = await adapter.get_physical_stock(cursor="cursor-1")
 
-    client.get_cursor_page.assert_awaited_once_with(
-        "cursor-1", "stock", None
-    )
+    client.get_cursor_page.assert_awaited_once_with("cursor-1", "stock", None)
     assert page.next_cursor == "cursor-2"
 
 
@@ -131,9 +129,7 @@ async def test_maps_order_and_navigation_tasks(adapter_and_client) -> None:
     task_call = client.get_collection.await_args
     assert task_call.args[1].endswith("/_WarehouseTask")
     assert task_call.args[2] == {
-        "$filter": (
-            "WarehouseTaskStatus eq 'O' and ExecutingResource eq 'RES1'"
-        ),
+        "$filter": ("WarehouseTaskStatus eq 'O' and ExecutingResource eq 'RES1'"),
         "$top": "100",
     }
 
@@ -191,6 +187,27 @@ async def test_unverified_assign_timeout_remains_unknown(
 
 
 @pytest.mark.asyncio
+async def test_assign_readback_failure_preserves_unknown_outcome(
+    adapter_and_client,
+) -> None:
+    adapter, client = adapter_and_client
+    readback_error = SAPEWMError(
+        SAPEWMErrorCode.SAP_TIMEOUT,
+        "readback timed out",
+        retriable=True,
+    )
+    client.get_entity.side_effect = [open_order(), readback_error]
+    client.post_action.side_effect = SAPEWMError.unknown_outcome("write timed out")
+
+    with pytest.raises(SAPEWMError) as captured:
+        await adapter.assign_warehouse_order("2000005003", "RES2")
+
+    assert captured.value.code is SAPEWMErrorCode.SAP_OUTCOME_UNKNOWN
+    assert captured.value.outcome_unknown is True
+    assert captured.value.__cause__ is readback_error
+
+
+@pytest.mark.asyncio
 async def test_already_confirmed_task_is_idempotent(adapter_and_client) -> None:
     adapter, client = adapter_and_client
     client.get_entity.return_value = open_task(status="C")
@@ -200,6 +217,27 @@ async def test_already_confirmed_task_is_idempotent(adapter_and_client) -> None:
     client.post_action.assert_not_awaited()
     assert result.status == "CONFIRMED"
     assert result.outcome_confirmed_by_readback is True
+
+
+@pytest.mark.asyncio
+async def test_confirmation_readback_failure_preserves_unknown_outcome(
+    adapter_and_client,
+) -> None:
+    adapter, client = adapter_and_client
+    readback_error = SAPEWMError(
+        SAPEWMErrorCode.SAP_UNAVAILABLE,
+        "readback unavailable",
+        retriable=True,
+    )
+    client.get_entity.side_effect = [open_task(), readback_error]
+    client.post_action.side_effect = SAPEWMError.unknown_outcome("write timed out")
+
+    with pytest.raises(SAPEWMError) as captured:
+        await adapter.confirm_warehouse_task_exact("1000004703", "0")
+
+    assert captured.value.code is SAPEWMErrorCode.SAP_OUTCOME_UNKNOWN
+    assert captured.value.outcome_unknown is True
+    assert captured.value.__cause__ is readback_error
 
 
 @pytest.mark.asyncio

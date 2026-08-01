@@ -1,6 +1,7 @@
 """Unit tests for the secure SAP EWM OData HTTP client."""
 
 import base64
+import json
 from unittest.mock import AsyncMock
 from urllib.parse import parse_qs
 
@@ -293,9 +294,7 @@ async def test_post_refreshes_csrf_once_after_explicit_rejection() -> None:
 
     client = await make_client(handler)
     try:
-        await client.post_action(
-            "orders", "/action", {}, etag='W/"1"'
-        )
+        await client.post_action("orders", "/action", {}, etag='W/"1"')
     finally:
         await client.close()
 
@@ -321,9 +320,7 @@ async def test_post_timeout_is_unknown_and_is_not_retried() -> None:
     client = await make_client(handler)
     try:
         with pytest.raises(SAPEWMError) as captured:
-            await client.post_action(
-                "orders", "/action", {}, etag='W/"1"'
-            )
+            await client.post_action("orders", "/action", {}, etag='W/"1"')
     finally:
         await client.close()
 
@@ -334,12 +331,14 @@ async def test_post_timeout_is_unknown_and_is_not_retried() -> None:
 
 def test_cursor_rejects_other_origin_and_service_prefix() -> None:
     client = SAPEWMODataClient(sap_config())
-    evil = client.encode_cursor("https://evil.example/steal")
-    wrong_service = client.encode_cursor(
-        "http://sap.example.test"
-        + SAPEWMODataClient.SERVICE_ROOTS["orders"]
-        + "/WarehouseOrder"
-    )
+    evil = base64.urlsafe_b64encode(b"https://evil.example/steal").decode()
+    wrong_service = base64.urlsafe_b64encode(
+        (
+            "http://sap.example.test"
+            + SAPEWMODataClient.SERVICE_ROOTS["orders"]
+            + "/WarehouseOrder"
+        ).encode()
+    ).decode()
 
     with pytest.raises(SAPEWMError) as evil_error:
         client.decode_cursor(evil, expected_service="stock")
@@ -355,7 +354,8 @@ def test_cursor_round_trip_accepts_same_origin_service_url() -> None:
     next_link = (
         "http://sap.example.test"
         + SAPEWMODataClient.SERVICE_ROOTS["stock"]
-        + "/WarehousePhysicalStockProducts?%24skiptoken=1"
+        + "/WarehousePhysicalStockProducts?%24filter="
+        + "EWMWarehouse%20eq%20%27EW01%27&%24skiptoken=1&sap-client=100"
     )
 
     cursor = client.encode_next_link(next_link, "stock")
@@ -363,6 +363,69 @@ def test_cursor_round_trip_accepts_same_origin_service_url() -> None:
     assert cursor is not None
     assert client.decode_cursor(cursor, expected_service="stock") == next_link
     assert client.encode_next_link(None, "stock") is None
+
+
+def test_cursor_signature_rejects_tampered_warehouse_filter() -> None:
+    client = SAPEWMODataClient(sap_config())
+    next_link = (
+        "http://sap.example.test"
+        + SAPEWMODataClient.SERVICE_ROOTS["stock"]
+        + "/WarehousePhysicalStockProducts?%24filter="
+        + "EWMWarehouse%20eq%20%27EW01%27&%24skiptoken=1&sap-client=100"
+    )
+    cursor = client.encode_next_link(next_link, "stock")
+    assert cursor is not None
+    encoded_payload, signature = cursor.split(".", maxsplit=1)
+    padding = "=" * (-len(encoded_payload) % 4)
+    payload = json.loads(
+        base64.urlsafe_b64decode(encoded_payload + padding).decode("utf-8")
+    )
+    payload["url"] = payload["url"].replace("EW01", "OTHER")
+    tampered_payload = (
+        base64.urlsafe_b64encode(
+            json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+        )
+        .decode("ascii")
+        .rstrip("=")
+    )
+
+    with pytest.raises(SAPEWMError) as captured:
+        client.decode_cursor(
+            f"{tampered_payload}.{signature}", expected_service="stock"
+        )
+
+    assert captured.value.code is SAPEWMErrorCode.SAP_RESPONSE_INVALID
+
+
+def test_cursor_is_bound_to_connection_warehouse_and_client() -> None:
+    client = SAPEWMODataClient(sap_config())
+    other_warehouse_client = SAPEWMODataClient(sap_config(warehouse="OTHER"))
+    next_link = (
+        "http://sap.example.test"
+        + SAPEWMODataClient.SERVICE_ROOTS["stock"]
+        + "/WarehousePhysicalStockProducts?%24skiptoken=1&sap-client=100"
+    )
+    cursor = client.encode_next_link(next_link, "stock")
+    assert cursor is not None
+
+    with pytest.raises(SAPEWMError) as captured:
+        other_warehouse_client.decode_cursor(cursor, expected_service="stock")
+
+    assert captured.value.code is SAPEWMErrorCode.SAP_RESPONSE_INVALID
+
+
+def test_next_link_rejects_mismatched_sap_client() -> None:
+    client = SAPEWMODataClient(sap_config())
+    next_link = (
+        "http://sap.example.test"
+        + SAPEWMODataClient.SERVICE_ROOTS["stock"]
+        + "/WarehousePhysicalStockProducts?%24skiptoken=1&sap-client=200"
+    )
+
+    with pytest.raises(SAPEWMError) as captured:
+        client.encode_next_link(next_link, "stock")
+
+    assert captured.value.code is SAPEWMErrorCode.SAP_RESPONSE_INVALID
 
 
 @pytest.mark.asyncio

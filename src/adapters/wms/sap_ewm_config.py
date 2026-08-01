@@ -55,9 +55,13 @@ class SAPEWMConfig(BaseModel):
         if self.auth_mode is SAPAuthMode.OAUTH2_CLIENT_CREDENTIALS and not (
             self.token_url and self.client_id and self.client_secret
         ):
-            raise ValueError(
-                "OAuth2 requires token_url, client_id, and client_secret"
-            )
+            raise ValueError("OAuth2 requires token_url, client_id, and client_secret")
+        if (
+            not self.mock_mode
+            and self.auth_mode is SAPAuthMode.OAUTH2_CLIENT_CREDENTIALS
+            and urlsplit(str(self.token_url)).scheme.lower() != "https"
+        ):
+            raise ValueError("OAuth2 token endpoint must use HTTPS")
 
         return self
 
@@ -67,9 +71,7 @@ class SAPEWMConfig(BaseModel):
 
         return cls(
             enabled=_env_bool("SAP_EWM_ENABLED", False),
-            connection_id=os.getenv(
-                "SAP_EWM_CONNECTION_ID", "sap-ewm-default"
-            ),
+            connection_id=os.getenv("SAP_EWM_CONNECTION_ID", "sap-ewm-default"),
             mock_mode=_env_bool("SAP_EWM_MOCK_MODE", False),
             base_url=os.environ["SAP_EWM_BASE_URL"],
             warehouse=os.environ["SAP_EWM_WAREHOUSE"],
@@ -84,13 +86,9 @@ class SAPEWMConfig(BaseModel):
             connect_timeout_seconds=float(
                 os.getenv("SAP_EWM_CONNECT_TIMEOUT_SECONDS", "5")
             ),
-            read_timeout_seconds=float(
-                os.getenv("SAP_EWM_READ_TIMEOUT_SECONDS", "15")
-            ),
+            read_timeout_seconds=float(os.getenv("SAP_EWM_READ_TIMEOUT_SECONDS", "15")),
             verify_tls=_env_bool("SAP_EWM_VERIFY_TLS", True),
-            max_read_attempts=int(
-                os.getenv("SAP_EWM_MAX_READ_ATTEMPTS", "3")
-            ),
+            max_read_attempts=int(os.getenv("SAP_EWM_MAX_READ_ATTEMPTS", "3")),
         )
 
 

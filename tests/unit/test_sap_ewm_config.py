@@ -68,6 +68,22 @@ def test_oauth_requires_token_endpoint_and_client_credentials() -> None:
         SAPEWMConfig(**values)
 
 
+def test_real_oauth_connection_rejects_http_token_endpoint() -> None:
+    values = basic_config(
+        mock_mode=False,
+        base_url="https://sap.example.test",
+        auth_mode="oauth2_client_credentials",
+        token_url="http://identity.example.test/oauth/token",
+        client_id="sap-client-id",
+        client_secret="sap-client-secret",
+    )
+    values.pop("username")
+    values.pop("password")
+
+    with pytest.raises(ValidationError, match="OAuth2 token endpoint.*HTTPS"):
+        SAPEWMConfig(**values)
+
+
 def test_from_env_parses_security_and_retry_settings(monkeypatch) -> None:
     environment = {
         "SAP_EWM_ENABLED": "true",
