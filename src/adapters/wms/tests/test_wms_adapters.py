@@ -26,6 +26,7 @@ from src.adapters.wms.base import (
     TaskStatus, TaskType, WMSConnectionError, WMSDataError
 )
 from src.adapters.wms.sap_ewm import SAPEWMAdapter
+from src.adapters.wms.sap_ewm_http import SAPEWMODataClient
 from src.adapters.wms.manhattan import ManhattanAdapter
 from src.adapters.wms.oracle import OracleWMSAdapter
 from src.adapters.wms.factory import WMSAdapterFactory
@@ -79,11 +80,16 @@ class TestSAPEWMAdapter:
         and is never used for actual WMS connections (tests use mocked connections).
         """
         return {
-            "host": "test-sap.com",
-            "user": "test_user",
+            "enabled": True,
+            "mock_mode": True,
+            "base_url": "http://test-sap.com",
+            "client": "100",
+            "auth_mode": "basic",
+            "username": "test_user",
             # Test-only placeholder password - never used for real connections
             "password": "<TEST_PASSWORD_PLACEHOLDER>",
-            "warehouse_number": "1000"
+            "warehouse": "EW01",
+            "verify_tls": False,
         }
     
     @pytest.fixture
@@ -94,22 +100,23 @@ class TestSAPEWMAdapter:
         """Test SAP adapter initialization."""
         adapter = SAPEWMAdapter(sap_config)
         
-        assert adapter.host == "test-sap.com"
-        assert adapter.user == "test_user"
-        assert adapter.warehouse_number == "1000"
-        assert adapter.use_rfc == False
+        assert str(adapter.sap_config.base_url).rstrip("/") == "http://test-sap.com"
+        assert adapter.sap_config.username == "test_user"
+        assert adapter.sap_config.warehouse == "EW01"
+        assert adapter.sap_config.mock_mode is True
     
     @pytest.mark.asyncio
     async def test_sap_adapter_connect_rest(self, sap_adapter):
         """Test SAP adapter REST connection."""
-        with patch('httpx.AsyncClient') as mock_client:
-            mock_response = Mock()
-            mock_response.status_code = 200
-            mock_client.return_value.get.return_value = mock_response
-            
-            result = await sap_adapter.connect()
-            assert result == True
-            assert sap_adapter.connected == True
+        client = AsyncMock(spec=SAPEWMODataClient)
+        client.connect.return_value = True
+        adapter = SAPEWMAdapter(sap_adapter.sap_config, client=client)
+
+        result = await adapter.connect()
+
+        assert result is True
+        assert adapter.connected is True
+        client.connect.assert_awaited_once()
     
     def test_sap_task_status_mapping(self, sap_adapter):
         """Test SAP task status mapping."""
@@ -228,16 +235,20 @@ class TestWMSAdapterFactory:
         and is never used for actual WMS connections.
         """
         config = {
-            "host": "test.com",
-            "user": "test",
+            "enabled": True,
+            "mock_mode": True,
+            "base_url": "http://test.com",
+            "auth_mode": "basic",
+            "username": "test",
             # Test-only placeholder password - never used for real connections
             "password": "<TEST_PASSWORD_PLACEHOLDER>",
-            "warehouse_number": "1000"
+            "warehouse": "EW01",
+            "verify_tls": False,
         }
         
         adapter = WMSAdapterFactory.create_adapter("sap_ewm", config)
         assert isinstance(adapter, SAPEWMAdapter)
-        assert adapter.config == config
+        assert adapter.sap_config.warehouse == "EW01"
     
     def test_factory_create_invalid_adapter(self):
         """Test creating invalid adapter type."""
