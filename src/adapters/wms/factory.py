@@ -19,6 +19,7 @@ WMS Adapter Factory - Creates and manages WMS adapter instances.
 from typing import Dict, Any, Optional, Type
 from .base import BaseWMSAdapter
 from .sap_ewm import SAPEWMAdapter
+from .sap_ewm_config import SAPEWMConfig
 from .manhattan import ManhattanAdapter
 from .oracle import OracleWMSAdapter
 import logging
@@ -56,7 +57,7 @@ class WMSAdapterFactory:
         logger.info(f"Registered WMS adapter: {name}")
     
     @classmethod
-    def create_adapter(cls, wms_type: str, config: Dict[str, Any], 
+    def create_adapter(cls, wms_type: str, config: Dict[str, Any] | SAPEWMConfig,
                       instance_id: Optional[str] = None) -> BaseWMSAdapter:
         """
         Create a new WMS adapter instance.
@@ -85,6 +86,8 @@ class WMSAdapterFactory:
         
         # Create new adapter instance
         adapter_class = cls._adapters[wms_type]
+        if wms_type != "sap_ewm" and not isinstance(config, dict):
+            raise TypeError("Non-SAP WMS adapters require dictionary configuration")
         adapter = adapter_class(config)
         
         # Cache instance if instance_id provided
@@ -210,7 +213,7 @@ class WMSAdapterFactory:
         return results
 
 # Convenience functions for common operations
-def create_sap_ewm_adapter(config: Dict[str, Any], instance_id: Optional[str] = None) -> SAPEWMAdapter:
+def create_sap_ewm_adapter(config: Dict[str, Any] | SAPEWMConfig, instance_id: Optional[str] = None) -> SAPEWMAdapter:
     """Create a SAP EWM adapter instance."""
     return WMSAdapterFactory.create_adapter('sap_ewm', config, instance_id)
 

@@ -23,6 +23,14 @@ from datetime import datetime
 import logging
 from src.adapters.wms import WMSAdapterFactory, BaseWMSAdapter
 from src.adapters.wms.base import InventoryItem, Task, Order, Location, TaskStatus, TaskType
+from src.adapters.wms.sap_ewm import SAPEWMAdapter
+from src.adapters.wms.sap_ewm_config import SAPEWMConfig
+from src.adapters.wms.sap_ewm_models import (
+    SAPOrderTaskResult,
+    SAPPage,
+    SAPStockItem,
+    SAPWriteResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +50,10 @@ class WMSIntegrationService:
         )
 
     async def add_wms_connection(
-        self, wms_type: str, config: Dict[str, Any], connection_id: str
+        self,
+        wms_type: str,
+        config: Dict[str, Any] | SAPEWMConfig,
+        connection_id: str,
     ) -> bool:
         """
         Add a new WMS connection.
@@ -594,7 +605,6 @@ class WMSIntegrationService:
                 "target_connection": target_connection_id,
                 "timestamp": datetime.now().isoformat(),
             }
-
         except Exception as e:
             self.logger.error(f"Error syncing inventory: {e}")
             return {
@@ -604,6 +614,66 @@ class WMSIntegrationService:
                 "target_connection": target_connection_id,
                 "timestamp": datetime.now().isoformat(),
             }
+
+    async def get_physical_stock(
+        self,
+        connection_id: str,
+        *,
+        product: str | None,
+        storage_bin: str | None,
+        limit: int,
+        cursor: str | None,
+        correlation_id: str,
+    ) -> SAPPage[SAPStockItem]:
+        adapter = self._get_sap_adapter(connection_id)
+        return await adapter.get_physical_stock(
+            product, storage_bin, limit, cursor, correlation_id
+        )
+
+    async def list_orders_and_tasks(
+        self,
+        connection_id: str,
+        *,
+        order_id: str | None,
+        task_status: str | None,
+        resource: str | None,
+        limit: int,
+        cursor: str | None,
+        correlation_id: str,
+    ) -> SAPOrderTaskResult:
+        adapter = self._get_sap_adapter(connection_id)
+        return await adapter.list_orders_and_tasks(
+            order_id,
+            task_status,
+            resource,
+            limit,
+            cursor,
+            correlation_id,
+        )
+
+    async def assign_warehouse_order(
+        self,
+        connection_id: str,
+        warehouse_order: str,
+        resource: str,
+        correlation_id: str,
+    ) -> SAPWriteResult:
+        adapter = self._get_sap_adapter(connection_id)
+        return await adapter.assign_warehouse_order(
+            warehouse_order, resource, correlation_id
+        )
+
+    async def confirm_warehouse_task(
+        self,
+        connection_id: str,
+        warehouse_task: str,
+        warehouse_task_item: str,
+        correlation_id: str,
+    ) -> SAPWriteResult:
+        adapter = self._get_sap_adapter(connection_id)
+        return await adapter.confirm_warehouse_task_exact(
+            warehouse_task, warehouse_task_item, correlation_id
+        )
 
     async def get_aggregated_inventory(
         self, location: Optional[str] = None, sku: Optional[str] = None
@@ -677,6 +747,14 @@ class WMSIntegrationService:
                 }
             )
         return connections
+
+    def _get_sap_adapter(self, connection_id: str) -> SAPEWMAdapter:
+        if connection_id not in self.adapters:
+            raise ValueError(f"WMS connection not found: {connection_id}")
+        adapter = self.adapters[connection_id]
+        if not isinstance(adapter, SAPEWMAdapter):
+            raise TypeError(f"WMS connection '{connection_id}' is not SAP EWM")
+        return adapter
 
 
 # Global WMS integration service instance

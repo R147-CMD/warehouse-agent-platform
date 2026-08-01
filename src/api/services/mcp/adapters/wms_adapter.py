@@ -701,6 +701,10 @@ class WMSAdapter(MCPAdapter):
     async def _get_inventory_levels(self, **kwargs) -> Dict[str, Any]:
         """Get inventory levels."""
         try:
+            if self.wms_config.wms_type == "sap_ewm":
+                raise RuntimeError(
+                    "Legacy SAP WMS handler is disabled; use sap_ewm_tools"
+                )
             # Implementation for getting inventory levels
             return {
                 "success": True,
