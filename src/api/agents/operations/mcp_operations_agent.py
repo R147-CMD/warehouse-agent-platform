@@ -49,6 +49,14 @@ from .action_tools import get_operations_action_tools
 logger = logging.getLogger(__name__)
 
 
+SAP_EWM_INTENT_TO_TOOL = {
+    "sap_stock_query": "sap_ewm_get_physical_stock",
+    "sap_order_task_query": "sap_ewm_list_orders_and_tasks",
+    "sap_order_assignment": "sap_ewm_assign_warehouse_order",
+    "sap_task_confirmation": "sap_ewm_confirm_warehouse_task",
+}
+
+
 @dataclass
 class MCPOperationsQuery:
     """MCP-enabled operations query."""
@@ -142,6 +150,9 @@ class MCPOperationsCoordinationAgent:
             from src.api.services.mcp.adapters.equipment_adapter import (
                 get_equipment_adapter,
             )
+            from src.api.services.mcp.adapters.sap_ewm_adapter import (
+                get_sap_ewm_mcp_adapter,
+            )
 
             # Register the operations adapter as an MCP source
             operations_adapter = await get_operations_adapter()
@@ -155,7 +166,16 @@ class MCPOperationsCoordinationAgent:
                 "equipment_asset_tools", equipment_adapter, "mcp_adapter"
             )
 
-            logger.info("MCP sources registered successfully (operations + equipment)")
+            sap_ewm_adapter = await get_sap_ewm_mcp_adapter()
+            if sap_ewm_adapter is not None:
+                await self.tool_discovery.register_discovery_source(
+                    "sap_ewm_tools", sap_ewm_adapter, "mcp_adapter"
+                )
+                logger.info("Registered SAP EWM MCP source")
+
+            logger.info(
+                "MCP sources registered successfully (operations + equipment + optional SAP EWM)"
+            )
         except Exception as e:
             logger.error(f"Failed to register MCP sources: {e}")
 
@@ -309,12 +329,16 @@ Return JSON format:
     "context": {"priority": "high", "shift": "morning"}
 }
 
-Intent options: workforce_management, task_assignment, shift_planning, kpi_analysis, performance_monitoring, resource_allocation, wave_creation, order_management, workflow_optimization
+Intent options: workforce_management, task_assignment, shift_planning, kpi_analysis, performance_monitoring, resource_allocation, wave_creation, order_management, workflow_optimization, sap_stock_query, sap_order_task_query, sap_order_assignment, sap_task_confirmation
 
 Examples:
 - "Create a wave for orders 1001-1010" → {"intent": "wave_creation", "entities": {"order_range": "1001-1010", "zone": "A"}, "context": {"priority": "normal"}}
 - "Assign workers to Zone A" → {"intent": "workforce_management", "entities": {"zone": "A"}, "context": {"priority": "normal"}}
 - "Schedule pick operations" → {"intent": "task_assignment", "entities": {"operation_type": "pick"}, "context": {"priority": "normal"}}
+- "Show SAP stock for TG11 in bin A-01" -> {"intent": "sap_stock_query", "entities": {"product": "TG11", "storage_bin": "A-01"}, "context": {}}
+- "List tasks for SAP warehouse order 2000005003" -> {"intent": "sap_order_task_query", "entities": {"warehouse_order": "2000005003"}, "context": {}}
+- "Assign SAP warehouse order 2000005003 to RES2" -> {"intent": "sap_order_assignment", "entities": {"warehouse_order": "2000005003", "resource": "RES2"}, "context": {}}
+- "Confirm SAP warehouse task 1000004703" -> {"intent": "sap_task_confirmation", "entities": {"warehouse_task": "1000004703", "warehouse_task_item": "0"}, "context": {}}
 
 Return only valid JSON.""",
                 },
@@ -357,6 +381,11 @@ Return only valid JSON.""",
     ) -> List[DiscoveredTool]:
         """Discover MCP tools relevant to the operations query."""
         try:
+            if query.intent in SAP_EWM_INTENT_TO_TOOL:
+                return await self.tool_discovery.get_tools_by_source(
+                    "sap_ewm_tools"
+                )
+
             # Search for tools based on query intent and entities
             search_terms = [query.intent]
 
@@ -455,6 +484,30 @@ Return only valid JSON.""",
     ) -> List[Dict[str, Any]]:
         """Create a plan for executing MCP tools."""
         try:
+            if query.intent in SAP_EWM_INTENT_TO_TOOL:
+                target_name = SAP_EWM_INTENT_TO_TOOL[query.intent]
+                target_tool = next(
+                    (tool for tool in tools if tool.name == target_name), None
+                )
+                if target_tool is None:
+                    logger.warning(
+                        "SAP EWM tool %s is unavailable for intent %s",
+                        target_name,
+                        query.intent,
+                    )
+                    return []
+                return [
+                    {
+                        "tool_id": target_tool.tool_id,
+                        "tool_name": target_tool.name,
+                        "arguments": self._prepare_sap_tool_arguments(
+                            target_tool, query
+                        ),
+                        "priority": 1,
+                        "required": True,
+                    }
+                ]
+
             execution_plan = []
             query_lower = query.user_query.lower()
 
@@ -554,6 +607,35 @@ Return only valid JSON.""",
         except Exception as e:
             logger.error(f"Error creating tool execution plan: {e}")
             return []
+
+    def _prepare_sap_tool_arguments(
+        self, tool: DiscoveredTool, query: MCPOperationsQuery
+    ) -> Dict[str, Any]:
+        """Map typed Agent entities to the stable SAP EWM tool contract."""
+
+        properties = tool.parameters.get("properties", {})
+        arguments = {
+            name: query.entities[name]
+            for name in properties
+            if name in query.entities
+        }
+
+        if "order_id" in properties and "order_id" not in arguments:
+            warehouse_order = query.entities.get("warehouse_order")
+            if warehouse_order is not None:
+                arguments["order_id"] = warehouse_order
+
+        if "warehouse_task_item" in properties:
+            arguments.setdefault(
+                "warehouse_task_item",
+                query.entities.get("warehouse_task_item", "0"),
+            )
+
+        if "reason" in properties:
+            reason = sanitize_prompt_input(query.user_query, max_length=500).strip()
+            arguments["reason"] = reason or "User requested SAP EWM operation"
+
+        return arguments
 
     def _prepare_tool_arguments(
         self, tool: DiscoveredTool, query: MCPOperationsQuery

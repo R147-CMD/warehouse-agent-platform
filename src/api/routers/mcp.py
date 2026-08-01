@@ -122,6 +122,26 @@ async def _register_mcp_adapters(tool_discovery: ToolDiscoveryService):
         except Exception as e:
             logger.warning(f"Forecasting adapter not available: {e}")
 
+        # Register SAP EWM only when its opt-in adapter is enabled and initialized.
+        try:
+            from src.api.services.mcp.adapters.sap_ewm_adapter import (
+                get_sap_ewm_mcp_adapter,
+            )
+
+            sap_ewm_adapter = await get_sap_ewm_mcp_adapter()
+            if sap_ewm_adapter is not None:
+                await tool_discovery.register_discovery_source(
+                    "sap_ewm_tools", sap_ewm_adapter, "mcp_adapter"
+                )
+                logger.info("Registered SAP EWM MCP Adapter")
+            else:
+                logger.info("SAP EWM MCP Adapter is disabled")
+        except Exception as e:
+            logger.warning(
+                "SAP EWM adapter not available: %s",
+                sanitize_error_message(e),
+            )
+
         # Register Document MCP Adapter (if available)
         try:
             # Document adapter may be registered differently - check if needed
