@@ -13,6 +13,11 @@ from uuid import uuid4
 
 import httpx
 
+from src.api.services.monitoring.sap_ewm_metrics import (
+    SAPEWMMetrics,
+    sap_ewm_metrics,
+)
+
 from .sap_ewm_config import SAPAuthMode, SAPEWMConfig
 from .sap_ewm_errors import SAPEWMError, SAPEWMErrorCode
 
@@ -44,11 +49,13 @@ class SAPEWMODataClient:
         http_client: httpx.AsyncClient | None = None,
         sleeper: Callable[[float], Awaitable[None]] = asyncio.sleep,
         clock: Callable[[], float] = monotonic,
+        metrics: SAPEWMMetrics | None = None,
     ) -> None:
         self.config = config
         self._client = http_client
         self._sleeper = sleeper
         self._clock = clock
+        self._metrics = metrics or sap_ewm_metrics
         self._connected = False
         self._access_token: str | None = None
         self._access_token_expires_at = 0.0
@@ -83,7 +90,8 @@ class SAPEWMODataClient:
         params: dict[str, str],
         correlation_id: str | None = None,
     ) -> dict[str, Any]:
-        return await self._read_json(
+        return await self._read_with_metrics(
+            _read_operation(service),
             self._service_url(service, entity),
             params=self._client_params(params),
             correlation_id=correlation_id,
@@ -95,7 +103,8 @@ class SAPEWMODataClient:
         path: str,
         correlation_id: str | None = None,
     ) -> dict[str, Any]:
-        return await self._read_json(
+        return await self._read_with_metrics(
+            _read_operation(service),
             self._service_url(service, path),
             params=self._client_params({}),
             correlation_id=correlation_id,
@@ -110,7 +119,8 @@ class SAPEWMODataClient:
         absolute_url = self.decode_cursor(
             cursor, expected_service=expected_service
         )
-        return await self._read_json(
+        return await self._read_with_metrics(
+            _read_operation(expected_service),
             absolute_url,
             params=None,
             correlation_id=correlation_id,
@@ -123,6 +133,38 @@ class SAPEWMODataClient:
         body: dict[str, Any] | None,
         etag: str,
         correlation_id: str | None = None,
+    ) -> None:
+        operation = _write_operation(path)
+        started_at = monotonic()
+        try:
+            await self._post_action(
+                service,
+                path,
+                body,
+                etag,
+                correlation_id,
+            )
+        except SAPEWMError as error:
+            self._metrics.observe_request(
+                operation, _metric_result(error), monotonic() - started_at
+            )
+            raise
+        except Exception:
+            self._metrics.observe_request(
+                operation, "error", monotonic() - started_at
+            )
+            raise
+        self._metrics.observe_request(
+            operation, "success", monotonic() - started_at
+        )
+
+    async def _post_action(
+        self,
+        service: str,
+        path: str,
+        body: dict[str, Any] | None,
+        etag: str,
+        correlation_id: str | None,
     ) -> None:
         self._ensure_connected()
         url = self._service_url(service, path)
@@ -144,10 +186,12 @@ class SAPEWMODataClient:
                     headers=headers,
                 )
             except httpx.TimeoutException as exc:
+                self._metrics.record_unknown_outcome()
                 raise SAPEWMError.unknown_outcome(
                     "SAP write response was not received"
                 ) from exc
             except httpx.NetworkError as exc:
+                self._metrics.record_unknown_outcome()
                 raise SAPEWMError.unknown_outcome(
                     "SAP write connection ended before a response was received"
                 ) from exc
@@ -155,9 +199,13 @@ class SAPEWMODataClient:
             if response.status_code == 204:
                 return
             if csrf_attempt == 0 and self._is_csrf_rejection(response):
+                self._metrics.record_csrf_refresh()
                 self._csrf_tokens.pop(service, None)
                 continue
-            raise self._response_error(response)
+            error = self._response_error(response)
+            if error.code is SAPEWMErrorCode.SAP_ETAG_CONFLICT:
+                self._metrics.record_etag_conflict()
+            raise error
 
         raise SAPEWMError(
             SAPEWMErrorCode.SAP_FORBIDDEN,
@@ -191,6 +239,36 @@ class SAPEWMODataClient:
         self._validate_next_link(absolute_url, expected_service)
         return absolute_url
 
+    async def _read_with_metrics(
+        self,
+        operation: str,
+        url: str,
+        *,
+        params: dict[str, str] | None,
+        correlation_id: str | None,
+    ) -> dict[str, Any]:
+        started_at = monotonic()
+        try:
+            payload = await self._read_json(
+                url,
+                params=params,
+                correlation_id=correlation_id,
+            )
+        except SAPEWMError as error:
+            self._metrics.observe_request(
+                operation, _metric_result(error), monotonic() - started_at
+            )
+            raise
+        except Exception:
+            self._metrics.observe_request(
+                operation, "error", monotonic() - started_at
+            )
+            raise
+        self._metrics.observe_request(
+            operation, "success", monotonic() - started_at
+        )
+        return payload
+
     async def _read_json(
         self,
         url: str,
@@ -213,6 +291,7 @@ class SAPEWMODataClient:
                 )
             except httpx.TimeoutException as exc:
                 if attempt < self.config.max_read_attempts:
+                    self._metrics.record_retry()
                     await self._sleeper(self._backoff(attempt, None))
                     continue
                 raise SAPEWMError(
@@ -222,6 +301,7 @@ class SAPEWMODataClient:
                 ) from exc
             except httpx.NetworkError as exc:
                 if attempt < self.config.max_read_attempts:
+                    self._metrics.record_retry()
                     await self._sleeper(self._backoff(attempt, None))
                     continue
                 raise SAPEWMError(
@@ -234,6 +314,7 @@ class SAPEWMODataClient:
                 response.status_code in _RETRIABLE_READ_STATUSES
                 and attempt < self.config.max_read_attempts
             ):
+                self._metrics.record_retry()
                 await self._sleeper(self._backoff(attempt, response))
                 continue
             if not 200 <= response.status_code < 300:
@@ -492,3 +573,27 @@ def _effective_port(parts) -> int | None:
     if parts.scheme.lower() == "http":
         return 80
     return None
+
+
+def _read_operation(service: str) -> str:
+    if service == "stock":
+        return "get_stock"
+    return "get_orders_tasks"
+
+
+def _write_operation(path: str) -> str:
+    if path.endswith("SAP__self.AssignWarehouseOrder"):
+        return "assign_order"
+    if path.endswith("SAP__self.ConfirmWarehouseTaskExact"):
+        return "confirm_task"
+    return "post_action"
+
+
+def _metric_result(error: SAPEWMError) -> str:
+    if error.code is SAPEWMErrorCode.SAP_TIMEOUT:
+        return "timeout"
+    if error.code is SAPEWMErrorCode.SAP_UNAVAILABLE:
+        return "unavailable"
+    if error.code is SAPEWMErrorCode.SAP_OUTCOME_UNKNOWN:
+        return "unknown_outcome"
+    return "error"

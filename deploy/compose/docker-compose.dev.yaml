@@ -90,6 +90,33 @@ services:
       - "9091:9091"     # HTTP
     depends_on: [etcd, minio]
 
+  sap-ewm-mock:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.backend
+    container_name: wosa-sap-ewm-mock
+    command:
+      - uvicorn
+      - src.mock_servers.sap_ewm.app:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8010"
+      - --workers
+      - "1"
+    environment:
+      SAP_EWM_MOCK_CONTROL_ENABLED: "true"
+      SAP_EWM_MOCK_USERNAME: ${SAP_EWM_USERNAME:-mock-user}
+      SAP_EWM_MOCK_PASSWORD: ${SAP_EWM_PASSWORD:-mock-password}
+    ports:
+      - "8010:8010"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8010/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   # Backend API Service
   backend:
     build:
@@ -110,11 +137,27 @@ services:
       - MILVUS_PORT=19530
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - ENVIRONMENT=development
+      - SAP_EWM_ENABLED=true
+      - SAP_EWM_CONNECTION_ID=sap-ewm-default
+      - SAP_EWM_MOCK_MODE=true
+      - SAP_EWM_BASE_URL=http://sap-ewm-mock:8010
+      - SAP_EWM_WAREHOUSE=EW01
+      - SAP_EWM_CLIENT=100
+      - SAP_EWM_AUTH_MODE=basic
+      - SAP_EWM_USERNAME=${SAP_EWM_USERNAME:-mock-user}
+      - SAP_EWM_PASSWORD=${SAP_EWM_PASSWORD:-mock-password}
+      - SAP_EWM_VERIFY_TLS=false
     depends_on:
-      - timescaledb
-      - redis
-      - milvus
-      - kafka
+      timescaledb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      milvus:
+        condition: service_started
+      kafka:
+        condition: service_started
+      sap-ewm-mock:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
