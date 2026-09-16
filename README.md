@@ -1,738 +1,589 @@
-# Multi-Agent-Intelligent-Warehouse 
-*NVIDIA Blueprint–aligned multi-agent assistant for warehouse operations.*
+# 智能仓库多 Agent 运营平台
+
+面向仓库库存、作业、设备、安全、需求预测和业务文档场景的多智能体协作平台。
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.120+-green.svg)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-19+-61dafb.svg)](https://reactjs.org/)
-[![NVIDIA NIMs](https://img.shields.io/badge/NVIDIA-NIMs-76B900.svg)](https://www.nvidia.com/en-us/ai-data-science/nim/)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.120+-009688.svg)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-19+-61dafb.svg)](https://react.dev/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-336791.svg)](https://www.postgresql.org/)
-[![Milvus](https://img.shields.io/badge/Milvus-GPU%20Accelerated-00D4AA.svg)](https://milvus.io/)
-[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED.svg)](https://www.docker.com/)
-[![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C.svg)](https://prometheus.io/)
-[![Grafana](https://img.shields.io/badge/Grafana-Dashboards-F46800.svg)](https://grafana.com/)
+[![Milvus](https://img.shields.io/badge/Milvus-2.4+-00D4AA.svg)](https://milvus.io/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg)](https://www.docker.com/)
 
-## Table of Contents
+> 本项目基于 NVIDIA Multi-Agent Intelligent Warehouse 开源项目持续扩展，保留 Apache 2.0 许可证和上游提交历史。当前 SAP EWM 集成为协议兼容的 Mock Server 与可替换型预集成，尚未声明连接任何真实企业 SAP 租户。
 
-- [Overview](#overview)
-- [Acronyms & Abbreviations](#acronyms--abbreviations)
-- [System Architecture](#system-architecture)
-- [Key Features](#key-features)
-- [Quick Start](#quick-start)
-- [Multi-Agent System](#multi-agent-system)
-- [API Reference](#api-reference)
-- [Monitoring & Observability](#monitoring--observability)
-- [NeMo Guardrails](#nemo-guardrails)
-- [Development Guide](#development-guide)
-- [Contributing](#contributing)
-- [License](#license)
+<a id="contents"></a>
+## 目录
 
-## Acronyms & Abbreviations
+- [项目简介](#overview)
+- [核心架构](#architecture)
+- [核心功能](#features)
+- [技术栈](#technology-stack)
+- [快速开始](#quick-start)
+- [多 Agent 体系](#multi-agent)
+- [MCP 工具与受控执行](#mcp-execution)
+- [SAP EWM 预集成](#sap-ewm)
+- [Hybrid RAG 与证据链](#rag-evidence)
+- [API 接口](#api-reference)
+- [监控、安全与记忆](#operations)
+- [测试](#testing)
+- [项目结构](#repository-layout)
+- [常见问题](#troubleshooting)
+- [开源来源与许可证](#license)
 
-| Acronym | Definition |
-|---------|------------|
-| **ADR** | Architecture Decision Record |
-| **API** | Application Programming Interface |
-| **BOL** | Bill of Lading |
-| **cuML** | CUDA Machine Learning |
-| **cuVS** | CUDA Vector Search |
-| **EAO** | Equipment & Asset Operations (Agent) |
-| **ERP** | Enterprise Resource Planning |
-| **GPU** | Graphics Processing Unit |
-| **HTTP/HTTPS** | Hypertext Transfer Protocol (Secure) |
-| **IoT** | Internet of Things |
-| **JSON** | JavaScript Object Notation |
-| **JWT** | JSON Web Token |
-| **KPI** | Key Performance Indicator |
-| **LLM** | Large Language Model |
-| **LOTO** | Lockout/Tagout |
-| **MAPE** | Mean Absolute Percentage Error |
-| **MCP** | Model Context Protocol |
-| **NeMo** | NVIDIA NeMo |
-| **NIM/NIMs** | NVIDIA Inference Microservices |
-| **OCR** | Optical Character Recognition |
-| **PPE** | Personal Protective Equipment |
-| **QPS** | Queries Per Second |
-| **RAG** | Retrieval-Augmented Generation |
-| **RAPIDS** | Rapid Analytics Platform for Interactive Data Science |
-| **RBAC** | Role-Based Access Control |
-| **RFID** | Radio Frequency Identification |
-| **RMSE** | Root Mean Square Error |
-| **REST** | Representational State Transfer |
-| **SDS** | Safety Data Sheet |
-| **SKU** | Stock Keeping Unit |
-| **SLA** | Service Level Agreement |
-| **SOP** | Standard Operating Procedure |
-| **SQL** | Structured Query Language |
-| **UI** | User Interface |
-| **UX** | User Experience |
-| **WMS** | Warehouse Management System |
+<a id="overview"></a>
+## 项目简介
 
-## Overview
+传统仓库系统中的库存、订单、设备、人员、安全事件和作业文档通常分散在 WMS、SAP EWM、IoT、RFID/条码及其他业务平台中。用户需要在多个系统之间查询数据、判断异常并手动执行操作。
 
-This repository implements a production-grade Multi-Agent-Intelligent-Warehouse patterned on NVIDIA's AI Blueprints, featuring:
+本项目提供统一的自然语言交互入口，将用户请求转换为可验证、可审批、可恢复的 Agent 工作流，主要覆盖：
 
-- **Multi-Agent AI System** - LangGraph-orchestrated Planner/Router + 5 Specialized Agents (Equipment, Operations, Safety, Forecasting, Document)
-- **NVIDIA NeMo Integration** - Complete document processing pipeline with OCR, structured data extraction, and vision models
-- **MCP Framework** - Model Context Protocol with dynamic tool discovery, execution, and adapter system
-- **Hybrid RAG Stack** - PostgreSQL/TimescaleDB + Milvus vector database with intelligent query routing (90%+ accuracy)
-- **Production-Grade Vector Search** - Llama Nemotron Embed VL 1B v2 embeddings (2048-dim) with NVIDIA cuVS GPU acceleration (19x performance)
-- **AI-Powered Demand Forecasting** - Multi-model ensemble (XGBoost, Random Forest, Gradient Boosting, Ridge, SVR) with NVIDIA RAPIDS GPU acceleration
-- **Real-Time Monitoring** - Equipment status, telemetry, Prometheus metrics, Grafana dashboards, and system health
-- **Enterprise Security** - JWT authentication + RBAC with 5 user roles, NeMo Guardrails for content safety, and comprehensive user management
-- **Integration Framework** - Adapter/MCP boundaries for WMS, ERP, IoT, RFID/Barcode, and attendance; SAP EWM currently provides a protocol-compatible Mock and replaceable pre-integration, not a claimed production tenant connection
-- **Advanced Features** - Redis caching, conversation memory, evidence scoring, intelligent query classification, automated reorder recommendations, business intelligence dashboards
+- 使用 LangGraph 编排任务规划、能力路由、并行协作、结果反思和答案合成。
+- 通过仓库运营、设备管理、安全管理、需求预测和文档处理五类专业 Agent 分工执行任务。
+- 通过 MCP（Model Context Protocol，模型上下文协议）统一发现和调用业务工具。
+- 通过 Hybrid RAG 同时检索关键词、向量和结构化数据，并生成可追溯引用。
+- 通过人工审批、状态检查点、事务发件箱、幂等键和执行后回查控制高风险写操作。
+- 通过 SAP OData V4 协议兼容 Mock 完成 Agent → MCP → WMS Service → SAP Adapter 的本地端到端链路。
 
-## System Architecture
+### 当前实现边界
 
-![Warehouse Operational Assistant Architecture](docs/architecture/diagrams/warehouse-assistant-architecture.png)
+| 能力 | 当前状态 |
+|---|---|
+| Planner、Router、Coordinator、Reflection、答案合成 | 已实现 V2 主链路与特性开关 |
+| 五类专业 Agent 与统一输入输出协议 | 已实现 |
+| PostgreSQL、BM25、Milvus、RRF、精排组件 | 已实现可组合链路；实际效果取决于数据集、模型与部署配置 |
+| MCP 工具注册、Schema 校验、权限与风险控制 | 已实现 |
+| 审批、Checkpoint、Outbox、Celery 异步执行、幂等与回查 | 已实现核心链路 |
+| SAP EWM | 已完成 Mock 与可替换预集成；真实租户仍需凭据、字段映射和验收测试 |
+| 其他 WMS、ERP、IoT、RFID、考勤 | 提供适配器边界或演示路径；不等同于已连接生产系统 |
 
-The architecture consists of:
+<a id="architecture"></a>
+## 核心架构
 
-1. **User/External Interaction Layer** - Entry point for users and external systems
-2. **Warehouse Operational Assistant** - Central orchestrator managing specialized AI agents
-3. **Agent Orchestration Framework** - LangGraph for workflow orchestration + MCP (Model Context Protocol) for tool discovery
-4. **Multi-Agent System** - Five specialized agents:
-   - **Equipment & Asset Operations Agent** - Equipment assets, assignments, maintenance, and telemetry
-   - **Operations Coordination Agent** - Task planning and workflow management  
-   - **Safety & Compliance Agent** - Safety monitoring, incident response, and compliance tracking
-   - **Forecasting Agent** - Demand forecasting, reorder recommendations, and model performance monitoring
-   - **Document Processing Agent** - OCR, structured data extraction, and document management
-5. **API Services Layer** - Standardized interfaces for business logic and data access
-6. **Data Retrieval & Processing** - SQL, Vector, and Knowledge Graph retrievers
-7. **LLM Integration & Orchestration** - NVIDIA NIMs with LangGraph orchestration
-8. **Data Storage Layer** - PostgreSQL, Vector DB, Knowledge Graph, and Telemetry databases
-9. **Infrastructure Layer** - Kubernetes, NVIDIA GPU infrastructure, Edge devices, and Cloud
+![智能仓库多 Agent 平台架构](docs/architecture/diagrams/warehouse-assistant-architecture.png)
 
-### Key Architectural Components
+一次典型请求会依次经过以下组件：
 
-- **Multi-Agent Coordination**: LangGraph orchestrates complex workflows between specialized agents
-- **MCP Integration**: Model Context Protocol enables seamless tool discovery and execution
-- **Hybrid Data Processing**: Combines structured (PostgreSQL/TimescaleDB) and vector (Milvus) data
-- **NVIDIA NIMs Integration**: LLM inference and embedding services for intelligent processing
-- **Real-time Monitoring**: Comprehensive telemetry and equipment status tracking
-- **Scalable Infrastructure**: Kubernetes orchestration with GPU acceleration
+1. **API 与会话层**：接收自然语言请求，加载用户身份、会话上下文和权限信息。
+2. **复杂度判断**：区分简单查询、标准仓储流程和复杂跨领域任务。
+3. **Planner（任务规划器）**：通过规则快速路径、HTN 模板或 LLM 结构化规划生成任务计划。
+4. **Plan Compiler（计划校验与编译器）**：校验任务结构、依赖、能力、参数和循环上限，生成可执行 PlanGraph。
+5. **Router（能力路由器）**：根据能力、权限、风险和可用状态选择 Agent 或 Tool。
+6. **Coordinator（协同调度器）**：查找可执行节点、并行分发任务、汇总结果并唤醒下游节点。
+7. **专业 Agent**：执行领域分析、检索数据或生成待审批动作。
+8. **Reflection（结果校验）**：判断证据是否充分、结果是否冲突以及是否需要补充检索或局部重规划。
+9. **受控执行层**：对高风险动作执行权限校验、人工审批、异步投递、幂等控制和结果回查。
+10. **答案合成层**：依据证据和引用生成最终回复，并保存运行记录、指标和审计事件。
 
-## Key Features
+### 主要数据协议
 
-### Multi-Agent AI System
-- **Planner/Router** - Intelligent query routing and workflow orchestration
-- **Equipment & Asset Operations Agent** - Equipment management, maintenance, and telemetry
-- **Operations Coordination Agent** - Task planning and workflow management
-- **Safety & Compliance Agent** - Safety monitoring and incident response
-- **Forecasting Agent** - Demand forecasting, reorder recommendations, and model performance monitoring
-- **Document Processing Agent** - OCR, structured data extraction, and document management
-- **MCP Integration** - Model Context Protocol with dynamic tool discovery
+- `AgentTask`：发送给专业 Agent 的标准任务，包含目标、输入参数、上下文、权限和依赖结果。
+- `AgentResult`：Agent 的标准执行结果，包含状态、输出、证据、置信度、错误和待执行动作。
+- `ProposedAction`：Agent 提出的外部系统操作建议，不代表操作已经执行。
+- `EvidenceRef`：指向数据库记录、文档片段、工具结果或 Agent 分析结果的证据引用。
+- `PlanGraph`：由任务节点、依赖边、条件分支、并行关系和有限循环组成的可执行任务图。
 
-### Document Processing Pipeline
-- **Multi-Format Support** - PDF, PNG, JPG, JPEG, TIFF, BMP files
-- **5-Stage NVIDIA NeMo Pipeline** - Complete OCR and structured data extraction
-- **Real-Time Processing** - Background processing with status tracking
-- **Intelligent OCR** - `meta/llama-3.2-11b-vision-instruct` for text extraction
-- **Structured Data Extraction** - Entity recognition and quality validation
+<a id="features"></a>
+## 核心功能
 
-### Advanced Search & Retrieval
-- **Hybrid RAG Stack** - PostgreSQL/TimescaleDB + Milvus vector database
-- **Production-Grade Vector Search** - Llama Nemotron Embed VL 1B v2 embeddings (2048-dim)
-- **GPU-Accelerated Search** - NVIDIA cuVS-powered vector search (19x performance)
-- **Intelligent Query Routing** - Automatic SQL vs Vector vs Hybrid classification (90%+ accuracy)
-- **Evidence Scoring** - Multi-factor confidence assessment with clarifying questions
-- **Redis Caching** - Intelligent caching with 85%+ hit rate
+### 1. 多 Agent 规划与协作
 
-### Demand Forecasting & Inventory Intelligence
-- **🚀 GPU-Accelerated Forecasting** - **NVIDIA RAPIDS cuML** integration for enterprise-scale performance
-  - **10-100x faster** training and inference compared to CPU-only
-  - **Automatic GPU detection** - Falls back to CPU if GPU not available
-  - **Full GPU acceleration** for Random Forest, Linear Regression, SVR via cuML
-  - **XGBoost GPU support** via CUDA when RAPIDS is available
-  - **Seamless integration** - No code changes needed, works out of the box
-- **AI-Powered Demand Forecasting** - Multi-model ensemble with Random Forest, XGBoost, Gradient Boosting, Linear Regression, Ridge Regression, SVR
-- **Advanced Feature Engineering** - Lag features, rolling statistics, seasonal patterns, promotional impacts
-- **Hyperparameter Optimization** - Optuna-based tuning with Time Series Cross-Validation
-- **Real-Time Predictions** - Live demand forecasts with confidence intervals
-- **Automated Reorder Recommendations** - AI-suggested stock orders with urgency levels
-- **Business Intelligence Dashboard** - Comprehensive analytics and performance monitoring
+- 简单请求通过规则 Fast Path 直接路由，减少不必要的 LLM 调用。
+- 标准仓储流程通过 HTN（层次任务网络）模板拆分为稳定步骤。
+- 复杂请求由 LLM 生成结构化计划，并通过 Pydantic Schema 进行类型校验。
+- 支持依赖执行、条件分支、并行节点、有限循环和失败节点局部重规划。
+- Agent 之间通过统一的 `AgentTask`、`AgentResult` 和 LangGraph State 交换数据。
 
-### System Integrations
-- **SAP EWM** - 协议兼容 Mock/可替换型预集成 with OData V4 paths,
-  Basic/OAuth2 configuration, CSRF, ETag, pagination, typed errors, bounded read
-  retries, approval-gated writes, metrics, and end-to-end Agent tests. It has not
-  been verified against a real customer SAP landscape.
-- **Other WMS/ERP systems** - Manhattan, Oracle WMS, SAP ECC, and Oracle ERP
-  adapter skeletons; validate their current implementation before describing
-  them as connected systems.
-- **IoT, RFID/Barcode, attendance** - local adapters and simulated/demo data
-  paths for equipment, sensors, scanners, and workforce systems; vendor-specific
-  production rollout requires credentials, field mapping, and acceptance tests.
+### 2. 专业 Agent
 
-#### SAP EWM local quick start
+- **仓库运营 Agent**：任务创建、查询、分配、进度更新、工作量分析和仓库作业协调。
+- **设备管理 Agent**：设备状态、遥测、调度、维护、位置和利用率分析。
+- **安全管理 Agent**：事故记录、安全检查、风险分析、告警和整改建议。
+- **需求预测 Agent**：需求预测、补货建议、模型表现和业务趋势分析。
+- **文档处理 Agent**：PDF、Word、图片等文档解析、OCR、结构化抽取、检索和引用。
+
+### 3. Hybrid RAG
+
+- 文档解析后按正文、SOP、表格和图片实施差异化分块。
+- 使用父子块关联兼顾小块精准召回和大块上下文完整性。
+- 通过 BM25 关键词检索和 Milvus 稠密向量检索进行双路召回。
+- 使用 RRF（倒数排名融合）合并候选，再通过 Cross-Encoder Reranker 进行精排。
+- 支持结构化 SQL 查询、查询改写、元数据过滤、上下文回填和证据评分。
+
+### 4. 证据、原子结论与引用
+
+- 将数据库查询、文档片段、Agent 分析和 Tool 结果转换为统一证据对象。
+- 对仓库、订单、任务、设备等业务实体进行标准化对齐。
+- 区分数据发生时间、查询时间和有效版本，避免把过期数据当成当前状态。
+- 基于来源优先级、数据新鲜度和一致性规则检测冲突。
+- 在生成答案前检查关键结论的证据覆盖情况。
+- 证据不足时可触发补充检索、降级表述、无答案或主动澄清。
+
+### 5. 外部系统受控执行
+
+- MCP Server 暴露标准化工具名称、说明、输入输出 Schema 和风险等级。
+- Tool Handler 将工具参数转换为领域服务调用，而不是让 LLM 直接发送任意 HTTP 请求。
+- WMS Service 负责业务校验，SAP Adapter 负责认证、URL、字段和错误模型转换。
+- 高风险操作先生成 `ProposedAction`，经人工批准后才会进入执行队列。
+- PostgreSQL Checkpoint 保存暂停状态，支持服务重启后的断点恢复。
+- Transactional Outbox 与 Celery Worker 保证命令可靠投递。
+- 幂等键、分类重试和执行后回查用于避免重复副作用并核验最终状态。
+
+<a id="technology-stack"></a>
+## 技术栈
+
+| 分类 | 技术 |
+|---|---|
+| Agent 与编排 | LangGraph、LangChain Core、MCP、Pydantic |
+| 大模型与安全 | NVIDIA NIM、OpenAI 兼容接口、NeMo Guardrails |
+| 检索与文档 | Hybrid RAG、BM25、Milvus、Embedding、RRF、Cross-Encoder Rerank、OCR |
+| 后端 | Python 3.11+、FastAPI、SQLAlchemy/AsyncPG、Celery |
+| 数据与消息 | PostgreSQL、TimescaleDB、Redis、Kafka、Milvus、MinIO |
+| 外部集成 | SAP EWM OData V4、REST API、IoT、RFID/Barcode 适配器边界 |
+| 前端 | React 19、TypeScript、Material UI、React Query、Recharts |
+| 部署与监控 | Docker Compose、Nginx、Prometheus、Grafana |
+
+<a id="quick-start"></a>
+## 快速开始
+
+### 环境要求
+
+- Python 3.11+
+- Node.js 18.17+（推荐 Node.js 20 LTS）
+- npm 9+
+- Docker 与 Docker Compose
+- Git
+- 可选：支持 CUDA 12.x 的 NVIDIA GPU
+
+### 方式一：Docker Compose（推荐）
 
 ```bash
-docker compose -f deploy/compose/docker-compose.dev.yaml up -d sap-ewm-mock backend
-curl http://localhost:8010/health
-pytest tests/integration/test_sap_ewm_agent_workflow.py -q
+# 1. 克隆仓库
+git clone https://github.com/R147-CMD/warehouse-agent-platform.git
+cd warehouse-agent-platform
+
+# 2. 创建环境变量文件
+cp .env.example deploy/compose/.env
+
+# 3. 按需编辑密码、JWT 密钥和模型 API Key
+# Linux/macOS
+nano deploy/compose/.env
+
+# 4. 启动完整开发环境
+docker compose --env-file deploy/compose/.env \
+  -f deploy/compose/docker-compose.dev.yaml up -d
+
+# 5. 查看服务状态
+docker compose --env-file deploy/compose/.env \
+  -f deploy/compose/docker-compose.dev.yaml ps
 ```
 
-The Agent exposes exactly four SAP tools: physical-stock query, order/task
-query, warehouse-order assignment, and exact warehouse-task confirmation. The
-two write tools pause for human approval and use checkpoint/replay protection.
-Configuration, fault injection, error semantics, and the real-SAP cutover
-checklist are documented in [docs/wms-integration.md](docs/wms-integration.md).
+Windows PowerShell 可使用：
 
-### Enterprise Security & Monitoring
-- **Authentication** - JWT authentication + RBAC with 5 user roles
-- **Real-Time Monitoring** - Prometheus metrics + Grafana dashboards
-- **Equipment Telemetry** - Battery, temperature, charging analytics
-- **System Health** - Comprehensive observability and alerting
-- **NeMo Guardrails** - Content safety and compliance protection (see [NeMo Guardrails](#nemo-guardrails) section below)
+```powershell
+Copy-Item .env.example deploy/compose/.env
+docker compose --env-file deploy/compose/.env `
+  -f deploy/compose/docker-compose.dev.yaml up -d
+docker compose --env-file deploy/compose/.env `
+  -f deploy/compose/docker-compose.dev.yaml ps
+```
 
-#### Security Notes
-
-**JWT Secret Key Configuration:**
-- **Development**: If `JWT_SECRET_KEY` is not set, the application uses a default development key with warnings. This allows for easy local development.
-- **Production**: The application **requires** `JWT_SECRET_KEY` to be set. If not set or using the default placeholder, the application will fail to start. Set `ENVIRONMENT=production` and provide a strong, unique `JWT_SECRET_KEY` in your `.env` file.
-- **Best Practice**: Always set `JWT_SECRET_KEY` explicitly, even in development, using a strong random string (minimum 32 characters).
-
-For more security information, see [docs/secrets.md](docs/secrets.md) and [SECURITY_REVIEW.md](SECURITY_REVIEW.md).
-
-## Quick Start
-
-**For complete deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).**
-
-### Setup Options
-
-**Option 1: Interactive Jupyter Notebook Setup (Recommended for First-Time Users)**
-
-📓 **[Complete Setup Guide (Jupyter Notebook)](notebooks/setup/complete_setup_guide.ipynb)**
-
-The interactive notebook provides:
-- ✅ Automated environment validation and checks
-- ✅ Step-by-step guided setup with explanations
-- ✅ Interactive API key configuration
-- ✅ Database setup and migration automation
-- ✅ User creation and demo data generation
-- ✅ Backend and frontend startup from within the notebook
-- ✅ Comprehensive error handling and troubleshooting
-
-**To use the notebook:**
-1. Open `notebooks/setup/complete_setup_guide.ipynb` in Jupyter Lab/Notebook
-2. Follow the interactive cells step by step
-3. The notebook will guide you through the entire setup process
-
-**Option 2: Command-Line Setup (For Experienced Users)**
-
-See the [Local Development Setup](#local-development-setup) section below for manual command-line setup.
-
-### Prerequisites
-
-- **Python 3.11+** (check with `python3 --version`)
-- **Node.js** and npm (check with `node --version` and `npm --version`)
-  - **Minimum**: Node.js 18.17.0+ (required for `node:path` protocol support)
-  - **Recommended**: Node.js 20.x LTS for best compatibility and performance
-  - **Note**: Node.js 18.0.0 - 18.16.x will fail with `Cannot find module 'node:path'` error
-- **Docker** and Docker Compose
-- **Git** (to clone the repository)
-- **PostgreSQL client** (`psql`) - Required for running database migrations
-  - **Ubuntu/Debian**: `sudo apt-get install postgresql-client`
-  - **macOS**: `brew install postgresql` or `brew install libpq`
-  - **Windows**: Install from [PostgreSQL downloads](https://www.postgresql.org/download/windows/)
-  - **Alternative**: Use Docker (see [DEPLOYMENT.md](DEPLOYMENT.md))
-- **Poppler utilities** (`poppler-utils`) - Required for PDF document processing
-  - **Ubuntu/Debian**: `sudo apt-get install poppler-utils`
-  - **macOS**: `brew install poppler`
-  - **Windows**: Install from [Poppler for Windows](http://blog.alivate.com.au/poppler-windows/) or use Chocolatey: `choco install poppler`
-  - **Note**: Required by `pdf2image` package for converting PDF pages to images
-- **CUDA (for GPU acceleration)** - Optional but recommended for RAPIDS GPU-accelerated forecasting
-  - **Recommended**: CUDA 12.x (default for RAPIDS packages)
-  - **Supported**: CUDA 11.x (via `install_rapids.sh` auto-detection)
-  - **Note**: CUDA version is auto-detected during RAPIDS installation. If you have CUDA 13.x, it will install CUDA 12.x packages (backward compatible). For best results, ensure your CUDA driver version matches or exceeds the toolkit version.
-
-### Local Development Setup
-
-For the fastest local development setup:
+### 方式二：本地开发
 
 ```bash
-# 1. Clone repository
-git clone https://github.com/NVIDIA-AI-Blueprints/Multi-Agent-Intelligent-Warehouse.git
-cd Multi-Agent-Intelligent-Warehouse
-
-# 2. Verify Node.js version (recommended before setup)
+# 检查 Node.js 版本
 ./scripts/setup/check_node_version.sh
 
-# 3. Setup environment
+# 创建 Python 环境并安装依赖
 ./scripts/setup/setup_environment.sh
 
-# 4. Configure environment variables (REQUIRED before starting services)
-# Create .env file for Docker Compose (recommended location)
-cp .env.example deploy/compose/.env
-# Or create in project root: cp .env.example .env
-# Edit with your values: nano deploy/compose/.env
-
-# 5. Start infrastructure services
+# 启动数据库、缓存、消息队列和向量数据库
 ./scripts/setup/dev_up.sh
 
-# 6. Run database migrations
+# 启动后端
 source env/bin/activate
-
-# Load environment variables from .env file (REQUIRED before running migrations)
-# This ensures $POSTGRES_PASSWORD is available for the psql commands below
-# If .env is in deploy/compose/ (recommended):
-set -a && source deploy/compose/.env && set +a
-# OR if .env is in project root:
-# set -a && source .env && set +a
-
-# Docker Compose: Using Docker Compose (Recommended - no psql client needed)
-docker compose -f deploy/compose/docker-compose.dev.yaml exec -T timescaledb psql -U warehouse -d warehouse < data/postgres/000_schema.sql
-docker compose -f deploy/compose/docker-compose.dev.yaml exec -T timescaledb psql -U warehouse -d warehouse < data/postgres/001_equipment_schema.sql
-docker compose -f deploy/compose/docker-compose.dev.yaml exec -T timescaledb psql -U warehouse -d warehouse < data/postgres/002_document_schema.sql
-docker compose -f deploy/compose/docker-compose.dev.yaml exec -T timescaledb psql -U warehouse -d warehouse < data/postgres/004_inventory_movements_schema.sql
-docker compose -f deploy/compose/docker-compose.dev.yaml exec -T timescaledb psql -U warehouse -d warehouse < scripts/setup/create_model_tracking_tables.sql
-
-
-# 7. Create default users
-python scripts/setup/create_default_users.py
-
-# 8. Generate demo data (optional but recommended)
-python scripts/data/quick_demo_data.py
-
-# 9. Generate historical demand data for forecasting (optional, required for Forecasting page)
-python scripts/data/generate_historical_demand.py
-
-# 10. (Optional) Install RAPIDS GPU acceleration for forecasting
-# This enables 10-100x faster forecasting with NVIDIA GPUs
-# Requires: NVIDIA GPU with CUDA 12.x support
-./scripts/setup/install_rapids.sh
-# Or manually: pip install --extra-index-url=https://pypi.nvidia.com cudf-cu12 cuml-cu12
-
-# 11. Start API server
 ./scripts/start_server.sh
 
-# 12. Start frontend (in another terminal)
+# 在另一个终端启动前端
 cd src/ui/web
 npm install
 npm start
 ```
 
-**Access:**
-- Frontend: http://localhost:3001 (login: `admin` / `changeme`)
-- API: http://localhost:8001
-- API Docs: http://localhost:8001/docs
+### 数据库初始化
 
-**Service Endpoints:**
-- **Postgres/Timescale**: `postgresql://warehouse:changeme@localhost:5435/warehouse`
-- **Redis**: `localhost:6379`
-- **Milvus gRPC**: `localhost:19530`
-- **Kafka**: `localhost:9092`
-
-### Environment Configuration
-
-**⚠️ Important:** For Docker Compose deployments, the `.env` file location matters!
-
-Docker Compose looks for `.env` files in this order:
-1. Same directory as the compose file (`deploy/compose/.env`)
-2. Current working directory (project root `.env`)
-
-**Recommended:** Create `.env` in the same directory as your compose file for consistency:
+项目的基础表和 V2 Agent 能力分别位于 `data/postgres/` 与 `data/postgres/migrations/`。首次部署时需要按照编号执行 SQL：
 
 ```bash
-# Option 1: In deploy/compose/ (recommended for Docker Compose)
-cp .env.example deploy/compose/.env
-nano deploy/compose/.env  # or your preferred editor
+COMPOSE="docker compose --env-file deploy/compose/.env -f deploy/compose/docker-compose.dev.yaml"
 
-# Option 2: In project root (works if running commands from project root)
-cp .env.example .env
-nano .env  # or your preferred editor
+for sql in \
+  data/postgres/000_schema.sql \
+  data/postgres/001_equipment_schema.sql \
+  data/postgres/002_document_schema.sql \
+  data/postgres/004_inventory_movements_schema.sql \
+  data/postgres/migrations/001_initial_schema.sql \
+  data/postgres/migrations/002_warehouse_tables.sql \
+  data/postgres/migrations/003_timescale_hypertables.sql \
+  data/postgres/migrations/004_agent_runtime_v2.sql \
+  data/postgres/migrations/005_evidence_retrieval_v2.sql \
+  data/postgres/migrations/006_command_outbox_v2.sql \
+  data/postgres/migrations/007_memory_audit_v2.sql \
+  data/postgres/migrations/008_execution_async_v2.sql; do
+  $COMPOSE exec -T timescaledb \
+    psql -U warehouse -d warehouse < "$sql"
+done
 ```
 
-**Critical Variables:**
-- Database connection settings (POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, DB_HOST, DB_PORT)
-- Redis connection (REDIS_HOST, REDIS_PORT)
-- Milvus connection (MILVUS_HOST, MILVUS_PORT)
-- JWT secret key (JWT_SECRET_KEY) - **Required in production**. In development, a default is used with warnings. See [Security Notes](#security-notes) below.
-- Admin password (DEFAULT_ADMIN_PASSWORD)
+如果 `.env` 修改了数据库用户名或数据库名，请同步调整示例中的 `warehouse`。
 
-**For AI Features (Optional):**
-- NVIDIA API keys (NVIDIA_API_KEY, NEMO_*_API_KEY, LLAMA_*_API_KEY)
+### 访问地址
 
-**Quick Setup for NVIDIA API Keys:**
-```bash
-python setup_nvidia_api.py
+| 服务 | 地址 |
+|---|---|
+| 中文前端 | <http://localhost:3001> |
+| Nginx 统一入口 | <http://localhost:3000> |
+| 后端 API | <http://localhost:8001> |
+| Swagger API 文档 | <http://localhost:8001/docs> |
+| SAP EWM Mock | <http://localhost:8010/health> |
+| Milvus gRPC | `localhost:19530` |
+| PostgreSQL/TimescaleDB | `localhost:5435` |
+| Redis | `localhost:6379` |
+| Kafka | `localhost:9092` |
+
+演示环境默认管理员通常为 `admin` / `changeme`。请仅在本地开发中使用该密码，并在生产部署前通过 `DEFAULT_ADMIN_PASSWORD` 和 `JWT_SECRET_KEY` 替换。
+
+### 关键环境变量
+
+| 环境变量 | 作用 |
+|---|---|
+| `POSTGRES_USER`、`POSTGRES_PASSWORD`、`POSTGRES_DB` | PostgreSQL 连接信息 |
+| `REDIS_HOST`、`REDIS_PORT` | Redis 连接信息 |
+| `MILVUS_HOST`、`MILVUS_PORT` | Milvus 连接信息 |
+| `JWT_SECRET_KEY` | JWT 签名密钥，生产环境必须设置 |
+| `NVIDIA_API_KEY` | NVIDIA NIM/模型服务访问密钥 |
+| `WAREHOUSE_AGENT_RUNTIME_V2_ENABLED` | 启用 V2 Agent 主链路 |
+| `WAREHOUSE_RETRIEVAL_V2_ENABLED` | 启用 V2 检索链路 |
+| `WAREHOUSE_EXECUTION_V2_ENABLED` | 启用 V2 受控执行链路 |
+| `SAP_EWM_BASE_URL` | SAP EWM 或 Mock Server 地址 |
+| `SAP_EWM_AUTH_MODE` | SAP 认证方式，例如 `basic` 或 OAuth2 |
+
+<a id="multi-agent"></a>
+## 多 Agent 体系
+
+### 仓库运营 Agent
+
+负责仓库任务规划、任务分派、进度跟踪、资源协调、KPI 查询和跨系统运营分析。涉及创建或修改任务的动作会进入审批链路。
+
+### 设备管理 Agent
+
+负责设备状态、位置、遥测、使用率、调度和维护建议。设备调度、停机或维护工单等高风险动作不会由模型直接执行。
+
+### 安全管理 Agent
+
+负责事故分析、安全检查、风险识别、SOP 查询、告警和整改建议。紧急通知、锁定挂牌等动作必须经过权限和风险策略判断。
+
+### 需求预测 Agent
+
+负责需求预测、补货建议、趋势分析和模型表现查询。预测结果可以作为业务建议，但不会未经审批直接创建采购或补货订单。
+
+### 文档处理 Agent
+
+负责多格式文档解析、OCR、结构化字段抽取、差异化分块、索引构建、知识检索和引用生成。
+
+### 能力注册中心
+
+Capability Registry（能力注册中心）统一管理：
+
+- Agent 和 Tool 能解决什么问题。
+- 输入输出 Schema 与必填字段。
+- 所需用户权限和租户范围。
+- 操作风险等级与是否需要审批。
+- 当前可用状态、版本和降级策略。
+
+Router 会先执行硬约束过滤，再根据任务语义选择最匹配的 Agent 或 Tool，避免只依赖 LLM 自由选择。
+
+<a id="mcp-execution"></a>
+## MCP 工具与受控执行
+
+### 为什么 MCP 工具能够操作外部系统
+
+工具定义本身只描述“名称、用途和参数”。真正控制外部系统的是工具后面的实现链路：
+
+```text
+用户自然语言
+  → Planner 生成任务计划
+  → Router 选择能力
+  → Agent 生成 Tool Call 或 ProposedAction
+  → MCP Gateway 校验 Schema、权限和风险
+  → Tool Handler 调用领域 Service
+  → Adapter 生成外部系统协议请求
+  → HTTP/MQTT/Kafka Client 发送请求
+  → 外部系统返回结果
+  → 回读验证并生成 Evidence
 ```
 
-### Troubleshooting
+LLM 不持有数据库连接或 SAP 凭据，也不能任意拼接请求。凭据、网络访问、字段映射和错误处理均位于受控的 Service 与 Adapter 层。
 
-**Node.js Version Issues:**
-- **Error: "Cannot find module 'node:path'"**: Your Node.js version is too old
-  - Check version: `node --version`
-  - Minimum required: Node.js 18.17.0+
-  - Recommended: Node.js 20.x LTS
-  - Run version check: `./scripts/setup/check_node_version.sh`
-  - Upgrade: `nvm install 20 && nvm use 20` (if using nvm)
-  - Or download from: https://nodejs.org/
-  - After upgrading, clear and reinstall: `cd src/ui/web && rm -rf node_modules package-lock.json && npm install`
+### 操作风险分级
 
-**Database Connection Issues:**
-- Ensure Docker containers are running: `docker ps`
-- Check TimescaleDB logs: `docker logs wosa-timescaledb`
-- Verify port 5435 is not in use
+- **低风险只读操作**：库存、订单、设备状态和文档查询，可在权限通过后直接执行。
+- **中风险操作**：生成计划、建议或草稿，不立即修改外部系统。
+- **高风险写操作**：任务分配、设备调度、SAP 状态修改等，需要人工审批。
+- **禁止操作**：超出工具能力、权限不足或参数无法验证的请求直接拒绝。
 
-**API Server Won't Start:**
-- Ensure virtual environment is activated: `source env/bin/activate`
-- Check Python version: `python3 --version` (must be 3.11+)
-- Use the startup script: `./scripts/start_server.sh`
-- See [DEPLOYMENT.md](DEPLOYMENT.md) troubleshooting section
+### 审批与可靠执行
 
-**Frontend Build Issues:**
-- Verify Node.js version: `./scripts/setup/check_node_version.sh`
-- Clear node_modules: `cd src/ui/web && rm -rf node_modules package-lock.json && npm install`
-- Check for port conflicts: Ensure port 3001 is available
+1. Agent 只生成包含业务参数、风险和依据的 `ProposedAction`。
+2. LangGraph Interrupt 暂停工作流。
+3. PostgreSQL 保存 Graph State、Checkpoint、审批记录和待执行命令。
+4. 审批通过后写入 Transactional Outbox。
+5. Celery Worker 异步调用外部系统。
+6. 幂等键防止超时重试造成重复业务副作用。
+7. 执行后重新查询外部系统，确认最终状态并写入审计证据。
 
-**For more help:** See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed troubleshooting or open an issue on GitHub.
+<a id="sap-ewm"></a>
+## SAP EWM 预集成
 
-## Multi-Agent System
+当前 SAP 模块用于在没有真实 SAP 测试环境时验证完整协议链路，Mock Server 遵循 OData V4 的路径和响应结构，并覆盖：
 
-The Warehouse Operational Assistant uses a sophisticated multi-agent architecture with specialized AI agents for different aspects of warehouse operations.
+- Basic/OAuth2 认证配置。
+- CSRF Token 获取与携带。
+- ETag 与 `If-Match` 并发控制。
+- OData 分页、过滤和响应解析。
+- 标准错误、超时、重试与错误分类。
+- 写操作审批、幂等执行与执行后回查。
 
-### Equipment & Asset Operations Agent (EAO)
+### 本地启动
 
-**Mission**: Ensure equipment is available, safe, and optimally used for warehouse workflows.
-
-**Key Capabilities:**
-- Equipment assignment and tracking
-- Real-time telemetry monitoring (battery, temperature, charging status)
-- Maintenance management and scheduling
-- Asset tracking and location monitoring
-- Equipment utilization analytics
-
-**Action Tools:** `assign_equipment`, `get_equipment_status`, `create_maintenance_request`, `get_equipment_telemetry`, `update_equipment_location`, `get_equipment_utilization`, `create_equipment_reservation`, `get_equipment_history`
-
-### Operations Coordination Agent
-
-**Mission**: Coordinate warehouse operations, task planning, and workflow optimization.
-
-**Key Capabilities:**
-- Task management and assignment
-- Workflow optimization (pick paths, resource allocation)
-- Performance monitoring and KPIs
-- Resource planning and allocation
-
-**Action Tools:** `create_task`, `assign_task`, `optimize_pick_path`, `get_task_status`, `update_task_progress`, `get_performance_metrics`, `create_work_order`, `get_task_history`
-
-### Safety & Compliance Agent
-
-**Mission**: Ensure warehouse safety compliance and incident management.
-
-**Key Capabilities:**
-- Incident management and logging
-- Safety procedures and checklists
-- Compliance monitoring and training
-- Emergency response coordination
-
-**Action Tools:** `log_incident`, `start_checklist`, `broadcast_alert`, `create_corrective_action`, `lockout_tagout_request`, `near_miss_capture`, `retrieve_sds`
-
-### Forecasting Agent
-
-**Mission**: Provide AI-powered demand forecasting, reorder recommendations, and model performance monitoring.
-
-**Key Capabilities:**
-- Demand forecasting using multiple ML models
-- Automated reorder recommendations with urgency levels
-- Model performance monitoring (accuracy, MAPE, drift scores)
-- Business intelligence and trend analysis
-- Real-time predictions with confidence intervals
-
-**Action Tools:** `get_forecast`, `get_batch_forecast`, `get_reorder_recommendations`, `get_model_performance`, `get_forecast_dashboard`, `get_business_intelligence`
-
-**Forecasting Models:**
-- Random Forest (82% accuracy, 15.8% MAPE)
-- XGBoost (79.5% accuracy, 15.0% MAPE)
-- Gradient Boosting (78% accuracy, 14.2% MAPE)
-- Linear Regression, Ridge Regression, SVR
-
-**Model Availability by Phase:**
-
-| Model | Phase 1 & 2 | Phase 3 |
-|-------|-------------|---------|
-| Random Forest | ✅ | ✅ |
-| XGBoost | ✅ | ✅ |
-| Time Series | ✅ | ❌ |
-| Gradient Boosting | ❌ | ✅ |
-| Ridge Regression | ❌ | ✅ |
-| SVR | ❌ | ✅ |
-| Linear Regression | ❌ | ✅ |
-
-### Document Processing Agent
-
-**Mission**: Process warehouse documents with OCR and structured data extraction.
-
-**Key Capabilities:**
-- Multi-format document support (PDF, PNG, JPG, JPEG, TIFF, BMP)
-- Intelligent OCR with NVIDIA NeMo
-- Structured data extraction (invoices, receipts, BOLs)
-- Quality assessment and validation
-
-### MCP Integration
-
-All agents are integrated with the **Model Context Protocol (MCP)** framework:
-- **Dynamic Tool Discovery** - Real-time tool registration and discovery
-- **Cross-Agent Communication** - Seamless tool sharing between agents
-- **Intelligent Routing** - MCP-enhanced intent classification
-- **Tool Execution Planning** - Context-aware tool execution
-
-See [docs/architecture/mcp-integration.md](docs/architecture/mcp-integration.md) for detailed MCP documentation.
-
-## API Reference
-
-### Health & Status
-- `GET /api/v1/health` - System health check
-- `GET /api/v1/health/simple` - Simple health status
-- `GET /api/v1/version` - API version information
-
-### Authentication
-- `POST /api/v1/auth/login` - User authentication
-- `GET /api/v1/auth/me` - Get current user information
-- `GET /api/v1/auth/users/public` - Get list of users for dropdown selection (public, no auth required)
-- `GET /api/v1/auth/users` - Get all users (admin only)
-
-### Chat
-- `POST /api/v1/chat` - Chat with multi-agent system (requires NVIDIA API keys)
-
-### Equipment & Assets
-- `GET /api/v1/equipment` - List all equipment
-- `GET /api/v1/equipment/{asset_id}` - Get equipment details
-- `GET /api/v1/equipment/{asset_id}/status` - Get equipment status
-- `GET /api/v1/equipment/{asset_id}/telemetry` - Get equipment telemetry
-- `GET /api/v1/equipment/assignments` - Get equipment assignments
-- `GET /api/v1/equipment/maintenance/schedule` - Get maintenance schedule
-- `POST /api/v1/equipment/assign` - Assign equipment
-- `POST /api/v1/equipment/release` - Release equipment
-- `POST /api/v1/equipment/maintenance` - Schedule maintenance
-
-### Forecasting
-- `GET /api/v1/forecasting/dashboard` - Comprehensive forecasting dashboard
-- `GET /api/v1/forecasting/real-time` - Real-time demand predictions
-- `GET /api/v1/forecasting/reorder-recommendations` - Automated reorder suggestions
-- `GET /api/v1/forecasting/model-performance` - Model performance metrics
-- `GET /api/v1/forecasting/business-intelligence` - Business analytics
-- `POST /api/v1/forecasting/batch-forecast` - Batch forecast for multiple SKUs
-- `GET /api/v1/training/history` - Training history
-- `POST /api/v1/training/start` - Start model training
-
-### Document Processing
-- `POST /api/v1/document/upload` - Upload document for processing
-- `GET /api/v1/document/status/{document_id}` - Check processing status
-- `GET /api/v1/document/results/{document_id}` - Get extraction results
-- `GET /api/v1/document/analytics` - Document analytics
-
-### Operations
-- `GET /api/v1/operations/tasks` - List tasks
-- `GET /api/v1/safety/incidents` - List safety incidents
-
-**Full API Documentation:** http://localhost:8001/docs (Swagger UI)
-
-## Monitoring & Observability
-
-### Prometheus & Grafana Stack
-
-The system includes comprehensive monitoring with Prometheus metrics collection and Grafana dashboards.
-
-**Quick Start:**
 ```bash
-# Start monitoring stack
+docker compose --env-file deploy/compose/.env \
+  -f deploy/compose/docker-compose.dev.yaml \
+  up -d sap-ewm-mock backend execution-worker
+
+curl http://localhost:8010/health
+pytest tests/integration/test_sap_ewm_agent_workflow.py -q
+```
+
+### 核心 SAP 能力
+
+- 查询仓库实物库存。
+- 查询仓库订单和仓库任务。
+- 提议并审批仓库订单分配。
+- 提议并审批仓库任务确认。
+
+默认 V2 路径将写操作建模为“提议能力 + 审批后的命令处理器”。遗留的直接写工具默认不对 LLM 暴露，避免绕过审批。
+
+切换真实 SAP 时主要需要修改地址、凭据、证书和字段映射，并完成网络连通性、权限、主数据、错误码和并发控制验收。详细说明参见 [SAP EWM/WMS 集成文档](docs/wms-integration.md)。
+
+<a id="rag-evidence"></a>
+## Hybrid RAG 与证据链
+
+### 文档处理
+
+- PDF：优先提取原生文本；扫描件进入 OCR；复杂版面可接入视觉解析。
+- Word：保留标题层级、段落、列表和表格结构。
+- SOP：按章节、步骤、前置条件、风险提示和操作结果切分。
+- 表格：保留表头、行列关系和来源页码，避免普通文本切块破坏语义。
+- 图片：保存 OCR 文本、视觉描述、页码和原文件引用。
+
+### 检索流程
+
+1. 查询理解：识别实体、时间、过滤条件和查询类型。
+2. 查询改写：生成适合关键词、向量和结构化查询的子查询。
+3. 双路召回：BM25 负责精确词匹配，Milvus Dense Retrieval 负责语义匹配。
+4. 结构化检索：按需要查询 PostgreSQL/TimescaleDB 的实时业务数据。
+5. RRF 融合：根据不同召回列表中的名次合并候选。
+6. Cross-Encoder 精排：同时读取问题与候选文本，重新计算相关性。
+7. 父块回填：使用命中的小块定位更完整的父级上下文。
+8. 证据校验：进行实体、时间、来源和冲突检查。
+9. 答案生成：只使用通过校验的证据，并建立结论到引用的映射。
+
+<a id="api-reference"></a>
+## API 接口
+
+完整接口及请求 Schema 请访问 <http://localhost:8001/docs>。
+
+### 健康与认证
+
+- `GET /api/v1/health`：系统健康检查。
+- `GET /api/v1/health/simple`：简单健康状态。
+- `GET /api/v1/version`：API 版本。
+- `POST /api/v1/auth/login`：用户登录。
+- `GET /api/v1/auth/me`：当前用户信息。
+
+### 对话与 Agent
+
+- `POST /api/v1/chat`：原有多 Agent 对话入口。
+- `POST /api/v2/chat`：V2 Agent 主链路入口。
+- `/api/v1/runs`：Agent 运行记录、事件、取消与重试。
+- `/api/v1/chat/approvals`：待审批动作查询与审批决策。
+- `/api/v2/actions`、`/api/v2/approvals`、`/api/v2/commands`：受控执行审批与命令状态查询。
+
+### 业务接口
+
+- `/api/v1/equipment`：设备、状态、遥测、分配和维护。
+- `/api/v1/forecasting`：预测看板、实时预测、补货建议和模型表现。
+- `/api/v1/document`：文档上传、处理状态、结果和分析。
+- `/api/v1/operations`：仓库任务和运营数据。
+- `/api/v1/safety`：安全事件与安全管理。
+
+<a id="operations"></a>
+## 监控、安全与记忆
+
+### 可观测性
+
+系统通过运行事件、日志、Trace 和 Prometheus Metrics 记录：
+
+- Planner 计划生成、校验和重规划次数。
+- Router 的能力选择结果和回退原因。
+- Agent 与 Tool 的耗时、状态和错误分类。
+- 检索召回、融合、精排和证据覆盖情况。
+- 审批状态、Outbox 投递、Celery 执行和回查结果。
+- 外部系统请求耗时、超时、重试和最终状态。
+
+```bash
+# 启动监控组件
 ./scripts/setup/setup_monitoring.sh
 ```
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed monitoring setup instructions.
+- Grafana：<http://localhost:3000>
+- Prometheus：<http://localhost:9090>
+- Alertmanager：<http://localhost:9093>
 
-**Access URLs:**
-- **Grafana**: http://localhost:3000 (admin/changeme)
-- **Prometheus**: http://localhost:9090
-- **Alertmanager**: http://localhost:9093
+### 安全
 
-**Key Metrics Tracked:**
-- API request rates and latencies
-- Equipment telemetry and status
-- Agent performance and response times
-- Database query performance
-- Vector search performance
-- Cache hit rates and memory usage
+- JWT 身份认证与基于角色的访问控制（RBAC）。
+- MCP Tool 级别的权限、租户、资源范围和风险校验。
+- NeMo Guardrails 与规则降级路径用于输入输出安全检查。
+- Prompt Injection 防护与不可信内容标记。
+- 敏感字段脱敏、操作审计和外部请求边界控制。
 
-See [monitoring/](monitoring/) for dashboard configurations and alerting rules.
+生产环境必须设置强随机 `JWT_SECRET_KEY`，不得继续使用 `changeme`、示例 SAP 凭据或默认管理员密码。更多信息参见 [密钥管理](docs/secrets.md) 和 [安全策略](SECURITY.md)。
 
-## NeMo Guardrails
+### 会话记忆
 
-The system implements **NVIDIA NeMo Guardrails** for content safety, security, and compliance protection. All user inputs and AI responses are validated through a comprehensive guardrails system to ensure safe and compliant interactions.
+- 短期记忆保存当前对话、任务计划、中间结果和审批状态。
+- 长期记忆通过 Memory Writer 抽取可复用事实，并进行权限、来源和有效期校验。
+- PostgreSQL 负责持久化会话、运行、审计和长期记忆；Redis 用于热点缓存和短期状态加速。
 
-### Overview
-
-The guardrails system provides **dual implementation support** with automatic fallback:
-
-- **NeMo Guardrails SDK** (with Colang) - Intelligent, programmable guardrails using NVIDIA's official SDK
-  - ✅ **Already included** in `requirements.txt` (`nemoguardrails>=0.19.0`)
-  - Installed automatically when you run `pip install -r requirements.txt`
-- **Pattern-Based Matching** - Fast, lightweight fallback using keyword/phrase matching
-- **Feature Flag Control** - Runtime switching between implementations via `USE_NEMO_GUARDRAILS_SDK`
-- **Automatic Fallback** - Seamlessly switches to pattern-based if SDK unavailable
-- **Input & Output Validation** - Checks both user queries and AI responses
-- **Timeout Protection** - Prevents hanging requests (3s input, 5s output)
-- **Comprehensive Monitoring** - Metrics tracking for method usage and performance
-
-### Protection Categories
-
-The guardrails system protects against **88 patterns** across 5 categories:
-
-1. **Jailbreak Attempts** (17 patterns) - Prevents instruction override attempts
-2. **Safety Violations** (13 patterns) - Blocks unsafe operational guidance
-3. **Security Violations** (15 patterns) - Prevents security information requests
-4. **Compliance Violations** (12 patterns) - Ensures regulatory adherence
-5. **Off-Topic Queries** (13 patterns) - Redirects non-warehouse queries
-
-### Quick Configuration
+<a id="testing"></a>
+## 测试
 
 ```bash
-# Enable SDK implementation (recommended)
-USE_NEMO_GUARDRAILS_SDK=true
-
-# NVIDIA API key (required for SDK)
-NVIDIA_API_KEY=your-api-key-here
-
-# Optional: Guardrails-specific configuration
-RAIL_API_KEY=your-api-key-here  # Falls back to NVIDIA_API_KEY if not set
-RAIL_API_URL=https://integrate.api.nvidia.com/v1
-GUARDRAILS_TIMEOUT=10
-GUARDRAILS_USE_API=true
-```
-
-### Integration
-
-Guardrails are automatically integrated into the chat endpoint:
-- **Input Safety Check** - Validates user queries before processing (3s timeout)
-- **Output Safety Check** - Validates AI responses before returning (5s timeout)
-- **Metrics Tracking** - Logs method used, performance, and safety status
-
-### Testing
-
-```bash
-# Unit tests
-pytest tests/unit/test_guardrails_sdk.py -v
-
-# Integration tests (compares both implementations)
-pytest tests/integration/test_guardrails_comparison.py -v -s
-
-# Performance benchmarks
-pytest tests/integration/test_guardrails_comparison.py::test_performance_benchmark -v -s
-```
-
-### Documentation
-
-**📖 For comprehensive documentation, see: [Guardrails Implementation Guide](docs/architecture/guardrails-implementation.md)**
-
-The detailed guide includes:
-- Complete architecture overview
-- Implementation details (SDK vs Pattern-based)
-- All 88 guardrails patterns
-- API interface documentation
-- Configuration reference
-- Monitoring & metrics
-- Testing instructions
-- Troubleshooting guide
-- Future roadmap
-
-**Key Files:**
-- Service: `src/api/services/guardrails/guardrails_service.py`
-- SDK Wrapper: `src/api/services/guardrails/nemo_sdk_service.py`
-- Colang Config: `data/config/guardrails/rails.co`
-- NeMo Config: `data/config/guardrails/config.yml`
-- Legacy YAML: `data/config/guardrails/rails.yaml`
-
-## Development Guide
-
-### Repository Layout
-
-```
-.
-├─ src/                    # Source code
-│  ├─ api/                 # FastAPI application
-│  ├─ retrieval/           # Retrieval services
-│  ├─ memory/              # Memory services
-│  ├─ adapters/            # External system adapters
-│  └─ ui/                  # React web dashboard
-├─ data/                   # SQL DDL/migrations, sample data
-├─ deploy/                 # Deployment configurations
-│  ├─ compose/             # Docker Compose files
-│  ├─ helm/                # Helm charts
-│  └─ scripts/             # Deployment scripts
-├─ scripts/                # Utility scripts
-│  ├─ setup/               # Setup scripts
-│  ├─ forecasting/         # Forecasting scripts
-│  └─ data/                # Data generation scripts
-├─ tests/                  # Test suite
-├─ docs/                   # Documentation
-│  └─ architecture/        # Architecture documentation
-└─ monitoring/             # Prometheus/Grafana configs
-```
-
-### Running Locally
-
-**API Server:**
-```bash
-source env/bin/activate
-./scripts/start_server.sh
-```
-
-**Frontend:**
-```bash
-cd src/ui/web
-npm start
-```
-
-**Infrastructure:**
-```bash
-./scripts/setup/dev_up.sh
-```
-
-### Testing
-
-```bash
-# Run all tests
+# 全部测试
 pytest tests/
 
-# Run specific test suite
-pytest tests/unit/
-pytest tests/integration/
+# V2 单元、契约、集成和安全测试
+pytest tests/unit/v2 tests/contract/v2 tests/integration/v2 tests/security -q
+
+# SAP EWM Adapter 与 Agent 工作流
+pytest \
+  tests/unit/test_sap_ewm_adapter.py \
+  tests/unit/test_sap_ewm_mcp_adapter.py \
+  tests/integration/test_sap_ewm_agent_workflow.py -q
+
+# 前端构建
+cd src/ui/web
+npm install
+npm run build
 ```
 
-### Documentation
+评测数据与指标实现位于 `tests/evaluation/v2/`，覆盖 Planner、Router、检索、引用和工具调用等场景。README 不将示例目标值表述为生产实测结果，实际指标应以当前数据集和评测报告为准。
 
-- **Architecture**: [docs/architecture/](docs/architecture/)
-- **MCP Integration**: [docs/architecture/mcp-integration.md](docs/architecture/mcp-integration.md)
-- **WMS and SAP EWM pre-integration**: [docs/wms-integration.md](docs/wms-integration.md)
-- **Forecasting**: [docs/forecasting/](docs/forecasting/)
-- **Deployment**: [DEPLOYMENT.md](DEPLOYMENT.md) - Complete deployment guide with Docker and Kubernetes options
+<a id="repository-layout"></a>
+## 项目结构
 
-## Contributing
+```text
+.
+├─ src/
+│  ├─ api/
+│  │  ├─ agents/v2/             # 五类专业 Agent 与动作提议
+│  │  ├─ graphs/                # LangGraph State 与主工作流
+│  │  ├─ routers/               # Chat、Run、Approval、Execution API
+│  │  └─ services/
+│  │     ├─ orchestration/       # Planner、Compiler、Router、Coordinator、Reflection
+│  │     ├─ mcp/                 # MCP Gateway、Manifest、Schema 校验
+│  │     ├─ execution/           # 审批、Outbox、Worker、幂等、回查
+│  │     ├─ evidence_v2/         # Evidence、Claim、Citation
+│  │     ├─ document_v2/         # 解析、切块、质量门禁和索引
+│  │     └─ memory_v2/           # 短期/长期记忆与 Memory Writer
+│  ├─ retrieval/v2/              # BM25、Dense、RRF、Reranker、上下文构建
+│  ├─ adapters/                  # 外部系统适配器
+│  ├─ mock_servers/sap_ewm/      # SAP OData V4 协议兼容 Mock
+│  └─ ui/web/                    # React 中文前端
+├─ data/postgres/                # 数据库 Schema 与 V2 迁移
+├─ deploy/compose/               # Docker Compose 与 Nginx 配置
+├─ monitoring/                   # Prometheus、Grafana 与告警配置
+├─ scripts/                      # 初始化、数据生成与运维脚本
+├─ tests/                        # 单元、契约、集成、安全与评测测试
+└─ docs/                         # 架构、集成与技术设计文档
+```
 
-Contributions are welcome! Please see our contributing guidelines and code of conduct.
+<a id="troubleshooting"></a>
+## 常见问题
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+### 前端提示 `Cannot find module 'node:path'`
 
-**Commit Message Format:** We use [Conventional Commits](https://www.conventionalcommits.org/):
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation changes
-- `refactor:` - Code refactoring
-- `test:` - Test additions/changes
+Node.js 版本过低。请升级到 Node.js 18.17+，推荐使用 Node.js 20 LTS：
 
-## License
+```bash
+node --version
+nvm install 20
+nvm use 20
+```
 
-See [LICENSE](LICENSE) for license information.
+### 后端无法连接数据库
 
-**Governing Terms:** The Blueprint scripts are governed by Apache License, Version 2.0, and enables use of separate open source and proprietary software governed by their respective licenses: [Llama-3.3-nemotron-super-49b-v1.5](https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/llama-3.3-nemotron-super-49b-v1.5?version=1), [Llama Nemotron Embed VL 1B v2](https://build.nvidia.com/nvidia/llama-nemotron-embed-vl-1b-v2/modelcard), [NeMo Retriever Extraction](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/nemo-microservices/containers/nv-ingest?version=25.9.0), [Nemotron Page Elements v3](https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/nemotron-page-elements-v3?version=1.7), [Nemotron OCR v1](https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/nemotron-ocr-v1?version=1.2.1), [Nemotron Parse](https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/nemotron-parse?version=1), [NVIDIA-Nemotron-Nano-12B-v2-VL](https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/nemotron-nano-12b-v2-vl?version=1), [NeMo Guardrails](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/nemo-microservices/containers/guardrails?version=25.12), and [RAPIDS cuML](https://github.com/rapidsai/cuml/blob/main/LICENSE).
+```bash
+docker ps
+docker logs wosa-timescaledb
+```
+
+确认宿主机端口 `5435` 未被占用，并检查 `deploy/compose/.env` 中的数据库配置。
+
+### SAP Mock 无法访问
+
+```bash
+docker logs wosa-sap-ewm-mock
+curl http://localhost:8010/health
+```
+
+### 前端无法登录
+
+确认后端 `http://localhost:8001/api/v1/health` 正常、默认用户已经创建，并检查浏览器请求是否指向 `REACT_APP_API_URL=http://localhost:8001`。
+
+### 查看完整部署说明
+
+参见 [DEPLOYMENT.md](DEPLOYMENT.md)。
+
+<a id="license"></a>
+## 开源来源与许可证
+
+本仓库保留 NVIDIA 上游项目提交历史，原始项目地址：
+
+- [NVIDIA-AI-Blueprints/Multi-Agent-Intelligent-Warehouse](https://github.com/NVIDIA-AI-Blueprints/Multi-Agent-Intelligent-Warehouse)
+
+项目代码按照 [Apache License 2.0](LICENSE) 使用。部分模型、容器和第三方软件拥有各自的许可证或服务条款，包括：
+
+- [Llama-3.3-Nemotron-Super-49B-v1.5](https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/llama-3.3-nemotron-super-49b-v1.5)
+- [Llama Nemotron Embed VL 1B v2](https://build.nvidia.com/nvidia/llama-nemotron-embed-vl-1b-v2/modelcard)
+- [NeMo Retriever Extraction](https://catalog.ngc.nvidia.com/orgs/nvidia/teams/nemo-microservices/containers/nv-ingest)
+- [Nemotron OCR](https://catalog.ngc.nvidia.com/orgs/nim/teams/nvidia/containers/nemotron-ocr-v1)
+- [NeMo Guardrails](https://github.com/NVIDIA-NeMo/Guardrails)
+- [RAPIDS cuML](https://github.com/rapidsai/cuml/blob/main/LICENSE)
+
+在生产或商业环境使用前，请分别审查代码、模型、容器、数据和第三方依赖的许可条款。
+
+## 贡献指南
+
+欢迎提交 Issue 或 Pull Request：
+
+1. Fork 本仓库。
+2. 创建功能分支：`git checkout -b feature/your-feature`。
+3. 使用 Conventional Commits 提交，例如 `feat:`、`fix:`、`docs:`、`test:`。
+4. 推送分支并创建 Pull Request。
 
 ---
 
-This project will download and install additional 3rd party open source software projects. Review the license terms for these open source projects before use. 
+如果你希望了解某一条 Agent 请求如何从自然语言执行到 SAP EWM Mock，可从 `src/api/graphs/warehouse_graph_v2.py`、`src/api/services/orchestration/`、`src/api/services/mcp/` 和 `src/api/services/execution/` 开始阅读。
