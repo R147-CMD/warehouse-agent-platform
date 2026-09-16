@@ -34,7 +34,6 @@ import {
   BugReport as BugReportIcon,
   Rocket as RocketIcon,
   School as SchoolIcon,
-  GitHub as GitHubIcon,
   Article as ArticleIcon,
   Build as BuildIcon,
   Api as ApiIcon,
@@ -51,10 +50,10 @@ const ArchitectureDiagramDisplay: React.FC = () => {
       <Box sx={{ p: 4, textAlign: 'center' }}>
         <ArchitectureIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
         <Typography variant="h6" color="text.secondary" gutterBottom>
-          Architecture Diagram
+          架构图
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          To display the architecture diagram, please add the image file to:
+          要显示架构图，请将图片文件添加到：
         </Typography>
         <Paper sx={{ 
           p: 2, 
@@ -74,7 +73,7 @@ const ArchitectureDiagramDisplay: React.FC = () => {
           onClick={() => navigate('/documentation/architecture')}
           sx={{ mt: 1 }}
         >
-          View Architecture Details
+          查看架构详情
         </Button>
       </Box>
     );
@@ -84,7 +83,7 @@ const ArchitectureDiagramDisplay: React.FC = () => {
     <Box
       component="img"
       src="/architecture-diagram.png"
-      alt="Multi-Agent-Intelligent-Warehouse System Architecture"
+      alt="多智能体智慧仓储系统架构"
       onError={() => setImageError(true)}
       sx={{
         maxWidth: '100%',
@@ -112,218 +111,218 @@ const Documentation: React.FC = () => {
   const quickStartSteps = [
     {
       step: 1,
-      title: "Environment Setup",
-      description: "Set up Python virtual environment and install dependencies",
+      title: "环境设置",
+      description: "设置 Python 虚拟环境并安装依赖项",
       code: "python -m venv env && source env/bin/activate && pip install -r requirements.txt"
     },
     {
       step: 2,
-      title: "Database Configuration",
-      description: "Configure PostgreSQL/TimescaleDB and Milvus connections",
+      title: "数据库配置",
+      description: "配置 PostgreSQL/TimescaleDB 和 Milvus 连接",
       code: "cp .env.example .env\n# Edit database credentials in .env"
     },
     {
       step: 3,
-      title: "NVIDIA NIMs Setup",
-      description: "Configure NVIDIA API keys for LLM and embeddings",
-      code: "export NVIDIA_API_KEY=your_api_key\n# Or add to .env file"
+      title: "模型服务设置",
+      description: "为大语言模型和嵌入模型配置服务密钥",
+      code: "export MODEL_API_KEY=your_api_key\n# 或写入 .env 文件"
     },
     {
       step: 4,
-      title: "Start Services",
-      description: "Launch the application stack",
+      title: "启动服务",
+      description: "启动应用栈",
       code: "./scripts/setup/dev_up.sh && ./scripts/start_server.sh"
     },
     {
       step: 5,
-      title: "Jupyter Notebook Setup (Recommended)",
-      description: "Use the interactive setup guide for step-by-step setup",
+      title: "Jupyter Notebook 设置（推荐）",
+      description: "使用交互式设置指南分步完成配置",
       code: "jupyter notebook notebooks/setup/complete_setup_guide.ipynb"
     }
   ];
 
   const architectureComponents = [
     {
-      name: "Multi-Agent System",
-      description: "Planner/Router + 5 Specialized Agents (Equipment, Operations, Safety, Forecasting, Document)",
-      status: "✅ Production Ready",
+      name: "多智能体系统",
+      description: "规划器/路由器 + 5 个专业智能体（设备、运营、安全、预测、文档）",
+      status: "✅ 生产就绪",
       icon: <ArchitectureIcon />
     },
     {
-      name: "NVIDIA NIMs Integration",
-      description: "Llama 3.3 Nemotron Super 49B + NV-EmbedQA-E5-v5 embeddings",
-      status: "✅ Fully Operational",
+      name: "模型服务集成",
+      description: "大语言模型与嵌入模型服务集成",
+      status: "✅ 全面运行",
       icon: <CloudIcon />
     },
     {
-      name: "MCP Framework",
-      description: "Model Context Protocol with dynamic tool discovery and execution",
-      status: "✅ Production Ready",
+      name: "MCP 框架",
+      description: "支持动态工具发现与执行的模型上下文协议",
+      status: "✅ 生产就绪",
       icon: <BuildIcon />
     },
     {
-      name: "Chat Interface",
-      description: "Optimized with caching, deduplication, semantic routing, and performance monitoring",
-      status: "✅ Fully Optimized (Dec 2024)",
+      name: "聊天界面",
+      description: "通过缓存、去重、语义路由和性能监控完成优化",
+      status: "✅ 全面优化（2024 年 12 月）",
       icon: <SpeedIcon />
     },
     {
-      name: "Parameter Validation",
-      description: "Comprehensive validation with business rules and warnings",
-      status: "✅ Implemented",
+      name: "参数验证",
+      description: "包含业务规则和警告的全面验证",
+      status: "✅ 已实现",
       icon: <SecurityIcon />
     },
     {
-      name: "Hybrid RAG System",
-      description: "PostgreSQL/TimescaleDB + Milvus vector search",
-      status: "✅ Optimized",
+      name: "混合 RAG 系统",
+      description: "PostgreSQL/TimescaleDB + Milvus 向量搜索",
+      status: "✅ 已优化",
       icon: <StorageIcon />
     },
     {
-      name: "Advanced Reasoning",
-      description: "5 reasoning types with confidence scoring",
-      status: "✅ Implemented",
+      name: "高级推理",
+      description: "5 种带置信度评分的推理类型",
+      status: "✅ 已实现",
       icon: <SpeedIcon />
     },
     {
-      name: "Document Processing",
-      description: "6-stage NVIDIA NeMo pipeline with Llama Nemotron Nano VL 8B vision model",
-      status: "✅ Production Ready",
+      name: "文档处理",
+      description: "采用视觉语言模型的 6 阶段智能文档处理流水线",
+      status: "✅ 生产就绪",
       icon: <ArticleIcon />
     },
     {
-      name: "Demand Forecasting",
-      description: "AI-powered forecasting with 6 ML models and NVIDIA RAPIDS GPU acceleration",
-      status: "✅ Production Ready",
+      name: "需求预测",
+      description: "由 6 个机器学习模型和 GPU 加速驱动的预测",
+      status: "✅ 生产就绪",
       icon: <SpeedIcon />
     },
     {
       name: "NeMo Guardrails",
-      description: "Content safety, security, and compliance protection for LLM inputs/outputs",
-      status: "✅ Production Ready",
+      description: "面向 LLM 输入/输出的内容安全、信息安全与合规保护",
+      status: "✅ 生产就绪",
       icon: <SecurityIcon />
     },
     {
-      name: "Security & RBAC",
-      description: "JWT authentication with 5 user roles",
-      status: "✅ Production Ready",
+      name: "安全与 RBAC",
+      description: "支持 5 种用户角色的 JWT 身份验证",
+      status: "✅ 生产就绪",
       icon: <SecurityIcon />
     }
   ];
 
   const apiEndpoints = [
     {
-      category: "Core Chat",
+      category: "核心聊天",
       endpoints: [
-        { method: "POST", path: "/api/v1/chat", description: "Main chat interface with agent routing, caching, and deduplication" },
-        { method: "POST", path: "/api/v1/chat/conversation/summary", description: "Get conversation summary" },
-        { method: "POST", path: "/api/v1/chat/conversation/search", description: "Search conversation history" },
-        { method: "DELETE", path: "/api/v1/chat/conversation/{session_id}", description: "Clear conversation history" },
-        { method: "POST", path: "/api/v1/chat/validate", description: "Validate chat response" },
-        { method: "GET", path: "/api/v1/chat/conversation/stats", description: "Get conversation statistics" },
-        { method: "GET", path: "/api/v1/health", description: "System health check" },
-        { method: "GET", path: "/api/v1/health/simple", description: "Simple health check" },
-        { method: "GET", path: "/api/v1/ready", description: "Readiness probe" },
-        { method: "GET", path: "/api/v1/live", description: "Liveness probe" },
-        { method: "GET", path: "/api/v1/version", description: "System version information" }
+        { method: "POST", path: "/api/v1/chat", description: "带智能体路由、缓存和去重的主聊天界面" },
+        { method: "POST", path: "/api/v1/chat/conversation/summary", description: "获取对话摘要" },
+        { method: "POST", path: "/api/v1/chat/conversation/search", description: "搜索对话历史" },
+        { method: "DELETE", path: "/api/v1/chat/conversation/{session_id}", description: "清除对话历史" },
+        { method: "POST", path: "/api/v1/chat/validate", description: "验证聊天响应" },
+        { method: "GET", path: "/api/v1/chat/conversation/stats", description: "获取对话统计信息" },
+        { method: "GET", path: "/api/v1/health", description: "系统健康检查" },
+        { method: "GET", path: "/api/v1/health/simple", description: "简单健康检查" },
+        { method: "GET", path: "/api/v1/ready", description: "就绪探针" },
+        { method: "GET", path: "/api/v1/live", description: "存活探针" },
+        { method: "GET", path: "/api/v1/version", description: "系统版本信息" }
       ]
     },
     {
-      category: "Agent Operations",
+      category: "智能体操作",
       endpoints: [
-        { method: "GET", path: "/api/v1/equipment", description: "Get all equipment assets" },
-        { method: "GET", path: "/api/v1/equipment/{asset_id}", description: "Get equipment by ID" },
-        { method: "GET", path: "/api/v1/equipment/assignments", description: "Get equipment assignments" },
-        { method: "GET", path: "/api/v1/equipment/{asset_id}/telemetry", description: "Get equipment telemetry data" },
-        { method: "POST", path: "/api/v1/equipment/assign", description: "Assign equipment" },
-        { method: "POST", path: "/api/v1/equipment/release", description: "Release equipment" },
-        { method: "GET", path: "/api/v1/safety/incidents", description: "Get safety incidents" },
-        { method: "POST", path: "/api/v1/safety/incidents", description: "Create safety incident" },
-        { method: "GET", path: "/api/v1/safety/policies", description: "Get safety policies" }
+        { method: "GET", path: "/api/v1/equipment", description: "获取所有设备资产" },
+        { method: "GET", path: "/api/v1/equipment/{asset_id}", description: "按 ID 获取设备" },
+        { method: "GET", path: "/api/v1/equipment/assignments", description: "获取设备分配" },
+        { method: "GET", path: "/api/v1/equipment/{asset_id}/telemetry", description: "获取设备遥测数据" },
+        { method: "POST", path: "/api/v1/equipment/assign", description: "分配设备" },
+        { method: "POST", path: "/api/v1/equipment/release", description: "释放设备" },
+        { method: "GET", path: "/api/v1/safety/incidents", description: "获取安全事件" },
+        { method: "POST", path: "/api/v1/safety/incidents", description: "创建安全事件" },
+        { method: "GET", path: "/api/v1/safety/policies", description: "获取安全策略" }
       ]
     },
     {
-      category: "MCP Framework",
+      category: "MCP 框架",
       endpoints: [
-        { method: "GET", path: "/api/v1/mcp/tools", description: "Discover available tools" },
-        { method: "POST", path: "/api/v1/mcp/tools/search", description: "Search tools by query" },
-        { method: "POST", path: "/api/v1/mcp/tools/execute", description: "Execute a specific tool (note: endpoint is /tools/execute)" },
-        { method: "GET", path: "/api/v1/mcp/status", description: "MCP system status" },
-        { method: "POST", path: "/api/v1/mcp/test-workflow", description: "Test MCP workflow execution" },
-        { method: "GET", path: "/api/v1/mcp/agents", description: "List MCP agents" },
-        { method: "POST", path: "/api/v1/mcp/discovery/refresh", description: "Refresh tool discovery" }
+        { method: "GET", path: "/api/v1/mcp/tools", description: "发现可用工具" },
+        { method: "POST", path: "/api/v1/mcp/tools/search", description: "按查询搜索工具" },
+        { method: "POST", path: "/api/v1/mcp/tools/execute", description: "执行指定工具（注意：端点为 /tools/execute）" },
+        { method: "GET", path: "/api/v1/mcp/status", description: "MCP 系统状态" },
+        { method: "POST", path: "/api/v1/mcp/test-workflow", description: "测试 MCP 工作流执行" },
+        { method: "GET", path: "/api/v1/mcp/agents", description: "列出 MCP 智能体" },
+        { method: "POST", path: "/api/v1/mcp/discovery/refresh", description: "刷新工具发现" }
       ]
     },
     {
-      category: "Document Processing",
+      category: "文档处理",
       endpoints: [
-        { method: "POST", path: "/api/v1/document/upload", description: "Upload document for processing" },
-        { method: "GET", path: "/api/v1/document/status/{document_id}", description: "Get processing status" },
-        { method: "GET", path: "/api/v1/document/results/{document_id}", description: "Get extraction results" },
-        { method: "POST", path: "/api/v1/document/search", description: "Search documents" },
-        { method: "POST", path: "/api/v1/document/validate/{document_id}", description: "Validate document extraction" },
-        { method: "POST", path: "/api/v1/document/approve/{document_id}", description: "Approve document" },
-        { method: "POST", path: "/api/v1/document/reject/{document_id}", description: "Reject document" },
-        { method: "GET", path: "/api/v1/document/analytics", description: "Document processing analytics" }
+        { method: "POST", path: "/api/v1/document/upload", description: "上传文档进行处理" },
+        { method: "GET", path: "/api/v1/document/status/{document_id}", description: "获取处理状态" },
+        { method: "GET", path: "/api/v1/document/results/{document_id}", description: "获取提取结果" },
+        { method: "POST", path: "/api/v1/document/search", description: "搜索文档" },
+        { method: "POST", path: "/api/v1/document/validate/{document_id}", description: "验证文档提取结果" },
+        { method: "POST", path: "/api/v1/document/approve/{document_id}", description: "批准文档" },
+        { method: "POST", path: "/api/v1/document/reject/{document_id}", description: "拒绝文档" },
+        { method: "GET", path: "/api/v1/document/analytics", description: "文档处理分析" }
       ]
     },
     {
-      category: "Reasoning Engine",
+      category: "推理引擎",
       endpoints: [
-        { method: "POST", path: "/api/v1/reasoning/analyze", description: "Deep reasoning analysis" },
-        { method: "GET", path: "/api/v1/reasoning/types", description: "Available reasoning types" },
-        { method: "GET", path: "/api/v1/reasoning/insights/{session_id}", description: "Get reasoning insights for session" },
-        { method: "POST", path: "/api/v1/reasoning/chat-with-reasoning", description: "Chat with reasoning" }
+        { method: "POST", path: "/api/v1/reasoning/analyze", description: "深度推理分析" },
+        { method: "GET", path: "/api/v1/reasoning/types", description: "可用的推理类型" },
+        { method: "GET", path: "/api/v1/reasoning/insights/{session_id}", description: "获取会话的推理洞察" },
+        { method: "POST", path: "/api/v1/reasoning/chat-with-reasoning", description: "带推理的聊天" }
       ]
     },
     {
-      category: "Forecasting",
+      category: "预测",
       endpoints: [
-        { method: "GET", path: "/api/v1/forecasting/dashboard", description: "Forecasting dashboard and analytics" },
-        { method: "POST", path: "/api/v1/forecasting/real-time", description: "Real-time demand predictions" },
-        { method: "GET", path: "/api/v1/forecasting/reorder-recommendations", description: "AI-powered reorder recommendations" },
-        { method: "GET", path: "/api/v1/forecasting/model-performance", description: "Model performance metrics" },
-        { method: "GET", path: "/api/v1/forecasting/business-intelligence", description: "Business intelligence dashboard" },
-        { method: "GET", path: "/api/v1/forecasting/business-intelligence/enhanced", description: "Enhanced business intelligence dashboard" },
-        { method: "POST", path: "/api/v1/forecasting/batch-forecast", description: "Batch forecast for multiple SKUs" }
+        { method: "GET", path: "/api/v1/forecasting/dashboard", description: "预测仪表板与分析" },
+        { method: "POST", path: "/api/v1/forecasting/real-time", description: "实时需求预测" },
+        { method: "GET", path: "/api/v1/forecasting/reorder-recommendations", description: "AI 驱动的补货建议" },
+        { method: "GET", path: "/api/v1/forecasting/model-performance", description: "模型性能指标" },
+        { method: "GET", path: "/api/v1/forecasting/business-intelligence", description: "商业智能仪表板" },
+        { method: "GET", path: "/api/v1/forecasting/business-intelligence/enhanced", description: "增强型商业智能仪表板" },
+        { method: "POST", path: "/api/v1/forecasting/batch-forecast", description: "对多个 SKU 进行批量预测" }
       ]
     },
     {
-      category: "Training",
+      category: "训练",
       endpoints: [
-        { method: "POST", path: "/api/v1/training/start", description: "Start model training" },
-        { method: "GET", path: "/api/v1/training/status", description: "Get training status" },
-        { method: "POST", path: "/api/v1/training/stop", description: "Stop training" },
-        { method: "GET", path: "/api/v1/training/history", description: "Training history" },
-        { method: "POST", path: "/api/v1/training/schedule", description: "Schedule training" },
-        { method: "GET", path: "/api/v1/training/logs", description: "Get training logs" }
+        { method: "POST", path: "/api/v1/training/start", description: "启动模型训练" },
+        { method: "GET", path: "/api/v1/training/status", description: "获取训练状态" },
+        { method: "POST", path: "/api/v1/training/stop", description: "停止训练" },
+        { method: "GET", path: "/api/v1/training/history", description: "训练历史" },
+        { method: "POST", path: "/api/v1/training/schedule", description: "计划训练" },
+        { method: "GET", path: "/api/v1/training/logs", description: "获取训练日志" }
       ]
     }
   ];
 
   const toolsOverview = [
     {
-      agent: "Equipment & Asset Operations",
+      agent: "设备与资产运营",
       count: 8,
       tools: ["check_stock", "reserve_inventory", "create_replenishment_task", "generate_purchase_requisition", "adjust_reorder_point", "recommend_reslotting", "start_cycle_count", "investigate_discrepancy"]
     },
     {
-      agent: "Operations Coordination",
+      agent: "运营协调",
       count: 8,
       tools: ["assign_tasks", "rebalance_workload", "generate_pick_wave", "optimize_pick_paths", "manage_shift_schedule", "dock_scheduling", "dispatch_equipment", "publish_kpis"]
     },
     {
-      agent: "Safety & Compliance",
+      agent: "安全与合规",
       count: 7,
       tools: ["log_incident", "start_checklist", "broadcast_alert", "lockout_tagout_request", "create_corrective_action", "retrieve_sds", "near_miss_capture"]
     },
     {
-      agent: "Forecasting Agent",
+      agent: "预测智能体",
       count: 6,
       tools: ["get_forecast", "get_batch_forecast", "get_reorder_recommendations", "get_model_performance", "get_business_intelligence", "get_forecast_dashboard"]
     },
     {
-      agent: "Document Processing",
+      agent: "文档处理",
       count: 4,
       tools: ["upload_document", "get_document_status", "get_document_results", "get_document_analytics"]
     }
@@ -334,29 +333,29 @@ const Documentation: React.FC = () => {
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          Multi-Agent-Intelligent-Warehouse
+              仓智智能仓储运营平台
         </Typography>
         <Typography variant="h5" component="h2" gutterBottom color="text.secondary">
-          Developer Guide & Implementation Documentation
+          开发者指南与实施文档
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          A comprehensive guide for developers taking this NVIDIA Blueprint-aligned Multi-Agent-Intelligent-Warehouse to the next level.
+              面向开发者的完整指南，帮助进一步使用和扩展这套多智能体智慧仓储系统。
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
-          <Chip label="Production Ready" color="success" />
-          <Chip label="NVIDIA NIMs" color="primary" />
-          <Chip label="MCP Framework" color="secondary" />
-          <Chip label="5 Agents" color="info" />
-          <Chip label="Hybrid RAG" color="warning" />
+          <Chip label="生产就绪" color="success" />
+          <Chip label="模型服务" color="primary" />
+          <Chip label="MCP 框架" color="secondary" />
+          <Chip label="5 个智能体" color="info" />
+          <Chip label="混合 RAG" color="warning" />
           <Chip label="NeMo Guardrails" color="error" />
-          <Chip label="GPU Accelerated" color="success" />
+          <Chip label="GPU 加速" color="success" />
         </Box>
       </Box>
 
       {/* Quick Start Alert */}
       <Alert severity="info" sx={{ mb: 4 }}>
-        <AlertTitle>🚀 Quick Start</AlertTitle>
-        This system is production-ready with comprehensive documentation. Follow the quick start guide below to get up and running in minutes.
+        <AlertTitle>🚀 快速开始</AlertTitle>
+        本系统已达到生产就绪状态并配有完整文档。按照下方快速入门指南操作，只需几分钟即可开始运行。
       </Alert>
 
       {/* Quick Start Section */}
@@ -364,7 +363,7 @@ const Documentation: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <RocketIcon color="primary" />
-            Quick Start Guide
+            快速入门指南
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -374,7 +373,7 @@ const Documentation: React.FC = () => {
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="h6" gutterBottom>
-                      Step {step.step}: {step.title}
+                      步骤 {step.step}：{step.title}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                       {step.description}
@@ -404,18 +403,18 @@ const Documentation: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ArchitectureIcon color="primary" />
-            System Architecture
+            系统架构
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Box sx={{ mb: 4 }}>
             <Typography variant="h5" gutterBottom>
-              🏗️ Complete System Architecture Diagram
+              🏗️ 完整系统架构图
             </Typography>
             <Typography variant="body1" sx={{ mb: 3 }}>
-              The Multi-Agent-Intelligent-Warehouse operational assistant system architecture, showing all major components, 
-              data flows, and integrations. This diagram illustrates the complete system from user interaction through 
-              AI services, agent orchestration, data processing pipelines, and storage layers.
+                多智能体智慧仓储运营助手系统架构，展示所有主要组件、
+              数据流和集成关系。该图呈现了从用户交互到 AI 服务、智能体编排、
+              数据处理流水线和存储层的完整系统。
             </Typography>
             
             {/* Architecture Diagram */}
@@ -433,57 +432,57 @@ const Documentation: React.FC = () => {
             >
               <ArchitectureDiagramDisplay />
               <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-                Complete system architecture showing user interfaces, AI services, agent orchestration, 
-                document processing pipeline, forecasting system, hybrid RAG, and data storage layers
+                完整系统架构，展示用户界面、AI 服务、智能体编排、
+                文档处理流水线、预测系统、混合 RAG 和数据存储层
               </Typography>
             </Paper>
 
             <Alert severity="info" sx={{ mb: 3 }}>
-              <AlertTitle>📋 Architecture Components</AlertTitle>
+              <AlertTitle>📋 架构组件</AlertTitle>
               <Typography variant="body2">
-                The diagram above shows the complete system architecture including:
+                上图展示的完整系统架构包括：
               </Typography>
               <List dense sx={{ mt: 1 }}>
                 <ListItem sx={{ py: 0 }}>
                   <ListItemText 
-                    primary="User Interaction Layer" 
-                    secondary="Frontend (Port 3001), API Gateway (Port 8001), Security (JWT, RBAC), MCP Integration Layer"
+                    primary="用户交互层" 
+                    secondary="前端（端口 3001）、API 网关（端口 8001）、安全（JWT、RBAC）、MCP 集成层"
                   />
                 </ListItem>
                 <ListItem sx={{ py: 0 }}>
                   <ListItemText 
-                    primary="AI Services - NVIDIA NIMs" 
+                    primary="AI 服务 - 模型服务" 
                     secondary="LLM NIM (Llama 3.3 Nemotron Super 49B), LLM NIM (Nemotron Nano VL 8B), NV Embed (E5-V5 1024-dim), NeMo Guardrails"
                   />
                 </ListItem>
                 <ListItem sx={{ py: 0 }}>
                   <ListItemText 
-                    primary="Agent Orchestration" 
-                    secondary="Planner Agent, General Agent, Safety Agent, Document Extraction Agent, Forecasting Agent, Equipment Agent, Operations Agent, Memory Manager"
+                    primary="智能体编排" 
+                    secondary="规划智能体、通用智能体、安全智能体、文档提取智能体、预测智能体、设备智能体、运营智能体、记忆管理器"
                   />
                 </ListItem>
                 <ListItem sx={{ py: 0 }}>
                   <ListItemText 
-                    primary="6 Stages NeMo Document Processing Pipeline" 
-                    secondary="NeMo Retriever, Intelligent OCR, Small LLM, Embedding & Indexing, LLM as a Judge, Routing"
+                    primary="6 阶段 NeMo 文档处理流水线" 
+                    secondary="NeMo 检索、智能 OCR、小型 LLM、嵌入与索引、LLM 评审、路由"
                   />
                 </ListItem>
                 <ListItem sx={{ py: 0 }}>
                   <ListItemText 
-                    primary="Forecasting System" 
-                    secondary="Forecasting Service (Multi-Modal Ensemble), ML Models (XGBoost, Random Forest, SVR), Business Intelligence, Training Pipeline (Phase 1-3 RAPIDS), Reorder Recommendations"
+                    primary="预测系统" 
+                    secondary="预测服务（多模态集成）、ML 模型（XGBoost、随机森林、SVR）、商业智能、训练流水线（阶段 1-3 RAPIDS）、补货建议"
                   />
                 </ListItem>
                 <ListItem sx={{ py: 0 }}>
                   <ListItemText 
-                    primary="Hybrid RAG" 
-                    secondary="cuVS Milvus (Vector Search), Structured Retrieve (PostgreSQL/TimescaleDB), Hybrid Ranker"
+                    primary="混合 RAG" 
+                    secondary="cuVS Milvus（向量搜索）、结构化检索（PostgreSQL/TimescaleDB）、混合排序器"
                   />
                 </ListItem>
                 <ListItem sx={{ py: 0 }}>
                   <ListItemText 
-                    primary="Data Storage" 
-                    secondary="PostgreSQL/TimescaleDB, Redis (Cache sessions), Milvus DB, MiniIO"
+                    primary="数据存储" 
+                    secondary="PostgreSQL/TimescaleDB、Redis（会话缓存）、Milvus DB、MiniIO"
                   />
                 </ListItem>
               </List>
@@ -496,7 +495,7 @@ const Documentation: React.FC = () => {
                 onClick={() => navigate('/documentation/architecture')}
                 size="large"
               >
-                View Detailed Architecture Diagrams
+                查看详细架构图
               </Button>
             </Box>
           </Box>
@@ -504,7 +503,7 @@ const Documentation: React.FC = () => {
           <Divider sx={{ my: 3 }} />
 
           <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
-            Component Details
+            组件详情
           </Typography>
           <Grid container spacing={3}>
             {architectureComponents.map((component, index) => (
@@ -536,17 +535,17 @@ const Documentation: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ArticleIcon color="primary" />
-            Document Processing Pipeline
+            文档处理流水线
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Box sx={{ mb: 3 }}>
             <Typography variant="h5" gutterBottom>
-              📄 6-Stage NVIDIA NeMo Document Processing Pipeline
+              📄 6 阶段智能文档处理流水线
             </Typography>
             <Typography variant="body1" sx={{ mb: 2 }}>
-              The system implements a comprehensive document processing pipeline using NVIDIA NeMo models for warehouse document understanding, 
-              from PDF decomposition to intelligent routing based on quality scores.
+              系统使用视觉与语言模型实现完整的仓库文档理解流水线，
+              覆盖从 PDF 分解到基于质量评分的智能路由。
             </Typography>
           </Box>
 
@@ -555,13 +554,13 @@ const Documentation: React.FC = () => {
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Stage 1: Document Preprocessing
+                    阶段 1：文档预处理
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 2 }}>
-                    <strong>Model:</strong> NeMo Retriever (NVIDIA NeMo)
+                    <strong>模型：</strong> 文档检索模型
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    PDF decomposition and image extraction with layout-aware processing for optimal document structure understanding.
+                    通过布局感知处理进行 PDF 分解和图像提取，以更好地理解文档结构。
                   </Typography>
                 </CardContent>
               </Card>
@@ -570,13 +569,13 @@ const Documentation: React.FC = () => {
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Stage 2: Intelligent OCR
+                    阶段 2：智能 OCR
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 2 }}>
-                    <strong>Model:</strong> NeMoRetriever-OCR-v1 + Nemotron Parse
+                    <strong>模型：</strong> NeMoRetriever-OCR-v1 + Nemotron Parse
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Fast, accurate text extraction with layout awareness, preserving spatial relationships and document structure.
+                    快速、准确且具备布局感知能力的文本提取，可保留空间关系和文档结构。
                   </Typography>
                 </CardContent>
               </Card>
@@ -585,26 +584,26 @@ const Documentation: React.FC = () => {
               <Card variant="outlined" sx={{ height: '100%', bgcolor: 'success.light', color: 'success.contrastText' }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Stage 3: Small LLM Processing ⭐
+                    阶段 3：小型 LLM 处理 ⭐
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 2 }}>
-                    <strong>Model:</strong> Llama Nemotron Nano VL 8B (NVIDIA NeMo)
+                    <strong>模型：</strong> 视觉语言模型
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 2 }}>
-                    <strong>Features:</strong>
+                    <strong>功能：</strong>
                   </Typography>
                   <List dense>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Native vision understanding" />
+                      <ListItemText primary="原生视觉理解" />
                     </ListItem>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="OCRBench v2 leader for document understanding" />
+                      <ListItemText primary="文档理解能力在 OCRBench v2 中领先" />
                     </ListItem>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Specialized for invoice/receipt/BOL processing" />
+                      <ListItemText primary="专用于发票、收据和 BOL 处理" />
                     </ListItem>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Fast inference (~100-200ms)" />
+                      <ListItemText primary="快速推理（约 100-200ms）" />
                     </ListItem>
                   </List>
                 </CardContent>
@@ -614,13 +613,13 @@ const Documentation: React.FC = () => {
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Stage 4: Embedding & Indexing
+                    阶段 4：嵌入与索引
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 2 }}>
-                    <strong>Model:</strong> llama-nemotron-embed-vl-1b-v2 (NVIDIA NeMo)
+                    <strong>模型：</strong> 多模态嵌入模型
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Vector embeddings generation for semantic search and intelligent document indexing with GPU acceleration.
+                    生成用于语义搜索和智能文档索引的向量嵌入，并支持 GPU 加速。
                   </Typography>
                 </CardContent>
               </Card>
@@ -629,13 +628,13 @@ const Documentation: React.FC = () => {
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Stage 5: Large LLM Judge
+                    阶段 5：大型 LLM 评审
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 2 }}>
-                    <strong>Model:</strong> Llama 3.3 Nemotron Super 49B NIM
+                    <strong>模型：</strong> Llama 3.3 Nemotron Super 49B NIM
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Comprehensive quality validation with 4 evaluation criteria: completeness, accuracy, compliance, and quality scoring.
+                    通过完整性、准确性、合规性和质量评分 4 项标准进行全面质量验证。
                   </Typography>
                 </CardContent>
               </Card>
@@ -644,13 +643,13 @@ const Documentation: React.FC = () => {
               <Card variant="outlined" sx={{ height: '100%' }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Stage 6: Intelligent Routing
+                    阶段 6：智能路由
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 2 }}>
-                    <strong>System:</strong> Quality-based routing decisions
+                    <strong>系统：</strong> 基于质量的路由决策
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Smart routing based on quality scores and business rules to determine document processing workflow and next actions.
+                    根据质量评分和业务规则进行智能路由，以确定文档处理工作流和后续操作。
                   </Typography>
                 </CardContent>
               </Card>
@@ -659,30 +658,30 @@ const Documentation: React.FC = () => {
 
           <Box sx={{ mt: 4 }}>
             <Typography variant="h6" gutterBottom>
-              🔧 Technical Implementation Details
+              🔧 技术实现详情
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined">
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>API Integration</Typography>
-                    <Typography variant="body2">NVIDIA NIMs API with automatic fallback to mock implementations for development</Typography>
+                    <Typography variant="subtitle1" gutterBottom>API 集成</Typography>
+                    <Typography variant="body2">模型服务 API，可自动回退到用于开发的模拟实现</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined">
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Error Handling</Typography>
-                    <Typography variant="body2">Graceful degradation with comprehensive error recovery and retry mechanisms</Typography>
+                    <Typography variant="subtitle1" gutterBottom>错误处理</Typography>
+                    <Typography variant="body2">通过完整的错误恢复和重试机制实现优雅降级</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined">
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Performance</Typography>
-                    <Typography variant="body2">Optimized for warehouse document types with fast processing and high accuracy</Typography>
+                    <Typography variant="subtitle1" gutterBottom>性能</Typography>
+                    <Typography variant="body2">针对仓库文档类型进行了优化，处理速度快、准确率高</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -702,37 +701,37 @@ const Documentation: React.FC = () => {
         <AccordionDetails>
           <Box sx={{ mb: 3 }}>
             <Typography variant="h5" gutterBottom>
-              🛡️ Content Safety & Compliance Protection
+              🛡️ 内容安全与合规保护
             </Typography>
             <Typography variant="body1" sx={{ mb: 2 }}>
-              The system implements <strong>NVIDIA NeMo Guardrails</strong> with dual implementation support:
-              <strong> NeMo Guardrails SDK</strong> (with Colang) for intelligent validation and <strong>pattern-based matching</strong> 
-              as a fast fallback. All user inputs and AI responses are validated to ensure safe and compliant interactions.
+              系统实现了具备双重实现支持的 <strong>NeMo Guardrails</strong>：
+              使用 <strong>NeMo Guardrails SDK</strong>（配合 Colang）进行智能验证，并以<strong>基于模式的匹配</strong>
+              作为快速回退。所有用户输入和 AI 响应都会经过验证，以确保交互安全合规。
             </Typography>
             <Alert severity="success" sx={{ mb: 3 }}>
-              <AlertTitle>✅ Production Ready</AlertTitle>
+              <AlertTitle>✅ 生产就绪</AlertTitle>
               <Typography variant="body2">
-                • Dual implementation: SDK (Colang) + Pattern-based fallback<br/>
-                • 88 protection patterns across 5 categories<br/>
-                • Real-time input/output validation<br/>
-                • Automatic fallback on errors<br/>
-                • Comprehensive monitoring and metrics
+                • 双重实现：SDK（Colang）+ 基于模式的回退<br/>
+                • 5 个类别共 88 个保护模式<br/>
+                • 实时输入/输出验证<br/>
+                • 出错时自动回退<br/>
+                • 全面的监控与指标
               </Typography>
             </Alert>
           </Box>
 
           <Typography variant="h6" gutterBottom>
-            🔒 Protection Categories
+            🔒 保护类别
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} md={6}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Jailbreak Detection (17 patterns)
+                    越狱检测（17 个模式）
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Prevents attempts to override system instructions, roleplay, or bypass safety protocols.
+                    防止覆盖系统指令、角色扮演或绕过安全协议的尝试。
                   </Typography>
                 </CardContent>
               </Card>
@@ -741,10 +740,10 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Safety Violations (13 patterns)
+                    安全违规（13 个模式）
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Blocks unsafe operational guidance, equipment operation without training, and bypassing safety protocols.
+                    阻止不安全的操作指导、未经培训的设备操作以及绕过安全协议的行为。
                   </Typography>
                 </CardContent>
               </Card>
@@ -753,10 +752,10 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Security Violations (15 patterns)
+                    信息安全违规（15 个模式）
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Prevents requests for security codes, access codes, restricted areas, and unauthorized access attempts.
+                    阻止索取安全代码、访问代码、受限区域信息以及未经授权的访问尝试。
                   </Typography>
                 </CardContent>
               </Card>
@@ -765,10 +764,10 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Compliance Violations (12 patterns)
+                    合规违规（12 个模式）
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Ensures adherence to safety regulations, prevents skipping inspections, and blocks policy circumvention.
+                    确保遵守安全法规，防止跳过检查并阻止规避策略。
                   </Typography>
                 </CardContent>
               </Card>
@@ -777,10 +776,10 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Off-Topic Queries (13 patterns)
+                    主题无关查询（13 个模式）
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Redirects non-warehouse related queries (weather, jokes, cooking, etc.) to warehouse operations topics.
+                    将与仓库无关的查询（天气、笑话、烹饪等）引导至仓库运营主题。
                   </Typography>
                 </CardContent>
               </Card>
@@ -788,7 +787,7 @@ const Documentation: React.FC = () => {
           </Grid>
 
           <Typography variant="h6" gutterBottom>
-            🔧 Implementation
+            🔧 实现
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} md={6}>
@@ -796,8 +795,8 @@ const Documentation: React.FC = () => {
                 <CardContent>
                   <Typography variant="subtitle1" gutterBottom>NeMo Guardrails SDK</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Intelligent, programmable guardrails using NVIDIA's official SDK with Colang configuration. 
-                    Enabled via <code>USE_NEMO_GUARDRAILS_SDK=true</code> environment variable.
+                    使用 Guardrails SDK 和 Colang 配置实现智能、可编程的防护机制。
+                    通过 <code>USE_NEMO_GUARDRAILS_SDK=true</code> 环境变量启用。
                   </Typography>
                 </CardContent>
               </Card>
@@ -805,10 +804,10 @@ const Documentation: React.FC = () => {
             <Grid item xs={12} md={6}>
               <Card variant="outlined">
                 <CardContent>
-                  <Typography variant="subtitle1" gutterBottom>Pattern-Based Fallback</Typography>
+                    <Typography variant="subtitle1" gutterBottom>基于模式的回退</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Fast, lightweight keyword/phrase matching. Automatically used if SDK is unavailable or fails. 
-                    Ensures system continues to function reliably.
+                    快速、轻量的关键词/短语匹配。当 SDK 不可用或失败时自动启用，
+                    确保系统继续可靠运行。
                   </Typography>
                 </CardContent>
               </Card>
@@ -816,10 +815,10 @@ const Documentation: React.FC = () => {
           </Grid>
 
           <Alert severity="info" sx={{ mb: 2 }}>
-            <AlertTitle>📖 Detailed Documentation</AlertTitle>
+            <AlertTitle>📖 详细文档</AlertTitle>
             <Typography variant="body2" sx={{ mt: 1 }}>
-              For comprehensive documentation including configuration, API interface, monitoring, and troubleshooting, 
-              see the <Link href="https://github.com/NVIDIA-AI-Blueprints/Multi-Agent-Intelligent-Warehouse/blob/main/docs/architecture/guardrails-implementation.md" target="_blank" rel="noopener">Guardrails Implementation Guide</Link>.
+              如需包含配置、API 接口、监控和故障排除的完整文档，
+              请参阅<Link href="https://github.com/NVIDIA-AI-Blueprints/Multi-Agent-Intelligent-Warehouse/blob/main/docs/architecture/guardrails-implementation.md" target="_blank" rel="noopener">防护机制实现指南</Link>。
             </Typography>
           </Alert>
         </AccordionDetails>
@@ -830,47 +829,47 @@ const Documentation: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <SpeedIcon color="primary" />
-            Demand Forecasting System
+            需求预测系统
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Box sx={{ mb: 3 }}>
             <Typography variant="h5" gutterBottom>
-              📈 AI-Powered Demand Forecasting
+              📈 AI 驱动的需求预测
             </Typography>
             <Typography variant="body1" sx={{ mb: 2 }}>
-              The Multi-Agent-Intelligent-Warehouse features a <strong>complete AI-powered demand forecasting system</strong> 
-              with multi-model ensemble, advanced analytics, and real-time predictions. This system provides accurate 
-              demand forecasts to optimize inventory management and reduce stockouts.
+                多智能体智慧仓储系统配备了<strong>完整的 AI 驱动需求预测系统</strong>，
+              支持多模型集成、高级分析和实时预测。该系统提供准确的需求预测，
+              以优化库存管理并减少缺货。
             </Typography>
             <Alert severity="success" sx={{ mb: 3 }}>
-              <AlertTitle>✅ Production Ready</AlertTitle>
+              <AlertTitle>✅ 生产就绪</AlertTitle>
               <Typography variant="body2">
-                • 100% Dynamic Database Integration - No hardcoded values<br/>
-                • Multi-Model Ensemble with 6 ML algorithms<br/>
-                • Real-Time Model Performance Tracking<br/>
-                • GPU Acceleration with NVIDIA RAPIDS cuML<br/>
-                • Automated Reorder Recommendations<br/>
-                • Business Intelligence Dashboard
+                • 100% 动态数据库集成——无硬编码值<br/>
+                • 集成 6 种 ML 算法的多模型组合<br/>
+                • 实时模型性能跟踪<br/>
+                • 使用 GPU 加速机器学习库进行计算<br/>
+                • 自动补货建议<br/>
+                • 商业智能仪表板
               </Typography>
             </Alert>
           </Box>
 
           <Typography variant="h6" gutterBottom>
-            🤖 Machine Learning Models
+            🤖 机器学习模型
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} md={6}>
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Random Forest
+                    随机森林
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Accuracy:</strong> 85% | <strong>MAPE:</strong> 12.5% | <strong>Status:</strong> HEALTHY
+                    <strong>准确率：</strong> 85% | <strong>MAPE：</strong> 12.5% | <strong>状态：</strong> HEALTHY
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Ensemble method using multiple decision trees for robust predictions with excellent handling of non-linear relationships.
+                    使用多棵决策树进行稳健预测的集成方法，能够出色处理非线性关系。
                   </Typography>
                 </CardContent>
               </Card>
@@ -879,13 +878,13 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    XGBoost (GPU-Accelerated)
+                    XGBoost（GPU 加速）
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Accuracy:</strong> 82% | <strong>MAPE:</strong> 15.8% | <strong>Status:</strong> HEALTHY
+                    <strong>准确率：</strong> 82% | <strong>MAPE：</strong> 15.8% | <strong>状态：</strong> HEALTHY
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Advanced gradient boosting with GPU acceleration using NVIDIA RAPIDS cuML for high-performance forecasting.
+                    使用 GPU 加速的高级梯度提升，可实现高性能预测。
                   </Typography>
                 </CardContent>
               </Card>
@@ -894,13 +893,13 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Gradient Boosting
+                    梯度提升
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Accuracy:</strong> 78% | <strong>MAPE:</strong> 14.2% | <strong>Status:</strong> WARNING
+                    <strong>准确率：</strong> 78% | <strong>MAPE：</strong> 14.2% | <strong>状态：</strong> WARNING
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Sequential ensemble method that builds models incrementally to minimize prediction errors.
+                    通过逐步构建模型来最大限度降低预测误差的序列集成方法。
                   </Typography>
                 </CardContent>
               </Card>
@@ -909,13 +908,13 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Linear Regression
+                    线性回归
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Accuracy:</strong> 72% | <strong>MAPE:</strong> 18.7% | <strong>Status:</strong> NEEDS_RETRAINING
+                    <strong>准确率：</strong> 72% | <strong>MAPE：</strong> 18.7% | <strong>状态：</strong> NEEDS_RETRAINING
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Traditional linear model for baseline predictions and trend analysis in demand patterns.
+                    用于基线预测和需求模式趋势分析的传统线性模型。
                   </Typography>
                 </CardContent>
               </Card>
@@ -924,13 +923,13 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Ridge Regression
+                    岭回归
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Accuracy:</strong> 75% | <strong>MAPE:</strong> 16.3% | <strong>Status:</strong> WARNING
+                    <strong>准确率：</strong> 75% | <strong>MAPE：</strong> 16.3% | <strong>状态：</strong> WARNING
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Regularized linear regression with L2 penalty to prevent overfitting and improve generalization.
+                    使用 L2 惩罚的正则化线性回归，可防止过拟合并提高泛化能力。
                   </Typography>
                 </CardContent>
               </Card>
@@ -939,13 +938,13 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    Support Vector Regression
+                    支持向量回归
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 1 }}>
-                    <strong>Accuracy:</strong> 70% | <strong>MAPE:</strong> 20.1% | <strong>Status:</strong> NEEDS_RETRAINING
+                    <strong>准确率：</strong> 70% | <strong>MAPE：</strong> 20.1% | <strong>状态：</strong> NEEDS_RETRAINING
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Kernel-based regression method effective for non-linear patterns and high-dimensional data.
+                    基于核的回归方法，适用于非线性模式和高维数据。
                   </Typography>
                 </CardContent>
               </Card>
@@ -953,19 +952,19 @@ const Documentation: React.FC = () => {
           </Grid>
 
           <Typography variant="h6" gutterBottom>
-            🔧 Technical Architecture
+            🔧 技术架构
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} md={4}>
               <Card variant="outlined">
                 <CardContent>
-                  <Typography variant="subtitle1" gutterBottom>Feature Engineering</Typography>
+                  <Typography variant="subtitle1" gutterBottom>特征工程</Typography>
                   <Typography variant="body2">
-                    • Lag features (1-30 days)<br/>
-                    • Rolling statistics (7, 14, 30 days)<br/>
-                    • Seasonal patterns<br/>
-                    • Promotional impacts<br/>
-                    • Day-of-week effects
+                    • 滞后特征（1-30 天）<br/>
+                    • 滚动统计（7、14、30 天）<br/>
+                    • 季节性模式<br/>
+                    • 促销影响<br/>
+                    • 星期效应
                   </Typography>
                 </CardContent>
               </Card>
@@ -973,13 +972,13 @@ const Documentation: React.FC = () => {
             <Grid item xs={12} md={4}>
               <Card variant="outlined">
                 <CardContent>
-                  <Typography variant="subtitle1" gutterBottom>Model Training</Typography>
+                  <Typography variant="subtitle1" gutterBottom>模型训练</Typography>
                   <Typography variant="body2">
-                    • Phase 1 & 2: Basic models<br/>
-                    • Phase 3: Advanced ensemble<br/>
-                    • Hyperparameter optimization<br/>
-                    • Time Series Cross-Validation<br/>
-                    • GPU acceleration ready
+                    • 阶段 1 和 2：基础模型<br/>
+                    • 阶段 3：高级集成<br/>
+                    • 超参数优化<br/>
+                    • 时间序列交叉验证<br/>
+                    • 支持 GPU 加速
                   </Typography>
                 </CardContent>
               </Card>
@@ -987,13 +986,13 @@ const Documentation: React.FC = () => {
             <Grid item xs={12} md={4}>
               <Card variant="outlined">
                 <CardContent>
-                  <Typography variant="subtitle1" gutterBottom>Performance Tracking</Typography>
+                  <Typography variant="subtitle1" gutterBottom>性能跟踪</Typography>
                   <Typography variant="body2">
-                    • Real-time accuracy monitoring<br/>
-                    • MAPE calculation<br/>
-                    • Drift detection<br/>
-                    • Prediction counts<br/>
-                    • Status indicators
+                    • 实时准确率监控<br/>
+                    • MAPE 计算<br/>
+                    • 漂移检测<br/>
+                    • 预测计数<br/>
+                    • 状态指示器
                   </Typography>
                 </CardContent>
               </Card>
@@ -1001,13 +1000,13 @@ const Documentation: React.FC = () => {
           </Grid>
 
           <Typography variant="h6" gutterBottom>
-            📊 API Endpoints
+            📊 API 端点
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} md={6}>
               <Card variant="outlined">
                 <CardContent>
-                  <Typography variant="subtitle1" gutterBottom>Core Forecasting</Typography>
+                  <Typography variant="subtitle1" gutterBottom>核心预测</Typography>
                   <List dense>
                     <ListItem sx={{ px: 0 }}>
                       <ListItemText
@@ -1019,7 +1018,7 @@ const Documentation: React.FC = () => {
                             </Typography>
                           </Box>
                         }
-                        secondary="Comprehensive forecasting dashboard with model performance and business intelligence"
+                        secondary="包含模型性能和商业智能的完整预测仪表板"
                       />
                     </ListItem>
                     <ListItem sx={{ px: 0 }}>
@@ -1032,7 +1031,7 @@ const Documentation: React.FC = () => {
                             </Typography>
                           </Box>
                         }
-                        secondary="Real-time demand predictions with confidence intervals"
+                        secondary="带置信区间的实时需求预测"
                       />
                     </ListItem>
                     <ListItem sx={{ px: 0 }}>
@@ -1045,7 +1044,7 @@ const Documentation: React.FC = () => {
                             </Typography>
                           </Box>
                         }
-                        secondary="Model health and performance metrics for all 6 models"
+                        secondary="全部 6 个模型的健康状态和性能指标"
                       />
                     </ListItem>
                   </List>
@@ -1055,7 +1054,7 @@ const Documentation: React.FC = () => {
             <Grid item xs={12} md={6}>
               <Card variant="outlined">
                 <CardContent>
-                  <Typography variant="subtitle1" gutterBottom>Training & Management</Typography>
+                  <Typography variant="subtitle1" gutterBottom>训练与管理</Typography>
                   <List dense>
                     <ListItem sx={{ px: 0 }}>
                       <ListItemText
@@ -1067,7 +1066,7 @@ const Documentation: React.FC = () => {
                             </Typography>
                           </Box>
                         }
-                        secondary="Current training status and progress"
+                        secondary="当前训练状态和进度"
                       />
                     </ListItem>
                     <ListItem sx={{ px: 0 }}>
@@ -1080,7 +1079,7 @@ const Documentation: React.FC = () => {
                             </Typography>
                           </Box>
                         }
-                        secondary="Start manual training session"
+                        secondary="启动手动训练会话"
                       />
                     </ListItem>
                     <ListItem sx={{ px: 0 }}>
@@ -1093,7 +1092,7 @@ const Documentation: React.FC = () => {
                             </Typography>
                           </Box>
                         }
-                        secondary="Training session history and performance"
+                        secondary="训练会话历史和性能"
                       />
                     </ListItem>
                   </List>
@@ -1103,19 +1102,19 @@ const Documentation: React.FC = () => {
           </Grid>
 
           <Typography variant="h6" gutterBottom>
-            🎯 Business Intelligence Features
+            🎯 商业智能功能
           </Typography>
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} md={6}>
               <Card variant="outlined">
                 <CardContent>
-                  <Typography variant="subtitle1" gutterBottom>Automated Recommendations</Typography>
+                  <Typography variant="subtitle1" gutterBottom>自动化建议</Typography>
                   <Typography variant="body2">
-                    • AI-suggested reorder quantities<br/>
-                    • Urgency levels (CRITICAL, HIGH, MEDIUM, LOW)<br/>
-                    • Confidence scores for each recommendation<br/>
-                    • Estimated arrival dates<br/>
-                    • Cost optimization suggestions
+                    • AI 建议的补货数量<br/>
+                    • 紧急程度（CRITICAL、HIGH、MEDIUM、LOW）<br/>
+                    • 每条建议的置信度评分<br/>
+                    • 预计到达日期<br/>
+                    • 成本优化建议
                   </Typography>
                 </CardContent>
               </Card>
@@ -1123,13 +1122,13 @@ const Documentation: React.FC = () => {
             <Grid item xs={12} md={6}>
               <Card variant="outlined">
                 <CardContent>
-                  <Typography variant="subtitle1" gutterBottom>Analytics Dashboard</Typography>
+                  <Typography variant="subtitle1" gutterBottom>分析仪表板</Typography>
                   <Typography variant="body2">
-                    • Model performance comparison<br/>
-                    • Forecast accuracy trends<br/>
-                    • SKU-specific demand patterns<br/>
-                    • Seasonal analysis<br/>
-                    • Inventory optimization insights
+                    • 模型性能比较<br/>
+                    • 预测准确率趋势<br/>
+                    • SKU 特定需求模式<br/>
+                    • 季节性分析<br/>
+                    • 库存优化洞察
                   </Typography>
                 </CardContent>
               </Card>
@@ -1137,25 +1136,25 @@ const Documentation: React.FC = () => {
           </Grid>
 
           <Typography variant="h6" gutterBottom>
-            🚀 GPU Acceleration
+            🚀 GPU 加速
           </Typography>
           <Alert severity="info" sx={{ mb: 2 }}>
-            <AlertTitle>NVIDIA RAPIDS cuML Integration</AlertTitle>
+            <AlertTitle>GPU 加速机器学习集成</AlertTitle>
             <Typography variant="body2">
-              The forecasting system supports GPU acceleration using NVIDIA RAPIDS cuML for enterprise-scale performance. 
-              When GPU resources are available, models automatically utilize CUDA acceleration for faster training and inference.
+              预测系统支持使用 GPU 加速机器学习库，以满足企业级性能需求。
+              当 GPU 资源可用时，模型会自动使用 CUDA 加速，从而加快训练和推理。
             </Typography>
           </Alert>
 
           <Box sx={{ mt: 3 }}>
             <Typography variant="h6" gutterBottom>
-              📁 Key Files & Components
+              📁 关键文件与组件
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} md={6}>
                 <Card variant="outlined">
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Backend Components</Typography>
+                    <Typography variant="subtitle1" gutterBottom>后端组件</Typography>
                     <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
                       • src/api/routers/advanced_forecasting.py<br/>
                       • src/api/routers/training.py<br/>
@@ -1170,14 +1169,14 @@ const Documentation: React.FC = () => {
               <Grid item xs={12} md={6}>
                 <Card variant="outlined">
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Frontend Components</Typography>
+                    <Typography variant="subtitle1" gutterBottom>前端组件</Typography>
                     <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
                       • src/ui/web/src/pages/Forecasting.tsx<br/>
                       • src/ui/web/src/services/forecastingAPI.ts<br/>
                       • src/ui/web/src/services/trainingAPI.ts<br/>
-                      • Real-time progress tracking<br/>
-                      • Model performance visualization<br/>
-                      • Training management interface
+                      • 实时进度跟踪<br/>
+                      • 模型性能可视化<br/>
+                      • 训练管理界面
                     </Typography>
                   </CardContent>
                 </Card>
@@ -1192,7 +1191,7 @@ const Documentation: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ApiIcon color="primary" />
-            API Reference
+            API 参考
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -1238,7 +1237,7 @@ const Documentation: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <BuildIcon color="primary" />
-            Agent Tools Overview
+            智能体工具概览
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -1251,7 +1250,7 @@ const Documentation: React.FC = () => {
                       {agent.agent}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                      {agent.count} Action Tools
+                      {agent.count} 个操作工具
                     </Typography>
                     <List dense>
                       {agent.tools.map((tool, toolIndex) => (
@@ -1279,36 +1278,36 @@ const Documentation: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <SchoolIcon color="primary" />
-            Implementation Journey & Next Steps
+            实施历程与后续步骤
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Box sx={{ mb: 3 }}>
             <Typography variant="h5" gutterBottom>
-              🎯 Current State: Production-Ready Foundation
+              🎯 当前状态：生产就绪的基础
             </Typography>
             <Typography variant="body1" sx={{ mb: 2 }}>
-              This Multi-Agent-Intelligent-Warehouse represents a <strong>production-grade implementation</strong> of NVIDIA's AI Blueprint architecture. 
-              We've successfully built a multi-agent system with comprehensive tooling, advanced reasoning capabilities, and enterprise-grade security.
+              这套多智能体智慧仓储系统是面向企业场景的<strong>生产级实现</strong>。
+              我们已成功构建具备完整工具、高级推理能力和企业级安全性的多智能体系统。
             </Typography>
             <Alert severity="success" sx={{ mb: 3 }}>
-              <AlertTitle>✅ What's Complete</AlertTitle>
+              <AlertTitle>✅ 已完成功能</AlertTitle>
               <Typography variant="body2">
-                • Multi-agent orchestration with LangGraph + MCP integration<br/>
-                • <strong>5 Specialized Agents:</strong> Equipment, Operations, Safety, Forecasting, Document<br/>
-                • <strong>34+ production-ready action tools</strong> across all agents<br/>
-                • NVIDIA NIMs integration (Llama 3.3 Nemotron Super 49B + NV-EmbedQA-E5-v5 + Vision models)<br/>
-                • <strong>Document Processing:</strong> 6-stage NVIDIA NeMo pipeline with vision models<br/>
-                • <strong>Demand Forecasting:</strong> 6 ML models with NVIDIA RAPIDS GPU acceleration<br/>
-                • <strong>NeMo Guardrails:</strong> Content safety and compliance protection<br/>
-                • Advanced reasoning engine with 5 reasoning types<br/>
-                • Hybrid RAG system with PostgreSQL/TimescaleDB + Milvus<br/>
-                • Real-time equipment telemetry and monitoring<br/>
-                • Automated reorder recommendations with AI-powered insights<br/>
-                • <strong>Chat System Optimizations (Dec 2024):</strong> Query caching, request deduplication, semantic routing, parallel tool execution, performance monitoring<br/>
-                • Complete security stack with JWT authentication + RBAC (5 user roles)<br/>
-                • Comprehensive monitoring with Prometheus/Grafana<br/>
-                • React frontend with Material-UI, message pagination, and real-time interfaces
+                • 使用 LangGraph + MCP 集成进行多智能体编排<br/>
+                • <strong>5 个专业智能体：</strong>设备、运营、安全、预测、文档<br/>
+                • 覆盖所有智能体的 <strong>34 个以上生产就绪操作工具</strong><br/>
+                • 模型服务集成（大语言模型、嵌入模型与视觉模型）<br/>
+                • <strong>文档处理：</strong>采用视觉模型的 6 阶段智能处理流水线<br/>
+                • <strong>需求预测：</strong>6 个机器学习模型，支持 GPU 加速<br/>
+                • <strong>NeMo Guardrails：</strong>内容安全与合规保护<br/>
+                • 支持 5 种推理类型的高级推理引擎<br/>
+                • 使用 PostgreSQL/TimescaleDB + Milvus 的混合 RAG 系统<br/>
+                • 实时设备遥测与监控<br/>
+                • 带 AI 洞察的自动补货建议<br/>
+                • <strong>聊天系统优化（2024 年 12 月）：</strong>查询缓存、请求去重、语义路由、并行工具执行、性能监控<br/>
+                • 完整安全栈，包含 JWT 身份验证 + RBAC（5 种用户角色）<br/>
+                • 使用 Prometheus/Grafana 进行全面监控<br/>
+                • 采用 Material-UI、消息分页和实时界面的 React 前端
               </Typography>
             </Alert>
           </Box>
@@ -1318,37 +1317,37 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    🚀 Immediate Development Opportunities
+                    🚀 近期开发机会
                   </Typography>
                   <List>
                     <ListItem>
                       <ListItemText 
-                        primary="Complete MCP Adapter Migration" 
-                        secondary="Migrate remaining WMS, IoT, RFID/Barcode, and Time Attendance adapters to MCP framework"
+                        primary="完成 MCP 适配器迁移" 
+                        secondary="将剩余的 WMS、IoT、RFID/条码和考勤适配器迁移到 MCP 框架"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="React Native Mobile App" 
-                        secondary="Build field operations app for warehouse workers with offline capabilities"
+                        primary="React Native 移动应用" 
+                        secondary="为仓库工作人员构建支持离线功能的现场作业应用"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Enhanced Document Processing" 
-                        secondary="Add support for more document types and improve extraction accuracy"
+                        primary="增强文档处理" 
+                        secondary="支持更多文档类型并提高提取准确率"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Advanced Forecasting Features" 
-                        secondary="Add seasonal adjustments, promotional impact modeling, and multi-SKU optimization"
+                        primary="高级预测功能" 
+                        secondary="增加季节性调整、促销影响建模和多 SKU 优化"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Real-Time Event Streaming" 
-                        secondary="Kafka integration for real-time data processing and event-driven architecture"
+                        primary="实时事件流" 
+                        secondary="集成 Kafka，用于实时数据处理和事件驱动架构"
                       />
                     </ListItem>
                   </List>
@@ -1359,37 +1358,37 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="secondary">
-                    🔧 Advanced Technical Enhancements
+                    🔧 高级技术增强
                   </Typography>
                   <List>
                     <ListItem>
                       <ListItemText 
-                        primary="ML-Powered Predictive Analytics" 
-                        secondary="Implement machine learning models for demand forecasting and optimization"
+                        primary="ML 驱动的预测分析" 
+                        secondary="实施用于需求预测与优化的机器学习模型"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Real-time Event Streaming" 
-                        secondary="Kafka integration for real-time data processing and event-driven architecture"
+                        primary="实时事件流" 
+                        secondary="集成 Kafka，用于实时数据处理和事件驱动架构"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Edge Computing Deployment" 
-                        secondary="Deploy lightweight agents to edge devices for local processing and reduced latency"
+                        primary="边缘计算部署" 
+                        secondary="将轻量级智能体部署到边缘设备，以进行本地处理并降低延迟"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Multi-tenant Architecture" 
-                        secondary="Support multiple warehouse organizations with data isolation and custom configurations"
+                        primary="多租户架构" 
+                        secondary="支持多个仓库组织，并提供数据隔离和自定义配置"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Advanced Security Features" 
-                        secondary="Implement zero-trust security, advanced threat detection, and compliance automation"
+                        primary="高级安全功能" 
+                        secondary="实施零信任安全、高级威胁检测和合规自动化"
                       />
                     </ListItem>
                   </List>
@@ -1400,33 +1399,33 @@ const Documentation: React.FC = () => {
 
           <Box sx={{ mt: 4 }}>
             <Typography variant="h5" gutterBottom>
-              🛠️ Development Roadmap
+              🛠️ 开发路线图
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
                   <CardContent>
-                    <Typography variant="h6" gutterBottom>Phase 1: Foundation</Typography>
-                    <Typography variant="body2">✅ Complete</Typography>
-                    <Typography variant="body2">Core architecture, agents, and MCP framework</Typography>
+                    <Typography variant="h6" gutterBottom>阶段 1：基础建设</Typography>
+                    <Typography variant="body2">✅ 已完成</Typography>
+                    <Typography variant="body2">核心架构、智能体和 MCP 框架</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
                   <CardContent>
-                    <Typography variant="h6" gutterBottom>Phase 2: Optimization</Typography>
-                    <Typography variant="body2">✅ Complete</Typography>
-                    <Typography variant="body2">Chat interface, parameter validation, real tool execution</Typography>
+                    <Typography variant="h6" gutterBottom>阶段 2：优化</Typography>
+                    <Typography variant="body2">✅ 已完成</Typography>
+                    <Typography variant="body2">聊天界面、参数验证、真实工具执行</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined" sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
                   <CardContent>
-                    <Typography variant="h6" gutterBottom>Phase 3: Scale</Typography>
-                    <Typography variant="body2">📋 Planned</Typography>
-                    <Typography variant="body2">ML analytics, edge computing, multi-tenant</Typography>
+                    <Typography variant="h6" gutterBottom>阶段 3：规模化</Typography>
+                    <Typography variant="body2">📋 已规划</Typography>
+                    <Typography variant="body2">ML 分析、边缘计算、多租户</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -1440,16 +1439,16 @@ const Documentation: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CodeIcon color="primary" />
-            Technical Deep Dive
+            技术深入解析
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Box sx={{ mb: 3 }}>
             <Typography variant="h5" gutterBottom>
-              🏗️ Architecture Deep Dive
+              🏗️ 架构深入解析
             </Typography>
             <Typography variant="body1" sx={{ mb: 2 }}>
-              This system implements NVIDIA's AI Blueprint architecture with several key innovations and production-ready patterns.
+              本系统采用模块化多智能体架构，并结合多项生产级工程实践。
             </Typography>
           </Box>
 
@@ -1458,46 +1457,46 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    🤖 Multi-Agent Architecture
+                    🤖 多智能体架构
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 2 }}>
-                    The system uses LangGraph for orchestration with specialized agents:
+                    系统使用 LangGraph 编排以下专业智能体：
                   </Typography>
                   <List dense>
                     <ListItem>
                       <ListItemText 
-                        primary="Planner/Router Agent" 
-                        secondary="Intent classification, context management, response synthesis, MCP tool routing"
+                        primary="规划器/路由器智能体" 
+                        secondary="意图分类、上下文管理、响应合成、MCP 工具路由"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Equipment & Asset Operations Agent" 
-                        secondary="8 tools for inventory, equipment, asset management, and telemetry monitoring"
+                        primary="设备与资产运营智能体" 
+                        secondary="8 个用于库存、设备、资产管理和遥测监控的工具"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Operations Coordination Agent" 
-                        secondary="8 tools for workforce, waves, scheduling, equipment dispatch, and KPIs"
+                        primary="运营协调智能体" 
+                        secondary="8 个用于人员、波次、排班、设备调度和 KPI 的工具"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Safety & Compliance Agent" 
-                        secondary="7 tools for incidents, checklists, alerts, compliance, and safety management"
+                        primary="安全与合规智能体" 
+                        secondary="7 个用于事件、检查清单、告警、合规和安全管理的工具"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Forecasting Agent" 
-                        secondary="6 tools for demand forecasting, reorder recommendations, model training, and analytics"
+                        primary="预测智能体" 
+                        secondary="6 个用于需求预测、补货建议、模型训练和分析的工具"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Document Processing Agent" 
-                        secondary="5 tools for document upload, OCR, structured extraction, validation, and routing"
+                        primary="文档处理智能体" 
+                        secondary="5 个用于文档上传、OCR、结构化提取、验证和路由的工具"
                       />
                     </ListItem>
                   </List>
@@ -1508,40 +1507,40 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    🔧 MCP Framework Innovation
+                    🔧 MCP 框架创新
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 2 }}>
-                    Our MCP implementation provides dynamic tool discovery and execution with recent optimizations:
+                    我们的 MCP 实现提供动态工具发现与执行，并包含近期优化：
                   </Typography>
                   <List dense>
                     <ListItem>
                       <ListItemText 
-                        primary="Dynamic Tool Discovery" 
-                        secondary="Automatic registration and discovery of available tools"
+                        primary="动态工具发现" 
+                        secondary="自动注册并发现可用工具"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Real Tool Execution" 
-                        secondary="All MCP tools now execute with actual database data"
+                        primary="真实工具执行" 
+                        secondary="所有 MCP 工具现在都使用真实数据库数据执行"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Parameter Validation" 
-                        secondary="Comprehensive validation with business rules and helpful warnings"
+                        primary="参数验证" 
+                        secondary="包含业务规则和实用警告的全面验证"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Response Formatting" 
-                        secondary="Clean, professional responses without technical jargon"
+                        primary="响应格式化" 
+                        secondary="生成简洁、专业且避免技术术语的响应"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Error Handling" 
-                        secondary="Graceful error handling with actionable suggestions"
+                        primary="错误处理" 
+                        secondary="通过可操作的建议优雅处理错误"
                       />
                     </ListItem>
                   </List>
@@ -1552,85 +1551,85 @@ const Documentation: React.FC = () => {
 
             <Box sx={{ mt: 3 }}>
             <Typography variant="h6" gutterBottom>
-              🚀 Recent System Optimizations (December 2024)
+              🚀 近期系统优化（2024 年 12 月）
             </Typography>
             <Alert severity="success" sx={{ mb: 3 }}>
-              <AlertTitle>✅ Phase 1 & 2 Optimizations Complete</AlertTitle>
+              <AlertTitle>✅ 阶段 1 和 2 的优化已完成</AlertTitle>
               <Typography variant="body2">
-                Comprehensive performance and quality improvements implemented across the chat system, 
-                including data leakage fixes, caching, semantic routing, and performance monitoring.
+                聊天系统已全面实施性能与质量改进，
+                包括数据泄漏修复、缓存、语义路由和性能监控。
               </Typography>
             </Alert>
             <Grid container spacing={2} sx={{ mb: 3 }}>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Data Leakage Fix</Typography>
-                    <Typography variant="body2">Eliminated structured data leakage at source, reducing response cleaning by 95%</Typography>
+                    <Typography variant="subtitle1" gutterBottom>数据泄漏修复</Typography>
+                    <Typography variant="body2">从源头消除结构化数据泄漏，使响应清理工作减少 95%</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Query Result Caching</Typography>
-                    <Typography variant="body2">In-memory cache with TTL for 50-90% latency reduction on repeated queries</Typography>
+                    <Typography variant="subtitle1" gutterBottom>查询结果缓存</Typography>
+                    <Typography variant="body2">使用带 TTL 的内存缓存，使重复查询的延迟降低 50%-90%</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Message Pagination</Typography>
-                    <Typography variant="body2">Frontend pagination for improved performance with long conversations</Typography>
+                    <Typography variant="subtitle1" gutterBottom>消息分页</Typography>
+                    <Typography variant="body2">使用前端分页提升长对话的性能</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined" sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Parallel Tool Execution</Typography>
-                    <Typography variant="body2">50-80% reduction in tool execution time via concurrent processing</Typography>
+                    <Typography variant="subtitle1" gutterBottom>并行工具执行</Typography>
+                    <Typography variant="body2">通过并发处理将工具执行时间缩短 50%-80%</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined" sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Semantic Routing</Typography>
-                    <Typography variant="body2">Embedding-based intent classification for improved routing accuracy</Typography>
+                    <Typography variant="subtitle1" gutterBottom>语义路由</Typography>
+                    <Typography variant="body2">基于嵌入的意图分类，提高路由准确率</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined" sx={{ bgcolor: 'info.light', color: 'info.contrastText' }}>
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Request Deduplication</Typography>
-                    <Typography variant="body2">Prevents duplicate concurrent requests, reducing system load</Typography>
+                    <Typography variant="subtitle1" gutterBottom>请求去重</Typography>
+                    <Typography variant="body2">防止重复并发请求，降低系统负载</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined" sx={{ bgcolor: 'warning.light', color: 'warning.contrastText' }}>
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Performance Monitoring</Typography>
-                    <Typography variant="body2">Real-time metrics for latency, cache hits, errors, and routing distribution</Typography>
+                    <Typography variant="subtitle1" gutterBottom>性能监控</Typography>
+                    <Typography variant="body2">提供延迟、缓存命中、错误和路由分布的实时指标</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined" sx={{ bgcolor: 'warning.light', color: 'warning.contrastText' }}>
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Response Cleaning Optimization</Typography>
-                    <Typography variant="body2">95% reduction in cleaning complexity with source-level fixes</Typography>
+                    <Typography variant="subtitle1" gutterBottom>响应清理优化</Typography>
+                    <Typography variant="body2">通过源代码层修复，将清理复杂度降低 95%</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined" sx={{ bgcolor: 'success.light', color: 'success.contrastText' }}>
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Parameter Validation</Typography>
-                    <Typography variant="body2">Comprehensive validation with business rules and helpful warnings</Typography>
+                    <Typography variant="subtitle1" gutterBottom>参数验证</Typography>
+                    <Typography variant="body2">包含业务规则和实用警告的全面验证</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -1639,38 +1638,38 @@ const Documentation: React.FC = () => {
 
           <Box sx={{ mt: 3 }}>
             <Typography variant="h6" gutterBottom>
-              🧠 Advanced Reasoning Engine
+              🧠 高级推理引擎
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} md={3}>
                 <Card variant="outlined">
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Chain-of-Thought</Typography>
-                    <Typography variant="body2">Step-by-step reasoning with intermediate conclusions</Typography>
+                    <Typography variant="subtitle1" gutterBottom>思维链</Typography>
+                    <Typography variant="body2">包含中间结论的分步推理</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={3}>
                 <Card variant="outlined">
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Multi-Hop Reasoning</Typography>
-                    <Typography variant="body2">Complex reasoning across multiple knowledge domains</Typography>
+                    <Typography variant="subtitle1" gutterBottom>多跳推理</Typography>
+                    <Typography variant="body2">跨多个知识领域的复杂推理</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={3}>
                 <Card variant="outlined">
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Scenario Analysis</Typography>
-                    <Typography variant="body2">What-if analysis and scenario planning</Typography>
+                    <Typography variant="subtitle1" gutterBottom>情景分析</Typography>
+                    <Typography variant="body2">假设分析与情景规划</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={3}>
                 <Card variant="outlined">
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Pattern Recognition</Typography>
-                    <Typography variant="body2">Learning from historical patterns and trends</Typography>
+                    <Typography variant="subtitle1" gutterBottom>模式识别</Typography>
+                    <Typography variant="body2">从历史模式和趋势中学习</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -1679,30 +1678,30 @@ const Documentation: React.FC = () => {
 
           <Box sx={{ mt: 3 }}>
             <Typography variant="h6" gutterBottom>
-              🗄️ Data Architecture
+              🗄️ 数据架构
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined">
                   <CardContent>
                     <Typography variant="subtitle1" gutterBottom>PostgreSQL/TimescaleDB</Typography>
-                    <Typography variant="body2">Structured data with time-series capabilities for IoT telemetry</Typography>
+                    <Typography variant="body2">具有时序能力的结构化数据，用于 IoT 遥测</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined">
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Milvus Vector DB</Typography>
-                    <Typography variant="body2">GPU-accelerated semantic search with NVIDIA cuVS</Typography>
+                    <Typography variant="subtitle1" gutterBottom>Milvus 向量 DB</Typography>
+                    <Typography variant="body2">使用 GPU 加速的语义搜索</Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12} md={4}>
                 <Card variant="outlined">
                   <CardContent>
-                    <Typography variant="subtitle1" gutterBottom>Redis Cache</Typography>
-                    <Typography variant="body2">Session management and intelligent caching with LRU/LFU policies</Typography>
+                    <Typography variant="subtitle1" gutterBottom>Redis 缓存</Typography>
+                    <Typography variant="body2">采用 LRU/LFU 策略的会话管理与智能缓存</Typography>
                   </CardContent>
                 </Card>
               </Grid>
@@ -1716,7 +1715,7 @@ const Documentation: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ArticleIcon color="primary" />
-            Resources & Documentation
+            资源与文档
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -1725,7 +1724,7 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    📚 Documentation
+                    📚 文档
                   </Typography>
                   <List>
                     <ListItem>
@@ -1736,10 +1735,10 @@ const Documentation: React.FC = () => {
                         onClick={() => navigate('/documentation/mcp-integration')}
                         sx={{ mb: 1 }}
                       >
-                        MCP Integration Guide
+                        MCP 集成指南
                       </Button>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Complete MCP framework documentation with implementation phases, API reference, and best practices
+                        完整的 MCP 框架文档，包含实施阶段、API 参考和最佳实践
                       </Typography>
                     </ListItem>
                     <ListItem>
@@ -1750,10 +1749,10 @@ const Documentation: React.FC = () => {
                         onClick={() => navigate('/documentation/api-reference')}
                         sx={{ mb: 1 }}
                       >
-                        API Reference
+                        API 参考
                       </Button>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Comprehensive API documentation with endpoints, request examples, and error handling
+                        完整的 API 文档，包含端点、请求示例和错误处理
                       </Typography>
                     </ListItem>
                     <ListItem>
@@ -1764,10 +1763,10 @@ const Documentation: React.FC = () => {
                         onClick={() => navigate('/documentation/deployment')}
                         sx={{ mb: 1 }}
                       >
-                        Deployment Guide
+                        部署指南
                       </Button>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        Production deployment instructions for Docker, Kubernetes, and Helm
+                        Docker、Kubernetes 和 Helm 的生产部署说明
                       </Typography>
                     </ListItem>
                     <ListItem>
@@ -1778,10 +1777,10 @@ const Documentation: React.FC = () => {
                         onClick={() => navigate('/documentation/architecture')}
                         sx={{ mb: 1 }}
                       >
-                        Architecture Diagrams
+                        架构图
                       </Button>
                       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                        System architecture and flow diagrams with component descriptions
+                        带组件说明的系统架构图和流程图
                       </Typography>
                     </ListItem>
                   </List>
@@ -1792,31 +1791,31 @@ const Documentation: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    🔗 External Resources
+                    🔗 外部资源
                   </Typography>
                   <List>
                     <ListItem>
                       <ListItemText 
-                        primary="NVIDIA NIMs Documentation" 
-                        secondary="Official NVIDIA NIMs API documentation"
+                        primary="模型服务文档" 
+                        secondary="模型服务 API 文档"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="MCP Specification" 
-                        secondary="Model Context Protocol specification"
+                        primary="MCP 规范" 
+                        secondary="模型上下文协议规范"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="LangGraph Documentation" 
-                        secondary="Multi-agent orchestration framework"
+                        primary="LangGraph 文档" 
+                        secondary="多智能体编排框架"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="FastAPI Documentation" 
-                        secondary="Modern Python web framework"
+                        primary="FastAPI 文档" 
+                        secondary="现代 Python Web 框架"
                       />
                     </ListItem>
                   </List>
@@ -1830,20 +1829,11 @@ const Documentation: React.FC = () => {
       {/* Footer */}
       <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
         <Typography variant="body2" color="text.secondary" align="center">
-          Multi-Agent-Intelligent-Warehouse - Built with NVIDIA NIMs, MCP Framework, NeMo Guardrails, and Modern Web Technologies
+          仓智智能仓储运营平台——使用模型服务、MCP 框架、Guardrails 和现代 Web 技术构建
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
-            <Button 
-            variant="outlined" 
-            startIcon={<GitHubIcon />}
-            href="https://github.com/NVIDIA-AI-Blueprints/Multi-Agent-Intelligent-Warehouse"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            View Source
-          </Button>
           <Button variant="outlined" startIcon={<DashboardIcon />}>
-            Live Demo
+            在线演示
           </Button>
         </Box>
       </Box>

@@ -81,6 +81,13 @@ import { format as formatDate, subDays, parseISO } from 'date-fns';
 import Papa from 'papaparse';
 import { mcpAPI } from '../services/api';
 import { useSearchParams } from 'react-router-dom';
+import {
+  translateMcpCapability,
+  translateMcpAgentNote,
+  translateMcpCategory,
+  translateMcpDescription,
+  translateMcpParameterDescription,
+} from '../localization/zhCN';
 
 interface MCPTool {
   tool_id: string;
@@ -296,7 +303,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         if (tabValue === 1) {
-          const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+          const searchInput = document.querySelector('input[placeholder*="Ctrl/Cmd"]') as HTMLInputElement;
           searchInput?.focus();
         }
       }
@@ -353,11 +360,11 @@ const EnhancedMCPTestingPanel: React.FC = () => {
       
       if (!silent) {
         if (toolsData.tools && toolsData.tools.length > 0) {
-          setSuccess(`Successfully loaded ${toolsData.tools.length} MCP tools`);
+          setSuccess(`已成功加载 ${toolsData.tools.length} 个 MCP 工具`);
         } else {
           setError({
             type: 'execution',
-            message: 'No MCP tools discovered. Try refreshing discovery.',
+            message: '未发现 MCP 工具，请尝试刷新发现结果。',
             timestamp: new Date(),
             retryable: true,
           });
@@ -366,7 +373,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
     } catch (err: any) {
       const errorDetails: ErrorDetails = {
         type: 'network',
-        message: `Failed to load MCP data: ${err.message}`,
+        message: 'MCP 数据加载失败，请检查服务连接后重试。',
         timestamp: new Date(),
         retryable: true,
         details: err.response?.data,
@@ -417,7 +424,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
     setTestScenarios(updated);
     localStorage.setItem('mcp_test_scenarios', JSON.stringify(updated));
     setShowScenarioDialog(false);
-    setSuccess('Test scenario saved successfully');
+    setSuccess('测试场景已成功保存');
   };
 
   const loadTestScenario = (scenario: TestScenario) => {
@@ -435,7 +442,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
     url.searchParams.set('message', scenario.message);
     url.searchParams.set('tab', '2');
     navigator.clipboard.writeText(url.toString());
-    setSuccess('Scenario URL copied to clipboard!');
+    setSuccess('场景 URL 已复制到剪贴板！');
   };
 
   const updatePerformanceMetrics = (history: ExecutionHistory[]) => {
@@ -470,14 +477,14 @@ const EnhancedMCPTestingPanel: React.FC = () => {
       setSuccess(null);
       
       const result = await mcpAPI.refreshDiscovery();
-      setSuccess(`Discovery refreshed: ${result.total_tools} tools found`);
+      setSuccess(`发现结果已刷新：找到 ${result.total_tools} 个工具`);
       
       await loadMcpData();
       
     } catch (err: any) {
       setError({
         type: 'network',
-        message: `Failed to refresh discovery: ${err.message}`,
+        message: '刷新发现结果失败，请稍后重试。',
         timestamp: new Date(),
         retryable: true,
         details: err.response?.data,
@@ -509,11 +516,11 @@ const EnhancedMCPTestingPanel: React.FC = () => {
       setSearchResults(results.tools || []);
       
       if (results.tools && results.tools.length > 0) {
-        setSuccess(`Found ${results.tools.length} tools matching "${searchQuery}"`);
+        setSuccess(`找到 ${results.tools.length} 个与“${searchQuery}”匹配的工具`);
       } else {
         setError({
           type: 'execution',
-          message: `No tools found matching "${searchQuery}". Try a different search term.`,
+          message: `未找到与“${searchQuery}”匹配的工具，请尝试其他搜索词。`,
           timestamp: new Date(),
           retryable: false,
         });
@@ -522,7 +529,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
     } catch (err: any) {
       setError({
         type: 'network',
-        message: `Search failed: ${err.message}`,
+        message: '搜索失败，请检查服务连接后重试。',
         timestamp: new Date(),
         retryable: true,
         details: err.response?.data,
@@ -550,7 +557,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
         id: Date.now().toString(),
         timestamp: new Date(),
         tool_id: 'workflow_test',
-        tool_name: 'MCP Workflow Test',
+        tool_name: 'MCP 工作流测试',
         success: result.status === 'success',
         execution_time: executionTime,
         result: result,
@@ -564,11 +571,11 @@ const EnhancedMCPTestingPanel: React.FC = () => {
       updatePerformanceMetrics(newHistory);
       
       if (result.status === 'success') {
-        setSuccess(`Workflow test completed successfully in ${executionTime}ms`);
+        setSuccess(`工作流测试成功完成，耗时 ${executionTime}ms`);
       } else {
         setError({
           type: 'execution',
-          message: `Workflow test failed: ${result.error || 'Unknown error'}`,
+          message: '工作流测试失败，请检查测试消息或服务状态。',
           timestamp: new Date(),
           retryable: false,
           details: result,
@@ -578,7 +585,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
     } catch (err: any) {
       const errorDetails: ErrorDetails = {
         type: err.code === 'ECONNABORTED' ? 'timeout' : 'network',
-        message: `Workflow test failed: ${err.message}`,
+        message: '工作流测试失败，请检查服务连接后重试。',
         timestamp: new Date(),
         retryable: true,
         details: err.response?.data,
@@ -598,7 +605,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
       if (schema.required && Array.isArray(schema.required)) {
         for (const field of schema.required) {
           if (params[field] === undefined || params[field] === null || params[field] === '') {
-            return `Required parameter "${field}" is missing`;
+            return `缺少必填参数“${field}”`;
           }
         }
       }
@@ -609,13 +616,13 @@ const EnhancedMCPTestingPanel: React.FC = () => {
           const prop = (schema.properties as any)[key];
           if (prop) {
             if (prop.type === 'number' && isNaN(Number(value))) {
-              return `Parameter "${key}" must be a number`;
+              return `参数“${key}”必须是数字`;
             }
             if (prop.type === 'boolean' && typeof value !== 'boolean') {
-              return `Parameter "${key}" must be a boolean`;
+              return `参数“${key}”必须是布尔值`;
             }
             if (prop.type === 'array' && !Array.isArray(value)) {
-              return `Parameter "${key}" must be an array`;
+              return `参数“${key}”必须是数组`;
             }
           }
         }
@@ -623,7 +630,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
       
       return null;
     } catch (err) {
-      return 'Invalid parameter format';
+      return '参数格式无效';
     }
   };
 
@@ -669,7 +676,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
       localStorage.setItem('mcp_execution_history', JSON.stringify(newHistory));
       updatePerformanceMetrics(newHistory);
       
-      setSuccess(`Tool ${toolName} executed successfully in ${executionTime}ms`);
+      setSuccess(`工具 ${toolName} 执行成功，耗时 ${executionTime}ms`);
       
     } catch (err: any) {
       const historyEntry: ExecutionHistory = {
@@ -680,7 +687,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
         success: false,
         execution_time: 0,
         result: null,
-        error: err.message,
+        error: '工具执行失败，请检查参数或服务状态。',
         errorType: err.code === 'ECONNABORTED' ? 'timeout' : 'network',
         parameters: parameters || toolParameters[toolId],
       };
@@ -692,7 +699,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
       
       setError({
         type: err.code === 'ECONNABORTED' ? 'timeout' : 'network',
-        message: `Tool execution failed: ${err.message}`,
+        message: '工具执行失败，请检查参数或服务状态。',
         timestamp: new Date(),
         retryable: true,
         details: err.response?.data,
@@ -719,12 +726,12 @@ const EnhancedMCPTestingPanel: React.FC = () => {
     if (failed > 0) {
       setError({
         type: 'execution',
-        message: `${failed} of ${selectedTools.length} tools failed to execute`,
+        message: `${selectedTools.length} 个工具中有 ${failed} 个执行失败`,
         timestamp: new Date(),
         retryable: false,
       });
     } else {
-      setSuccess(`All ${selectedTools.length} tools executed successfully`);
+      setSuccess(`全部 ${selectedTools.length} 个工具均执行成功`);
     }
     
     setSelectedTools([]);
@@ -868,15 +875,15 @@ const EnhancedMCPTestingPanel: React.FC = () => {
       URL.revokeObjectURL(url);
     }
     
-    setSuccess(`History exported as ${format.toUpperCase()}`);
+    setSuccess(`历史记录已导出为 ${format.toUpperCase()}`);
   };
 
   const clearHistory = () => {
-    if (window.confirm('Are you sure you want to clear all execution history?')) {
+    if (window.confirm('确定要清空全部执行历史记录吗？')) {
       setExecutionHistory([]);
       localStorage.removeItem('mcp_execution_history');
       updatePerformanceMetrics([]);
-      setSuccess('Execution history cleared');
+      setSuccess('执行历史记录已清空');
     }
   };
 
@@ -884,7 +891,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
     if (!tool.parameters || typeof tool.parameters !== 'object') {
       return (
         <Alert severity="info">
-          This tool does not require parameters.
+          此工具无需参数。
         </Alert>
       );
     }
@@ -941,7 +948,9 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                 }
               }}
               type={prop.type === 'number' ? 'number' : prop.type === 'boolean' ? 'text' : 'text'}
-              helperText={prop.description || (isRequired ? 'Required' : 'Optional')}
+              helperText={prop.description
+                ? translateMcpParameterDescription(prop.description, key)
+                : (isRequired ? '必填' : '可选')}
               error={!!error && isRequired && !value}
               sx={{ mb: 2 }}
             />
@@ -954,23 +963,23 @@ const EnhancedMCPTestingPanel: React.FC = () => {
   const renderToolDetails = (tool: MCPTool) => (
     <Collapse in={showToolDetails === tool.tool_id} timeout="auto" unmountOnExit>
       <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-        <Typography variant="subtitle2" gutterBottom>Tool Details:</Typography>
+        <Typography variant="subtitle2" gutterBottom>工具详情：</Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
           <strong>ID:</strong> {tool.tool_id}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
-          <strong>Source:</strong> {tool.source}
+          <strong>来源：</strong> {tool.source}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
-          <strong>Category:</strong> {tool.category}
+          <strong>类别：</strong> {translateMcpCategory(tool.category)}
         </Typography>
         <Typography variant="body2" sx={{ mb: 1 }}>
-          <strong>Capabilities:</strong> {tool.capabilities?.join(', ') || 'None'}
+          <strong>能力：</strong> {tool.capabilities?.map(translateMcpCapability).join('、') || '无'}
         </Typography>
         {tool.parameters && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              <strong>Parameters:</strong>
+              <strong>参数：</strong>
             </Typography>
             <Paper sx={{ p: 1, bgcolor: 'white', maxHeight: 200, overflow: 'auto' }}>
               <JsonView
@@ -983,7 +992,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
         {tool.metadata && (
           <Box>
             <Typography variant="body2" sx={{ mb: 1 }}>
-              <strong>Metadata:</strong>
+              <strong>元数据：</strong>
             </Typography>
             <Paper sx={{ p: 1, bgcolor: 'white', maxHeight: 200, overflow: 'auto' }}>
               <JsonView
@@ -997,19 +1006,55 @@ const EnhancedMCPTestingPanel: React.FC = () => {
     </Collapse>
   );
 
+  const getStatusLabel = (status: unknown) => {
+    const normalizedStatus = String(status);
+    const labels: Record<string, string> = {
+      operational: '运行正常',
+      connected: '已连接',
+      disconnected: '未连接',
+      checking: '检查中',
+      running: '运行中',
+      stopped: '已停止',
+      success: '成功',
+      failed: '失败',
+      error: '错误',
+    };
+    return labels[normalizedStatus] || normalizedStatus;
+  };
+
+  const getServiceLabel = (service: string) => {
+    const labels: Record<string, string> = {
+      tool_discovery: '工具发现',
+      tool_binding: '工具绑定',
+      tool_routing: '工具路由',
+      tool_validation: '工具验证',
+    };
+    return labels[service] || service.replace('_', ' ').toUpperCase();
+  };
+
+  const getErrorTypeLabel = (type: ErrorDetails['type']) => {
+    const labels: Record<ErrorDetails['type'], string> = {
+      network: '网络错误',
+      validation: '验证错误',
+      execution: '执行错误',
+      timeout: '超时错误',
+    };
+    return labels[type];
+  };
+
   return (
     <Box sx={{ p: 2, bgcolor: 'background.default', minHeight: '100vh' }}>
       {/* Header with connection status and controls */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5" gutterBottom>
-          Enhanced MCP Testing Dashboard
+          增强型 MCP 测试仪表板
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           {/* Connection Status */}
-          <Tooltip title={connectionStatus === 'connected' ? 'Connected' : 'Disconnected'}>
+          <Tooltip title={getStatusLabel(connectionStatus)}>
             <Chip
               icon={connectionStatus === 'connected' ? <WifiIcon /> : <WifiOffIcon />}
-              label={connectionStatus === 'connected' ? 'Connected' : 'Disconnected'}
+              label={getStatusLabel(connectionStatus)}
               color={connectionStatus === 'connected' ? 'success' : 'error'}
               size="small"
             />
@@ -1024,7 +1069,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                 size="small"
               />
             }
-            label="Auto-refresh"
+            label="自动刷新"
           />
         </Box>
       </Box>
@@ -1036,11 +1081,11 @@ const EnhancedMCPTestingPanel: React.FC = () => {
           sx={{ mb: 2 }}
           action={
             <Button color="inherit" size="small" onClick={() => loadMcpData()}>
-              Refresh Now
+              立即刷新
             </Button>
           }
         >
-          Data may be stale. Last updated: {formatDate(lastUpdateTime, 'HH:mm:ss')}
+          数据可能已过期。上次更新时间：{formatDate(lastUpdateTime, 'HH:mm:ss')}
         </Alert>
       )}
 
@@ -1053,22 +1098,22 @@ const EnhancedMCPTestingPanel: React.FC = () => {
           action={
             error.retryable && (
               <Button color="inherit" size="small" onClick={handleRetry} startIcon={<RetryIcon />}>
-                Retry
+                重试
               </Button>
             )
           }
         >
           <Typography variant="body2" fontWeight="bold">
-            {error.type.toUpperCase()}: {error.message}
+            {getErrorTypeLabel(error.type)}：{error.message}
           </Typography>
           <Collapse in={true}>
             <Box sx={{ mt: 1 }}>
               <Typography variant="caption">
-                Timestamp: {formatDate(error.timestamp, 'yyyy-MM-dd HH:mm:ss')}
+                时间戳：{formatDate(error.timestamp, 'yyyy-MM-dd HH:mm:ss')}
               </Typography>
               {error.details && (
                 <Box sx={{ mt: 1 }}>
-                  <Typography variant="caption" fontWeight="bold">Details:</Typography>
+                  <Typography variant="caption" fontWeight="bold">详情：</Typography>
                   <Paper sx={{ p: 1, mt: 0.5, bgcolor: 'rgba(0,0,0,0.05)', maxHeight: 200, overflow: 'auto' }}>
                     <JsonView
                       value={error.details}
@@ -1097,7 +1142,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                 <PlayIcon color="primary" sx={{ mr: 1 }} />
                 <Box>
                   <Typography variant="h6">{performanceMetrics.totalExecutions}</Typography>
-                  <Typography variant="body2" color="text.secondary">Total Executions</Typography>
+                  <Typography variant="body2" color="text.secondary">执行总数</Typography>
                 </Box>
               </Box>
             </CardContent>
@@ -1110,7 +1155,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                 <CheckCircleIcon color="success" sx={{ mr: 1 }} />
                 <Box>
                   <Typography variant="h6">{performanceMetrics.successRate.toFixed(1)}%</Typography>
-                  <Typography variant="body2" color="text.secondary">Success Rate</Typography>
+                  <Typography variant="body2" color="text.secondary">成功率</Typography>
                 </Box>
               </Box>
             </CardContent>
@@ -1123,7 +1168,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                 <SpeedIcon color="info" sx={{ mr: 1 }} />
                 <Box>
                   <Typography variant="h6">{performanceMetrics.averageExecutionTime.toFixed(0)}ms</Typography>
-                  <Typography variant="body2" color="text.secondary">Avg Execution Time</Typography>
+                  <Typography variant="body2" color="text.secondary">平均执行时间</Typography>
                 </Box>
               </Box>
             </CardContent>
@@ -1136,7 +1181,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                 <AssessmentIcon color="warning" sx={{ mr: 1 }} />
                 <Box>
                   <Typography variant="h6">{mcpStatus?.tool_discovery.discovered_tools || 0}</Typography>
-                  <Typography variant="body2" color="text.secondary">Available Tools</Typography>
+                  <Typography variant="body2" color="text.secondary">可用工具</Typography>
                 </Box>
               </Box>
             </CardContent>
@@ -1146,11 +1191,11 @@ const EnhancedMCPTestingPanel: React.FC = () => {
 
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
         <Tabs value={tabValue} onChange={(e, newValue) => setTabValue(newValue)}>
-          <Tab label="Status & Discovery" />
-          <Tab label="Tool Search" />
-          <Tab label="Workflow Testing" />
-          <Tab label="Execution History" />
-          <Tab label="Analytics" />
+          <Tab label="状态与发现" />
+          <Tab label="工具搜索" />
+          <Tab label="工作流测试" />
+          <Tab label="执行历史" />
+          <Tab label="分析" />
         </Tabs>
       </Box>
 
@@ -1162,30 +1207,30 @@ const EnhancedMCPTestingPanel: React.FC = () => {
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Agent Status
+                    智能体状态
                   </Typography>
                   <Grid container spacing={2}>
                     {Object.entries(agentsStatus.agents || {}).map(([agentName, agentInfo]: [string, any]) => (
                       <Grid item xs={12} sm={6} md={4} key={agentName}>
                         <Paper sx={{ p: 2, bgcolor: agentInfo.status === 'operational' ? 'success.light' : 'error.light' }}>
                           <Typography variant="subtitle1" fontWeight="bold" sx={{ textTransform: 'capitalize' }}>
-                            {agentName}
+                            {translateMcpCategory(agentName)}
                           </Typography>
                           <Chip 
-                            label={agentInfo.status} 
+                            label={getStatusLabel(agentInfo.status)} 
                             color={agentInfo.status === 'operational' ? 'success' : 'error'}
                             size="small"
                             sx={{ mt: 1, mb: 1 }}
                           />
                           <Typography variant="body2">
-                            MCP Enabled: {agentInfo.mcp_enabled ? 'Yes' : 'No'}
+                            MCP 已启用：{agentInfo.mcp_enabled ? '是' : '否'}
                           </Typography>
                           <Typography variant="body2">
-                            Tools Available: {agentInfo.tool_count || 0}
+                            可用工具：{agentInfo.tool_count || 0}
                           </Typography>
                           {agentInfo.note && (
                             <Typography variant="caption" color="text.secondary">
-                              {agentInfo.note}
+                              {translateMcpAgentNote(agentInfo.note)}
                             </Typography>
                           )}
                         </Paper>
@@ -1201,7 +1246,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  MCP Framework Status
+                  MCP 框架状态
                 </Typography>
                 
                 {mcpStatus ? (
@@ -1209,38 +1254,38 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       <CheckCircleIcon color="success" sx={{ mr: 1 }} />
                       <Typography variant="body1">
-                        Status: <strong>{mcpStatus.status}</strong>
+                        状态：<strong>{getStatusLabel(mcpStatus.status)}</strong>
                       </Typography>
                     </Box>
                     
                     <Typography variant="body2" gutterBottom>
-                      <strong>Tool Discovery:</strong>
+                      <strong>工具发现：</strong>
                     </Typography>
                     <Typography variant="body2" sx={{ ml: 2 }}>
-                      • Discovered Tools: {mcpStatus.tool_discovery.discovered_tools}
+                      • 已发现工具：{mcpStatus.tool_discovery.discovered_tools}
                     </Typography>
                     <Typography variant="body2" sx={{ ml: 2 }}>
-                      • Discovery Sources: {mcpStatus.tool_discovery.discovery_sources}
+                      • 发现来源：{mcpStatus.tool_discovery.discovery_sources}
                     </Typography>
                     <Typography variant="body2" sx={{ ml: 2 }}>
-                      • Running: {mcpStatus.tool_discovery.is_running ? 'Yes' : 'No'}
+                      • 运行中：{mcpStatus.tool_discovery.is_running ? '是' : '否'}
                     </Typography>
                     
                     <Divider sx={{ my: 2 }} />
                     
                     <Typography variant="body2" gutterBottom>
-                      <strong>Services:</strong>
+                      <strong>服务：</strong>
                     </Typography>
                     {Object.entries(mcpStatus.services).map(([service, status]) => (
                       <Box key={service} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                         <Chip 
-                          label={status} 
+                          label={getStatusLabel(status)} 
                           color={status === 'operational' ? 'success' : 'error'}
                           size="small"
                           sx={{ mr: 1 }}
                         />
                         <Typography variant="body2">
-                          {service.replace('_', ' ').toUpperCase()}
+                          {getServiceLabel(service)}
                         </Typography>
                       </Box>
                     ))}
@@ -1252,7 +1297,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                       disabled={refreshLoading || loading}
                       sx={{ mt: 2 }}
                     >
-                      {refreshLoading ? 'Refreshing...' : 'Refresh Discovery'}
+                      {refreshLoading ? '正在刷新...' : '刷新发现结果'}
                     </Button>
                   </Box>
                 ) : (
@@ -1267,22 +1312,22 @@ const EnhancedMCPTestingPanel: React.FC = () => {
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                   <Typography variant="h6">
-                    Discovered Tools ({filteredTools.length})
+                    已发现工具（{filteredTools.length}）
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <IconButton size="small" onClick={() => setShowFilters(!showFilters)}>
                       <FilterIcon />
                     </IconButton>
                     <FormControl size="small" sx={{ minWidth: 120 }}>
-                      <InputLabel>Sort By</InputLabel>
+                      <InputLabel>排序方式</InputLabel>
                       <Select
                         value={toolSortBy}
-                        label="Sort By"
+                        label="排序方式"
                         onChange={(e) => setToolSortBy(e.target.value as any)}
                       >
-                        <MenuItem value="name">Name</MenuItem>
-                        <MenuItem value="category">Category</MenuItem>
-                        <MenuItem value="source">Source</MenuItem>
+                        <MenuItem value="name">名称</MenuItem>
+                        <MenuItem value="category">类别</MenuItem>
+                        <MenuItem value="source">来源</MenuItem>
                       </Select>
                     </FormControl>
                   </Box>
@@ -1294,28 +1339,28 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                     <Grid container spacing={2}>
                       <Grid item xs={12} md={4}>
                         <FormControl fullWidth size="small">
-                          <InputLabel>Category</InputLabel>
+                          <InputLabel>类别</InputLabel>
                           <Select
                             value={toolFilters.category}
-                            label="Category"
+                            label="类别"
                             onChange={(e) => setToolFilters({ ...toolFilters, category: e.target.value })}
                           >
-                            <MenuItem value="">All</MenuItem>
+                            <MenuItem value="">全部</MenuItem>
                             {Array.from(new Set(tools.map(t => t.category))).map(cat => (
-                              <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                              <MenuItem key={cat} value={cat}>{translateMcpCategory(cat)}</MenuItem>
                             ))}
                           </Select>
                         </FormControl>
                       </Grid>
                       <Grid item xs={12} md={4}>
                         <FormControl fullWidth size="small">
-                          <InputLabel>Source</InputLabel>
+                          <InputLabel>来源</InputLabel>
                           <Select
                             value={toolFilters.source}
-                            label="Source"
+                            label="来源"
                             onChange={(e) => setToolFilters({ ...toolFilters, source: e.target.value })}
                           >
-                            <MenuItem value="">All</MenuItem>
+                            <MenuItem value="">全部</MenuItem>
                             {Array.from(new Set(tools.map(t => t.source))).map(src => (
                               <MenuItem key={src} value={src}>{src}</MenuItem>
                             ))}
@@ -1326,7 +1371,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                         <TextField
                           fullWidth
                           size="small"
-                          label="Search"
+                          label="搜索"
                           value={toolFilters.search}
                           onChange={(e) => setToolFilters({ ...toolFilters, search: e.target.value })}
                         />
@@ -1338,7 +1383,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                       onClick={() => setToolFilters({ category: '', source: '', search: '' })}
                       sx={{ mt: 1 }}
                     >
-                      Clear Filters
+                      清除筛选条件
                     </Button>
                   </Box>
                 </Collapse>
@@ -1346,12 +1391,12 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                 {/* Bulk selection */}
                 {selectedTools.length > 0 && (
                   <Alert severity="info" sx={{ mb: 2 }}>
-                    {selectedTools.length} tool(s) selected
+                    已选择 {selectedTools.length} 个工具
                     <Button size="small" onClick={handleBulkExecute} disabled={bulkExecuting} sx={{ ml: 2 }}>
-                      Execute Selected
+                      执行所选工具
                     </Button>
                     <Button size="small" onClick={() => setSelectedTools([])} sx={{ ml: 1 }}>
-                      Clear Selection
+                      清除选择
                     </Button>
                   </Alert>
                 )}
@@ -1374,20 +1419,21 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                           />
                           <ListItemText
                             primary={tool.name}
+                            secondaryTypographyProps={{ component: 'div' }}
                             secondary={
                               <Box>
                                 <Typography variant="body2" color="text.secondary">
-                                  {tool.description}
+                                  {translateMcpDescription(tool.description, tool.name)}
                                 </Typography>
                                 <Box sx={{ mt: 1 }}>
-                                  <Chip label={tool.category} size="small" sx={{ mr: 1 }} />
+                                  <Chip label={translateMcpCategory(tool.category)} size="small" sx={{ mr: 1 }} />
                                   <Chip label={tool.source} size="small" />
                                 </Box>
                               </Box>
                             }
                           />
                           <ListItemSecondaryAction>
-                            <Tooltip title="View Details">
+                            <Tooltip title="查看详情">
                               <IconButton
                                 edge="end"
                                 onClick={() => setShowToolDetails(
@@ -1397,7 +1443,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                                 <VisibilityIcon />
                               </IconButton>
                             </Tooltip>
-                            <Tooltip title="Execute Tool">
+                            <Tooltip title="执行工具">
                               <IconButton
                                 edge="end"
                                 onClick={() => {
@@ -1422,7 +1468,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                   </List>
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    {tools.length === 0 ? 'No tools discovered yet. Try refreshing discovery.' : 'No tools match the current filters.'}
+                    {tools.length === 0 ? '尚未发现工具，请尝试刷新发现结果。' : '没有工具符合当前筛选条件。'}
                   </Typography>
                 )}
               </CardContent>
@@ -1436,14 +1482,14 @@ const EnhancedMCPTestingPanel: React.FC = () => {
         <Card>
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Tool Search
+              工具搜索
             </Typography>
             
             <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
               <TextField
                 fullWidth
-                label="Search tools..."
-                placeholder="Press Ctrl/Cmd + K to focus"
+                label="搜索工具..."
+                placeholder="按 Ctrl/Cmd + K 聚焦搜索框"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearchTools()}
@@ -1454,21 +1500,21 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                 onClick={handleSearchTools}
                 disabled={loading || !searchQuery.trim()}
               >
-                Search
+                搜索
               </Button>
             </Box>
             
             {searchResults.length > 0 && (
               <Box>
                 <Typography variant="body2" gutterBottom>
-                  Found {searchResults.length} tools:
+                  找到 {searchResults.length} 个工具：
                 </Typography>
                 <List dense>
                   {searchResults.map((tool) => (
                     <ListItem key={tool.tool_id}>
                       <ListItemText
                         primary={tool.name}
-                        secondary={`${tool.description} (${tool.category})`}
+                        secondary={`${translateMcpDescription(tool.description, tool.name)}（${translateMcpCategory(tool.category)}）`}
                       />
                       <ListItemSecondaryAction>
                         <IconButton
@@ -1496,7 +1542,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
               <CardContent>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                   <Typography variant="h6">
-                    MCP Workflow Testing
+                    MCP 工作流测试
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 1 }}>
                     <Button
@@ -1504,7 +1550,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                       startIcon={<SaveIcon />}
                       onClick={() => setShowScenarioDialog(true)}
                     >
-                      Save Scenario
+                      保存场景
                     </Button>
                     <Button
                       size="small"
@@ -1523,7 +1569,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                             } catch (err) {
                               setError({
                                 type: 'validation',
-                                message: 'Invalid scenario file',
+                                message: '场景文件无效',
                                 timestamp: new Date(),
                                 retryable: false,
                               });
@@ -1534,19 +1580,19 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                         input.click();
                       }}
                     >
-                      Load Scenario
+                      加载场景
                     </Button>
                   </Box>
                 </Box>
                 
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  Test the complete MCP workflow with sample messages (Press Ctrl/Cmd + Enter to execute):
+                  使用示例消息测试完整的 MCP 工作流（按 Ctrl/Cmd + Enter 执行）：
                 </Typography>
                 
                 {/* Test Scenarios */}
                 {testScenarios.length > 0 && (
                   <Box sx={{ mb: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>Saved Scenarios:</Typography>
+                    <Typography variant="subtitle2" gutterBottom>已保存场景：</Typography>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       {testScenarios.slice(0, 5).map((scenario) => (
                         <Chip
@@ -1569,61 +1615,61 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                   <Button
                     variant="outlined"
                     size="small"
-                    onClick={() => setTestMessage("Show me the status of forklift FL-001")}
+                    onClick={() => setTestMessage('显示叉车 FL-001 的状态。')}
                   >
-                    Equipment Status
+                    设备状态
                   </Button>
                   <Button
                     variant="outlined"
                     size="small"
-                    onClick={() => setTestMessage("Create a new picking task for order ORD-123")}
+                    onClick={() => setTestMessage('为订单 ORD-123 创建新的拣货任务。')}
                   >
-                    Create Task
+                    创建任务
                   </Button>
                   <Button
                     variant="outlined"
                     size="small"
-                    onClick={() => setTestMessage("Report a safety incident in zone A")}
+                    onClick={() => setTestMessage('报告 A 区发生的一起安全事件。')}
                   >
-                    Safety Report
+                    安全报告
                   </Button>
                   <Button
                     variant="outlined"
                     size="small"
-                    onClick={() => setTestMessage("What equipment is available?")}
+                    onClick={() => setTestMessage('当前有哪些设备可用？')}
                   >
-                    Available Equipment
+                    可用设备
                   </Button>
                   <Button
                     variant="outlined"
                     size="small"
-                    onClick={() => setTestMessage("Generate a demand forecast for SKU-12345")}
+                    onClick={() => setTestMessage('为 SKU-12345 生成需求预测。')}
                   >
-                    Forecasting
+                    需求预测
                   </Button>
                   <Button
                     variant="outlined"
                     size="small"
-                    onClick={() => setTestMessage("Show me reorder recommendations")}
+                    onClick={() => setTestMessage('显示补货建议。')}
                   >
-                    Reorder Recommendations
+                    补货建议
                   </Button>
                   <Button
                     variant="outlined"
                     size="small"
-                    onClick={() => setTestMessage("Upload and process a document")}
+                    onClick={() => setTestMessage('上传并处理一份文档。')}
                   >
-                    Document Processing
+                    文档处理
                   </Button>
                 </Box>
                 
                 <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                   <TextField
                     fullWidth
-                    label="Test message..."
+                    label="测试消息..."
                     value={testMessage}
                     onChange={(e) => setTestMessage(e.target.value)}
-                    placeholder="e.g., Show me the status of forklift FL-001"
+                    placeholder="例如：显示叉车 FL-001 的状态"
                     multiline
                     rows={3}
                   />
@@ -1634,7 +1680,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                     disabled={loading || !testMessage.trim()}
                     sx={{ alignSelf: 'flex-start' }}
                   >
-                    {loading ? 'Testing...' : 'Test Workflow'}
+                    {loading ? '正在测试...' : '测试工作流'}
                   </Button>
                 </Box>
                 
@@ -1642,7 +1688,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                   <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Typography variant="subtitle2">
-                        Workflow Test Result:
+                        工作流测试结果：
                       </Typography>
                       <CopyToClipboard text={JSON.stringify(testResult, null, 2)}>
                         <IconButton size="small">
@@ -1666,7 +1712,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Test Scenarios
+                  测试场景
                 </Typography>
                 {testScenarios.length > 0 ? (
                   <List dense>
@@ -1689,7 +1735,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                   </List>
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    No saved scenarios. Save a test message to create one.
+                    暂无已保存场景。保存一条测试消息即可创建场景。
                   </Typography>
                 )}
               </CardContent>
@@ -1704,7 +1750,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="h6">
-                Execution History
+                执行历史
               </Typography>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 {selectedHistoryEntries.length > 0 && (
@@ -1715,7 +1761,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                       onClick={() => setShowComparisonDialog(true)}
                       disabled={selectedHistoryEntries.length < 2}
                     >
-                      Compare ({selectedHistoryEntries.length})
+                      比较（{selectedHistoryEntries.length}）
                     </Button>
                   </>
                 )}
@@ -1725,7 +1771,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                   onClick={() => exportHistory('json')}
                   disabled={filteredHistory.length === 0}
                 >
-                  Export JSON
+                  导出 JSON
                 </Button>
                 <Button
                   size="small"
@@ -1733,7 +1779,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                   onClick={() => exportHistory('csv')}
                   disabled={filteredHistory.length === 0}
                 >
-                  Export CSV
+                  导出 CSV
                 </Button>
                 <Button
                   size="small"
@@ -1742,7 +1788,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                   disabled={executionHistory.length === 0}
                   color="error"
                 >
-                  Clear
+                  清空
                 </Button>
               </Box>
             </Box>
@@ -1754,20 +1800,20 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                   <TextField
                     fullWidth
                     size="small"
-                    label="Search"
+                    label="搜索"
                     value={historyFilters.search}
                     onChange={(e) => setHistoryFilters({ ...historyFilters, search: e.target.value })}
                   />
                 </Grid>
                 <Grid item xs={12} md={3}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>Tool</InputLabel>
+                    <InputLabel>工具</InputLabel>
                     <Select
                       value={historyFilters.tool}
-                      label="Tool"
+                      label="工具"
                       onChange={(e) => setHistoryFilters({ ...historyFilters, tool: e.target.value })}
                     >
-                      <MenuItem value="">All</MenuItem>
+                      <MenuItem value="">全部</MenuItem>
                       {Array.from(new Set(executionHistory.map(h => h.tool_name))).map(tool => (
                         <MenuItem key={tool} value={tool}>{tool}</MenuItem>
                       ))}
@@ -1776,30 +1822,30 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                 </Grid>
                 <Grid item xs={12} md={3}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>Status</InputLabel>
+                    <InputLabel>状态</InputLabel>
                     <Select
                       value={historyFilters.status}
-                      label="Status"
+                      label="状态"
                       onChange={(e) => setHistoryFilters({ ...historyFilters, status: e.target.value as any })}
                     >
-                      <MenuItem value="all">All</MenuItem>
-                      <MenuItem value="success">Success</MenuItem>
-                      <MenuItem value="failed">Failed</MenuItem>
+                      <MenuItem value="all">全部</MenuItem>
+                      <MenuItem value="success">成功</MenuItem>
+                      <MenuItem value="failed">失败</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
                 <Grid item xs={12} md={3}>
                   <FormControl fullWidth size="small">
-                    <InputLabel>Date Range</InputLabel>
+                    <InputLabel>日期范围</InputLabel>
                     <Select
                       value={historyFilters.dateRange}
-                      label="Date Range"
+                      label="日期范围"
                       onChange={(e) => setHistoryFilters({ ...historyFilters, dateRange: e.target.value as any })}
                     >
-                      <MenuItem value="all">All</MenuItem>
-                      <MenuItem value="today">Today</MenuItem>
-                      <MenuItem value="week">Last Week</MenuItem>
-                      <MenuItem value="month">Last Month</MenuItem>
+                      <MenuItem value="all">全部</MenuItem>
+                      <MenuItem value="today">今天</MenuItem>
+                      <MenuItem value="week">最近一周</MenuItem>
+                      <MenuItem value="month">最近一个月</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -1824,11 +1870,11 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                           }}
                         />
                       </TableCell>
-                      <TableCell>Timestamp</TableCell>
-                      <TableCell>Tool</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Execution Time</TableCell>
-                      <TableCell>Actions</TableCell>
+                      <TableCell>时间戳</TableCell>
+                      <TableCell>工具</TableCell>
+                      <TableCell>状态</TableCell>
+                      <TableCell>执行时间</TableCell>
+                      <TableCell>操作</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -1860,7 +1906,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                         <TableCell>
                           <Chip
                             icon={entry.success ? <CheckCircleIcon /> : <ErrorIcon />}
-                            label={entry.success ? 'Success' : 'Failed'}
+                            label={entry.success ? '成功' : '失败'}
                             color={entry.success ? 'success' : 'error'}
                             size="small"
                           />
@@ -1869,7 +1915,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                           {entry.execution_time}ms
                         </TableCell>
                         <TableCell>
-                          <Tooltip title="View Details">
+                          <Tooltip title="查看详情">
                             <IconButton 
                               size="small"
                               onClick={() => setSelectedHistoryEntry(entry)}
@@ -1886,8 +1932,8 @@ const EnhancedMCPTestingPanel: React.FC = () => {
             ) : (
               <Typography variant="body2" color="text.secondary">
                 {executionHistory.length === 0 
-                  ? 'No execution history yet. Execute some tools to see history.'
-                  : 'No history entries match the current filters.'}
+                  ? '暂无执行历史。执行一些工具后即可查看记录。'
+                  : '没有历史记录符合当前筛选条件。'}
               </Typography>
             )}
           </CardContent>
@@ -1901,7 +1947,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Execution Time Trends
+                  执行时间趋势
                 </Typography>
                 {chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
@@ -1911,12 +1957,12 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                       <YAxis />
                       <RechartsTooltip />
                       <Legend />
-                      <Line type="monotone" dataKey="avgTime" stroke="#8884d8" name="Avg Execution Time (ms)" />
+                      <Line type="monotone" dataKey="avgTime" stroke="#8884d8" name="平均执行时间（ms）" />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    No data available for the last 30 days
+                    最近 30 天暂无数据
                   </Typography>
                 )}
               </CardContent>
@@ -1927,7 +1973,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Success Rate Over Time
+                  成功率趋势
                 </Typography>
                 {chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
@@ -1937,13 +1983,13 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                       <YAxis />
                       <RechartsTooltip />
                       <Legend />
-                      <Line type="monotone" dataKey="success" stroke="#82ca9d" name="Successful" />
-                      <Line type="monotone" dataKey="failed" stroke="#ff7300" name="Failed" />
+                      <Line type="monotone" dataKey="success" stroke="#82ca9d" name="成功" />
+                      <Line type="monotone" dataKey="failed" stroke="#ff7300" name="失败" />
                     </LineChart>
                   </ResponsiveContainer>
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    No data available
+                    暂无数据
                   </Typography>
                 )}
               </CardContent>
@@ -1954,7 +2000,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Tool Usage Distribution
+                  工具使用分布
                 </Typography>
                 {toolUsageData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
@@ -1963,12 +2009,12 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                       <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
                       <YAxis />
                       <RechartsTooltip />
-                      <Bar dataKey="count" fill="#8884d8" />
+                      <Bar dataKey="count" fill="#8884d8" name="使用次数" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    No tool usage data available
+                    暂无工具使用数据
                   </Typography>
                 )}
               </CardContent>
@@ -1985,20 +2031,23 @@ const EnhancedMCPTestingPanel: React.FC = () => {
         fullWidth
       >
         <DialogTitle>
-          Execute Tool: {selectedToolForExecution?.name}
+          执行工具：{selectedToolForExecution?.name}
         </DialogTitle>
         <DialogContent>
           {selectedToolForExecution && (
             <>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                {selectedToolForExecution.description}
+                {translateMcpDescription(
+                  selectedToolForExecution.description,
+                  selectedToolForExecution.name,
+                )}
               </Typography>
               {renderParameterForm(selectedToolForExecution)}
             </>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowParameterDialog(false)}>Cancel</Button>
+          <Button onClick={() => setShowParameterDialog(false)}>取消</Button>
           <Button
             variant="contained"
             onClick={() => {
@@ -2013,7 +2062,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
             }}
             disabled={!!parameterErrors[selectedToolForExecution?.tool_id || '']}
           >
-            Execute
+            执行
           </Button>
         </DialogActions>
       </Dialog>
@@ -2028,7 +2077,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
         {selectedHistoryEntry && (
           <>
             <DialogTitle>
-              Execution Details: {selectedHistoryEntry.tool_name}
+              执行详情：{selectedHistoryEntry.tool_name}
             </DialogTitle>
             <DialogContent>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -2036,19 +2085,19 @@ const EnhancedMCPTestingPanel: React.FC = () => {
               </Typography>
               <Divider sx={{ my: 2 }} />
               <Typography variant="subtitle2" gutterBottom>
-                Status: {selectedHistoryEntry.success ? 'Success' : 'Failed'}
+                状态：{selectedHistoryEntry.success ? '成功' : '失败'}
               </Typography>
               <Typography variant="body2" sx={{ mb: 2 }}>
-                Execution Time: {selectedHistoryEntry.execution_time}ms
+                执行时间：{selectedHistoryEntry.execution_time}ms
               </Typography>
               {selectedHistoryEntry.error && (
                 <Alert severity="error" sx={{ mb: 2 }}>
-                  {selectedHistoryEntry.error}
+                  工具执行失败，请检查参数或服务状态。
                 </Alert>
               )}
               {selectedHistoryEntry.parameters && (
                 <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom>Parameters:</Typography>
+                  <Typography variant="subtitle2" gutterBottom>参数：</Typography>
                   <Paper sx={{ p: 1, bgcolor: 'grey.50', maxHeight: 200, overflow: 'auto' }}>
                     <JsonView
                       value={selectedHistoryEntry.parameters}
@@ -2060,7 +2109,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
               {selectedHistoryEntry.result && (
                 <Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                    <Typography variant="subtitle2">Result:</Typography>
+                    <Typography variant="subtitle2">结果：</Typography>
                     <CopyToClipboard text={JSON.stringify(selectedHistoryEntry.result, null, 2)}>
                       <IconButton size="small">
                         <CopyIcon />
@@ -2077,7 +2126,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
               )}
             </DialogContent>
             <DialogActions>
-              <Button onClick={() => setSelectedHistoryEntry(null)}>Close</Button>
+              <Button onClick={() => setSelectedHistoryEntry(null)}>关闭</Button>
             </DialogActions>
           </>
         )}
@@ -2090,7 +2139,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
         maxWidth="lg"
         fullWidth
       >
-        <DialogTitle>Compare Execution Results</DialogTitle>
+        <DialogTitle>比较执行结果</DialogTitle>
         <DialogContent>
           <Grid container spacing={2}>
             {selectedHistoryEntries.slice(0, 2).map((id) => {
@@ -2105,13 +2154,13 @@ const EnhancedMCPTestingPanel: React.FC = () => {
                         {formatDate(entry.timestamp, 'yyyy-MM-dd HH:mm:ss')}
                       </Typography>
                       <Chip
-                        label={entry.success ? 'Success' : 'Failed'}
+                        label={entry.success ? '成功' : '失败'}
                         color={entry.success ? 'success' : 'error'}
                         size="small"
                         sx={{ ml: 1 }}
                       />
                       <Typography variant="body2" sx={{ mt: 1 }}>
-                        Execution Time: {entry.execution_time}ms
+                        执行时间：{entry.execution_time}ms
                       </Typography>
                       {entry.result && (
                         <Box sx={{ mt: 2, maxHeight: 300, overflow: 'auto' }}>
@@ -2129,7 +2178,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowComparisonDialog(false)}>Close</Button>
+          <Button onClick={() => setShowComparisonDialog(false)}>关闭</Button>
         </DialogActions>
       </Dialog>
 
@@ -2141,25 +2190,25 @@ const EnhancedMCPTestingPanel: React.FC = () => {
           setSelectedScenario({ name: '', description: '', message: testMessage });
         }}
       >
-        <DialogTitle>Save Test Scenario</DialogTitle>
+        <DialogTitle>保存测试场景</DialogTitle>
         <DialogContent>
           <TextField
             fullWidth
-            label="Scenario Name"
+            label="场景名称"
             value={selectedScenario.name || ''}
             onChange={(e) => setSelectedScenario({ ...selectedScenario, name: e.target.value })}
             sx={{ mb: 2, mt: 1 }}
           />
           <TextField
             fullWidth
-            label="Description (optional)"
+            label="说明（可选）"
             value={selectedScenario.description || ''}
             onChange={(e) => setSelectedScenario({ ...selectedScenario, description: e.target.value })}
             sx={{ mb: 2 }}
           />
           <TextField
             fullWidth
-            label="Test Message"
+            label="测试消息"
             value={testMessage}
             onChange={(e) => setTestMessage(e.target.value)}
             multiline
@@ -2167,7 +2216,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowScenarioDialog(false)}>Cancel</Button>
+          <Button onClick={() => setShowScenarioDialog(false)}>取消</Button>
           <Button
             variant="contained"
             onClick={() => {
@@ -2183,7 +2232,7 @@ const EnhancedMCPTestingPanel: React.FC = () => {
             }}
             disabled={!testMessage || !selectedScenario.name}
           >
-            Save
+            保存
           </Button>
         </DialogActions>
       </Dialog>

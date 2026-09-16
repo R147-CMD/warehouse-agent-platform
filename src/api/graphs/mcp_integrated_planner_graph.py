@@ -27,11 +27,15 @@ This module implements the MCP-enhanced planner/router agent that:
 from __future__ import annotations
 
 from typing import Dict, List, Optional, TypedDict, Annotated, Any
+from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.graph import StateGraph, END
+from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode
+from langgraph.types import Command
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.tools import tool
 from dataclasses import asdict
+import inspect
 import logging
 import asyncio
 import threading
@@ -41,6 +45,35 @@ from src.api.services.mcp.tool_binding import ToolBindingService
 from src.api.services.mcp.tool_routing import ToolRoutingService, RoutingStrategy
 from src.api.services.mcp.tool_validation import ToolValidationService
 from src.api.services.mcp.base import MCPManager
+from src.api.services.approval import (
+    ApprovalDecision,
+    ApprovalExecutionContext,
+    ApprovalInterruptPayload,
+    ApprovalRecord,
+    ApprovalResumePayload,
+    bind_approval_context,
+)
+from src.api.services.checkpointing import get_checkpoint_manager
+from src.api.services.reasoning.reflection_loop import (
+    DEFAULT_MAX_REFLECTION_ITERATIONS,
+    build_planner_decision,
+    review_agent_outcome_with_judge,
+)
+from src.api.services.reasoning.evidence_join import (
+    build_collaboration_plan,
+    join_agent_evidence,
+    summarize_agent_evidence,
+)
+from src.api.services.runs import (
+    RunCancelled,
+    RunEventSeverity,
+    RunEventType,
+    RunExecutionContext,
+    RunUpdate,
+    bind_run_context,
+    get_run_context,
+    get_run_manager,
+)
 from src.api.utils.log_utils import sanitize_log_data
 
 logger = logging.getLogger(__name__)
@@ -62,6 +95,38 @@ COMPLEX_QUERY_KEYWORDS = [
 
 COMPLEX_QUERY_ACTIONS = ["create", "dispatch", "assign", "show", "list", "get", "check"]
 COMPLEX_QUERY_WORD_COUNT_THRESHOLD = 15
+CHECKPOINT_NAMESPACE = "warehouse_mcp_planner"
+
+
+class _ApprovalWorkflowError(RuntimeError):
+    """Raised when persisted approval workflow data cannot be trusted."""
+
+
+_SENSITIVE_CONTEXT_KEYS = {
+    "authorization",
+    "bearer",
+    "bearer_token",
+    "access_token",
+    "refresh_token",
+    "token",
+    "user",
+    "current_user",
+}
+
+
+def _sanitize_graph_context(value: Any) -> Any:
+    """Copy caller context without credentials or complete user objects."""
+    if isinstance(value, dict):
+        return {
+            key: _sanitize_graph_context(item)
+            for key, item in value.items()
+            if str(key).lower() not in _SENSITIVE_CONTEXT_KEYS
+        }
+    if isinstance(value, list):
+        return [_sanitize_graph_context(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_sanitize_graph_context(item) for item in value)
+    return value
 
 
 def _extract_message_text(state: "MCPWarehouseState") -> Optional[str]:
@@ -203,10 +268,11 @@ def _convert_reasoning_chain_to_dict(reasoning_chain: Any) -> Optional[Dict[str,
 class MCPWarehouseState(TypedDict):
     """Enhanced state management for MCP-enabled warehouse assistant workflow."""
 
-    messages: Annotated[List[BaseMessage], "Chat messages"]
+    messages: Annotated[List[BaseMessage], add_messages]
     user_intent: Optional[str]
     routing_decision: Optional[str]
-    agent_responses: Dict[str, str]
+    routing_confidence: Optional[float]
+    agent_responses: Dict[str, Any]
     final_response: Optional[str]
     context: Dict[str, any]
     session_id: str
@@ -216,6 +282,14 @@ class MCPWarehouseState(TypedDict):
     enable_reasoning: bool  # Enable advanced reasoning
     reasoning_types: Optional[List[str]]  # Specific reasoning types to use
     reasoning_chain: Optional[Dict[str, Any]]  # Reasoning chain from agents
+    planner_scratchpad: Optional[Dict[str, Any]]  # Deterministic plan/risk profile
+    primary_route: Optional[str]  # Original route before optional collaboration
+    collaboration_plan: Optional[Dict[str, Any]]  # Multi-agent fan-out decision
+    evidence_bundle: Optional[Dict[str, Any]]  # Joined multi-agent evidence
+    reflection_decision: Optional[Dict[str, Any]]  # Last reflection decision
+    reflection_history: List[Dict[str, Any]]  # Append-only reflection decisions
+    reflection_iterations: int  # Completed reflection reviews
+    max_reflection_iterations: int  # Loop guard
 
 
 class MCPIntentClassifier:
@@ -609,7 +683,8 @@ class MCPIntentClassifier:
 class MCPPlannerGraph:
     """MCP-enabled planner graph for warehouse operations."""
 
-    def __init__(self):
+    def __init__(self, checkpointer: BaseCheckpointSaver):
+        self.checkpointer = checkpointer
         self.tool_discovery: Optional[ToolDiscoveryService] = None
         self.tool_binding: Optional[ToolBindingService] = None
         self.tool_routing: Optional[ToolRoutingService] = None
@@ -667,24 +742,32 @@ class MCPPlannerGraph:
         workflow = StateGraph(MCPWarehouseState)
 
         # Add nodes
-        workflow.add_node("route_intent", self._mcp_route_intent)
-        workflow.add_node("equipment", self._mcp_equipment_agent)
-        workflow.add_node("operations", self._mcp_operations_agent)
-        workflow.add_node("safety", self._mcp_safety_agent)
-        workflow.add_node("forecasting", self._mcp_forecasting_agent)
-        workflow.add_node("document", self._mcp_document_agent)
-        workflow.add_node("general", self._mcp_general_agent)
-        workflow.add_node("ambiguous", self._handle_ambiguous_query)
-        workflow.add_node("synthesize", self._mcp_synthesize_response)
+        workflow.add_node("plan_task", self._instrumented_node("plan_task", self._plan_task))
+        workflow.add_node("route_intent", self._instrumented_node("route_intent", self._mcp_route_intent))
+        workflow.add_node("collaboration_plan", self._instrumented_node("collaboration_plan", self._build_collaboration_plan))
+        workflow.add_node("multi_agent_collect", self._instrumented_node("multi_agent_collect", self._mcp_multi_agent_collect))
+        workflow.add_node("evidence_join", self._instrumented_node("evidence_join", self._mcp_evidence_join))
+        workflow.add_node("equipment", self._instrumented_node("equipment", self._mcp_equipment_agent))
+        workflow.add_node("operations", self._instrumented_node("operations", self._mcp_operations_agent))
+        workflow.add_node("safety", self._instrumented_node("safety", self._mcp_safety_agent))
+        workflow.add_node("forecasting", self._instrumented_node("forecasting", self._mcp_forecasting_agent))
+        workflow.add_node("document", self._instrumented_node("document", self._mcp_document_agent))
+        workflow.add_node("general", self._instrumented_node("general", self._mcp_general_agent))
+        workflow.add_node("ambiguous", self._instrumented_node("ambiguous", self._handle_ambiguous_query))
+        workflow.add_node("reflect", self._instrumented_node("reflect", self._mcp_reflect))
+        workflow.add_node("synthesize", self._instrumented_node("synthesize", self._mcp_synthesize_response))
 
         # Set entry point
-        workflow.set_entry_point("route_intent")
+        workflow.set_entry_point("plan_task")
+        workflow.add_edge("plan_task", "route_intent")
+        workflow.add_edge("route_intent", "collaboration_plan")
 
         # Add conditional edges for routing
         workflow.add_conditional_edges(
-            "route_intent",
-            self._route_to_agent,
+            "collaboration_plan",
+            self._route_after_collaboration_plan,
             {
+                "multi_agent_collect": "multi_agent_collect",
                 "equipment": "equipment",
                 "operations": "operations",
                 "safety": "safety",
@@ -695,22 +778,164 @@ class MCPPlannerGraph:
             },
         )
 
-        # Add edges from agents to synthesis
-        workflow.add_edge("equipment", "synthesize")
-        workflow.add_edge("operations", "synthesize")
-        workflow.add_edge("safety", "synthesize")
-        workflow.add_edge("forecasting", "synthesize")
-        workflow.add_edge("document", "synthesize")
-        workflow.add_edge("general", "synthesize")
+        # Add edges from agents to reflection before final synthesis
+        workflow.add_edge("equipment", "reflect")
+        workflow.add_edge("operations", "reflect")
+        workflow.add_edge("safety", "reflect")
+        workflow.add_edge("forecasting", "reflect")
+        workflow.add_edge("document", "reflect")
+        workflow.add_edge("general", "reflect")
+        workflow.add_edge("multi_agent_collect", "evidence_join")
+        workflow.add_edge("evidence_join", "reflect")
         workflow.add_edge("ambiguous", "synthesize")
+
+        workflow.add_conditional_edges(
+            "reflect",
+            self._route_after_reflection,
+            {
+                "finalize": "synthesize",
+                "clarify": "ambiguous",
+                "replan": "route_intent",
+            },
+        )
 
         # Add edge from synthesis to end
         workflow.add_edge("synthesize", END)
 
-        # SECURITY: We intentionally use in-memory state management (no checkpointer)
-        # to avoid CVE-2025-8709 (SQL injection in langgraph-checkpoint-sqlite).
-        # If persistence is needed, use a secure checkpoint backend (e.g., Postgres).
-        return workflow.compile()  # No checkpointer = in-memory state
+        return workflow.compile(checkpointer=self.checkpointer)
+
+    def _instrumented_node(self, node_name: str, handler):
+        """Wrap a LangGraph node with run events and cooperative cancellation."""
+
+        async def wrapped(state: MCPWarehouseState) -> MCPWarehouseState:
+            await _check_run_cancelled()
+            if node_name not in {"plan_task", "route_intent", "reflect", "synthesize"}:
+                await _emit_run_event(
+                    RunEventType.AGENT_STARTED,
+                    f"智能体开始执行：{node_name}",
+                    agent_name=node_name,
+                )
+            try:
+                maybe_result = handler(state)
+                result = (
+                    await maybe_result
+                    if inspect.isawaitable(maybe_result)
+                    else maybe_result
+                )
+            except RunCancelled:
+                raise
+            except Exception as error:
+                await _emit_run_event(
+                    RunEventType.RUN_FAILED,
+                    "图节点执行失败",
+                    severity=RunEventSeverity.ERROR,
+                    agent_name=node_name,
+                    payload={"error": sanitize_log_data(str(error))},
+                )
+                raise
+
+            if node_name == "route_intent":
+                await _emit_run_event(
+                    RunEventType.ROUTE_SELECTED,
+                    f"路由到：{result.get('routing_decision') or 'unknown'}",
+                    payload={
+                        "intent": result.get("user_intent"),
+                        "route": result.get("routing_decision"),
+                    },
+                )
+            elif node_name == "synthesize":
+                await _emit_run_event(
+                    RunEventType.CHECKPOINT_SAVED,
+                    "图执行结果已进入检查点流程",
+                    payload={"node": node_name},
+                )
+            elif node_name in {"plan_task", "reflect"}:
+                pass
+            else:
+                await _emit_run_event(
+                    RunEventType.AGENT_COMPLETED,
+                    f"智能体执行完成：{node_name}",
+                    agent_name=node_name,
+                )
+            await _check_run_cancelled()
+            return result
+
+        wrapped.__name__ = f"instrumented_{node_name}"
+        return wrapped
+
+    async def _plan_task(self, state: MCPWarehouseState) -> MCPWarehouseState:
+        """Create a structured task plan before intent routing."""
+
+        message_text = _extract_message_text(state) or ""
+        context = state.setdefault("context", {})
+        plan = build_planner_decision(message_text, context)
+        max_iterations = int(
+            plan.get("max_reflection_iterations", DEFAULT_MAX_REFLECTION_ITERATIONS)
+        )
+
+        state["planner_scratchpad"] = plan
+        state["reflection_decision"] = None
+        state["reflection_history"] = list(state.get("reflection_history") or [])
+        state["reflection_iterations"] = int(state.get("reflection_iterations") or 0)
+        state["max_reflection_iterations"] = max_iterations
+        context["planner_scratchpad"] = plan
+        context["max_reflection_iterations"] = max_iterations
+        autonomous_reasoning = context.get("autonomous_reasoning")
+        if not isinstance(autonomous_reasoning, dict):
+            autonomous_reasoning = {}
+            context["autonomous_reasoning"] = autonomous_reasoning
+        autonomous_reasoning["planner"] = plan
+
+        await _emit_run_event(
+            RunEventType.PLAN_CREATED,
+            f"已生成任务计划：路由建议 {plan.get('route_hint')}，风险 {plan.get('risk_level')}",
+            payload={
+                "route_hint": plan.get("route_hint"),
+                "risk_level": plan.get("risk_level"),
+                "requires_approval": plan.get("requires_approval"),
+                "missing_facts": plan.get("missing_facts", []),
+                "detected_actions": plan.get("detected_actions", []),
+                "plan_steps": plan.get("plan_steps", []),
+            },
+        )
+        await _update_current_run_risk_level(str(plan.get("risk_level") or "low"))
+        return state
+
+    async def _mcp_reflect(self, state: MCPWarehouseState) -> MCPWarehouseState:
+        """Review the selected agent result before final synthesis."""
+
+        context = state.setdefault("context", {})
+        decision = await review_agent_outcome_with_judge(state)
+        history = list(state.get("reflection_history") or [])
+        history.append(decision)
+
+        state["reflection_decision"] = decision
+        state["reflection_history"] = history
+        state["reflection_iterations"] = int(
+            decision.get("iteration", state.get("reflection_iterations", 0) + 1)
+        )
+        context["reflection_decision"] = decision
+        context["reflection_history"] = history
+        autonomous_reasoning = context.get("autonomous_reasoning")
+        if not isinstance(autonomous_reasoning, dict):
+            autonomous_reasoning = {}
+            context["autonomous_reasoning"] = autonomous_reasoning
+        autonomous_reasoning["reflection_history"] = history
+
+        action = decision.get("action", "finalize")
+        if action == "clarify":
+            state["routing_decision"] = "ambiguous"
+            context["reflection_clarification"] = {
+                "question": decision.get("clarifying_question"),
+                "options": decision.get("clarifying_options", []),
+                "missing_facts": decision.get("missing_facts", []),
+            }
+        elif action == "replan":
+            next_route = decision.get("next_route") or "general"
+            context["reflection_next_route"] = next_route
+
+        await _emit_reflection_event(decision)
+        return state
 
     async def _mcp_route_intent(self, state: MCPWarehouseState) -> MCPWarehouseState:
         """Route user message using MCP-enhanced intent classification with semantic routing."""
@@ -720,6 +945,31 @@ class MCPPlannerGraph:
             if not message_text:
                 state["user_intent"] = "general"
                 state["routing_decision"] = "general"
+                state["routing_confidence"] = 0.0
+                return state
+
+            context = state.setdefault("context", {})
+            reflection_next_route = context.pop("reflection_next_route", None)
+            if reflection_next_route in {
+                "equipment",
+                "operations",
+                "safety",
+                "forecasting",
+                "document",
+                "general",
+                "ambiguous",
+            }:
+                state["user_intent"] = str(reflection_next_route)
+                state["routing_decision"] = str(reflection_next_route)
+                state["routing_confidence"] = 0.75
+                context["reflection_route_override_used"] = {
+                    "route": reflection_next_route,
+                    "iteration": state.get("reflection_iterations", 0),
+                }
+                logger.info(
+                    "Reflection requested one-shot route override to %s",
+                    reflection_next_route,
+                )
                 return state
 
             # Use MCP-enhanced intent classification (keyword-based)
@@ -801,6 +1051,204 @@ class MCPPlannerGraph:
 
         return state
 
+    async def _build_collaboration_plan(
+        self, state: MCPWarehouseState
+    ) -> MCPWarehouseState:
+        """Decide whether this request should use multi-agent evidence join."""
+
+        message_text = _extract_message_text(state) or ""
+        context = state.setdefault("context", {})
+        planner = state.get("planner_scratchpad") or context.get("planner_scratchpad") or {}
+        primary_route = str(
+            state.get("routing_decision")
+            or (planner.get("route_hint") if isinstance(planner, dict) else None)
+            or "general"
+        )
+        plan = build_collaboration_plan(
+            message_text,
+            planner if isinstance(planner, dict) else {},
+            primary_route,
+            context,
+        )
+
+        state["primary_route"] = plan.get("primary_route", primary_route)
+        state["collaboration_plan"] = plan
+        context["collaboration_plan"] = plan
+
+        autonomous_reasoning = context.get("autonomous_reasoning")
+        if not isinstance(autonomous_reasoning, dict):
+            autonomous_reasoning = {}
+            context["autonomous_reasoning"] = autonomous_reasoning
+        autonomous_reasoning["collaboration_plan"] = plan
+
+        if plan.get("enabled"):
+            await _emit_run_event(
+                RunEventType.MULTI_AGENT_SELECTED,
+                "已选择多智能体协作收集证据",
+                agent_name="collaboration_plan",
+                payload={
+                    "primary_route": plan.get("primary_route"),
+                    "selected_agents": plan.get("selected_agents", []),
+                    "reasons": plan.get("reasons", []),
+                    "mode": plan.get("mode"),
+                    "max_agents": plan.get("max_agents"),
+                },
+            )
+
+        return state
+
+    async def _mcp_multi_agent_collect(
+        self, state: MCPWarehouseState
+    ) -> MCPWarehouseState:
+        """Run selected read-only specialist agents and collect their evidence."""
+
+        message_text = _extract_message_text(state) or ""
+        context = state.setdefault("context", {})
+        plan = state.get("collaboration_plan") or {}
+        handler_map = {
+            "equipment": self._mcp_equipment_agent,
+            "operations": self._mcp_operations_agent,
+            "safety": self._mcp_safety_agent,
+            "forecasting": self._mcp_forecasting_agent,
+            "document": self._mcp_document_agent,
+        }
+        selected_agents = [
+            str(agent)
+            for agent in plan.get("selected_agents", [])
+            if str(agent) in handler_map
+        ]
+        if not selected_agents:
+            primary_route = str(
+                state.get("primary_route")
+                or plan.get("primary_route")
+                or state.get("routing_decision")
+                or "general"
+            )
+            if primary_route in handler_map:
+                selected_agents = [primary_route]
+
+        async def _run_selected_agent(agent_name: str) -> tuple[str, Any, str | None]:
+            await _check_run_cancelled()
+            agent_state = self._clone_state_for_agent(state, agent_name)
+            try:
+                maybe_result = handler_map[agent_name](agent_state)
+                result_state = (
+                    await maybe_result
+                    if inspect.isawaitable(maybe_result)
+                    else maybe_result
+                )
+                response = (result_state.get("agent_responses") or {}).get(agent_name)
+                return agent_name, response, None
+            except RunCancelled:
+                raise
+            except Exception as exc:
+                logger.warning(
+                    "Multi-agent specialist %s failed: %s",
+                    agent_name,
+                    sanitize_log_data(str(exc)),
+                )
+                return (
+                    agent_name,
+                    _create_error_response(agent_name, message_text, exc),
+                    str(exc),
+                )
+
+        results = await asyncio.gather(
+            *(_run_selected_agent(agent_name) for agent_name in selected_agents)
+        )
+
+        merged_responses = dict(state.get("agent_responses") or {})
+        errors = []
+        for agent_name, response, error in results:
+            merged_responses[agent_name] = response
+            if error:
+                errors.append({"agent_name": agent_name, "error": error})
+
+        state["agent_responses"] = merged_responses
+        context["multi_agent_collection"] = {
+            "selected_agents": selected_agents,
+            "errors": errors,
+        }
+        return state
+
+    async def _mcp_evidence_join(self, state: MCPWarehouseState) -> MCPWarehouseState:
+        """Join collected specialist evidence into one response for reflection."""
+
+        message_text = _extract_message_text(state) or ""
+        context = state.setdefault("context", {})
+        plan = state.get("collaboration_plan") or {}
+        selected_agents = [
+            str(agent)
+            for agent in plan.get("selected_agents", [])
+            if str(agent) in {
+                "equipment",
+                "operations",
+                "safety",
+                "forecasting",
+                "document",
+            }
+        ]
+        primary_route = str(
+            state.get("primary_route")
+            or plan.get("primary_route")
+            or state.get("routing_decision")
+            or "general"
+        )
+        planner = dict(
+            state.get("planner_scratchpad")
+            or context.get("planner_scratchpad")
+            or {}
+        )
+        planner["selected_agents"] = selected_agents
+
+        agent_responses = state.get("agent_responses") or {}
+        evidence_items = [
+            summarize_agent_evidence(agent_name, agent_responses.get(agent_name))
+            for agent_name in selected_agents
+        ]
+        bundle = join_agent_evidence(
+            message_text,
+            planner,
+            primary_route,
+            evidence_items,
+        )
+        recommendations = self._recommendations_from_evidence_bundle(bundle)
+
+        state["evidence_bundle"] = bundle
+        state["routing_decision"] = "evidence_join"
+        state["agent_responses"]["evidence_join"] = {
+            "natural_language": bundle.get("summary", ""),
+            "data": bundle,
+            "recommendations": recommendations,
+            "confidence": bundle.get("average_confidence", 0.0),
+            "response_type": "multi_agent_evidence",
+            "mcp_tools_used": self._tools_from_evidence_bundle(bundle),
+            "tool_execution_results": {},
+            "actions_taken": [],
+        }
+
+        context["evidence_bundle"] = bundle
+        autonomous_reasoning = context.get("autonomous_reasoning")
+        if not isinstance(autonomous_reasoning, dict):
+            autonomous_reasoning = {}
+            context["autonomous_reasoning"] = autonomous_reasoning
+        autonomous_reasoning["evidence_bundle"] = bundle
+
+        await _emit_run_event(
+            RunEventType.EVIDENCE_JOINED,
+            "多智能体证据已汇总",
+            agent_name="evidence_join",
+            payload={
+                "primary_route": bundle.get("primary_route"),
+                "contributing_agents": bundle.get("contributing_agents", []),
+                "evidence_count": bundle.get("evidence_count", 0),
+                "average_confidence": bundle.get("average_confidence", 0.0),
+                "gaps": bundle.get("gaps", []),
+            },
+        )
+
+        return state
+
     async def _handle_ambiguous_query(
         self, state: MCPWarehouseState
     ) -> MCPWarehouseState:
@@ -811,6 +1259,34 @@ class MCPPlannerGraph:
                 return state
 
             message_lower = message_text.lower()
+            reflection_clarification = state.get("context", {}).get(
+                "reflection_clarification"
+            )
+            if isinstance(reflection_clarification, dict):
+                question = str(
+                    reflection_clarification.get("question")
+                    or "请补充关键业务信息后我再继续执行。"
+                )
+                options = reflection_clarification.get("options") or []
+                clarifying_message = AIMessage(content=question)
+                state["messages"].append(clarifying_message)
+                state["routing_decision"] = "ambiguous"
+                state["context"]["clarifying"] = {
+                    "text": question,
+                    "options": options,
+                    "original_query": message_text,
+                    "source": "reflection",
+                    "missing_facts": reflection_clarification.get("missing_facts", []),
+                }
+                state["agent_responses"]["ambiguous"] = {
+                    "natural_language": question,
+                    "data": {"options": options},
+                    "recommendations": options,
+                    "confidence": 1.0,
+                    "response_type": "clarification_required",
+                }
+                state["final_response"] = question
+                return state
 
             # Define clarifying questions based on ambiguous patterns
             clarifying_responses = {
@@ -1280,7 +1756,9 @@ class MCPPlannerGraph:
                     try:
                         # Execute the tool
                         result = await self.tool_discovery.execute_tool(
-                            best_tool.tool_id, {"query": message_text}
+                            best_tool.tool_id,
+                            {"query": message_text},
+                            action_index=0,
                         )
 
                         response = f"[MCP GENERAL AGENT] Found relevant tool '{best_tool.name}' and executed it. Result: {str(result)[:200]}..."
@@ -1482,14 +1960,179 @@ class MCPPlannerGraph:
 
         return state
 
+    def _clone_state_for_agent(
+        self, state: MCPWarehouseState, agent_name: str
+    ) -> MCPWarehouseState:
+        """Create an isolated state copy for one specialist fan-out branch."""
+
+        cloned_state = dict(state)
+        cloned_state["messages"] = list(state.get("messages") or [])
+        cloned_state["context"] = dict(state.get("context") or {})
+        cloned_state["agent_responses"] = dict(state.get("agent_responses") or {})
+        cloned_state["user_intent"] = agent_name
+        cloned_state["routing_decision"] = agent_name
+        return cloned_state  # type: ignore[return-value]
+
+    @staticmethod
+    def _recommendations_from_evidence_bundle(bundle: Dict[str, Any]) -> List[str]:
+        """Collect deduplicated recommendations and gaps from an evidence bundle."""
+
+        recommendations: List[str] = []
+        for item in bundle.get("evidence_items", []) or []:
+            if not isinstance(item, dict):
+                continue
+            for recommendation in item.get("recommendations", []) or []:
+                text = str(recommendation).strip()
+                if text and text not in recommendations:
+                    recommendations.append(text)
+        for gap in bundle.get("gaps", []) or []:
+            text = str(gap).strip()
+            if text and text not in recommendations:
+                recommendations.append(text)
+        return recommendations[:10]
+
+    @staticmethod
+    def _tools_from_evidence_bundle(bundle: Dict[str, Any]) -> List[str]:
+        """Collect deduplicated tool names from all evidence items."""
+
+        tools: List[str] = []
+        for item in bundle.get("evidence_items", []) or []:
+            if not isinstance(item, dict):
+                continue
+            for tool_name in item.get("tools_used", []) or []:
+                text = str(tool_name).strip()
+                if text and text not in tools:
+                    tools.append(text)
+        return tools[:20]
+
     def _route_to_agent(self, state: MCPWarehouseState) -> str:
         """Route to the appropriate agent based on MCP intent classification."""
         routing_decision = state.get("routing_decision", "general")
         return routing_decision
 
+    def _route_after_collaboration_plan(self, state: MCPWarehouseState) -> str:
+        """Route either to multi-agent collection or the original specialist."""
+
+        plan = state.get("collaboration_plan") or {}
+        if plan.get("enabled"):
+            return "multi_agent_collect"
+
+        routing_decision = str(
+            plan.get("primary_route")
+            or state.get("routing_decision")
+            or "general"
+        )
+        if routing_decision in {
+            "equipment",
+            "operations",
+            "safety",
+            "forecasting",
+            "document",
+            "general",
+            "ambiguous",
+        }:
+            return routing_decision
+        return "general"
+
+    def _route_after_reflection(self, state: MCPWarehouseState) -> str:
+        """Route based on the latest reflection decision."""
+
+        decision = state.get("reflection_decision") or {}
+        action = decision.get("action", "finalize")
+        if action in {"finalize", "clarify", "replan"}:
+            return action
+        return "finalize"
+
+    def _format_graph_result(
+        self, result: Dict[str, Any], session_id: str
+    ) -> Dict[str, Any]:
+        """Format completed and interrupted graph results consistently."""
+        if not isinstance(result, dict):
+            raise _ApprovalWorkflowError("Approval workflow returned an invalid result.")
+
+        raw_interrupts = result.get("__interrupt__")
+        if raw_interrupts:
+            interrupt_items = (
+                raw_interrupts
+                if isinstance(raw_interrupts, (list, tuple))
+                else [raw_interrupts]
+            )
+            try:
+                pending_approvals = [
+                    ApprovalInterruptPayload.model_validate(
+                        getattr(interrupt_item, "value", interrupt_item)
+                    ).model_dump(mode="json")
+                    for interrupt_item in interrupt_items
+                ]
+            except Exception as exc:
+                logger.error(
+                    "Invalid approval interrupt payload: %s",
+                    sanitize_log_data(str(exc)),
+                )
+                raise _ApprovalWorkflowError(
+                    "Approval workflow returned an invalid interrupt payload."
+                ) from exc
+
+            return {
+                "response": "鎿嶄綔宸叉殏鍋滐紝绛夊緟缁忕悊瀹℃壒銆?",
+                "intent": result.get("user_intent", "unknown"),
+                "route": result.get("routing_decision", "unknown"),
+                "session_id": session_id,
+                "context": {},
+                "execution_status": "approval_required",
+                "pending_approvals": pending_approvals,
+            }
+
+        result_context = result.get("context", {}) or {}
+        if result.get("planner_scratchpad"):
+            result_context.setdefault("planner_scratchpad", result.get("planner_scratchpad"))
+        if result.get("collaboration_plan"):
+            result_context.setdefault("collaboration_plan", result.get("collaboration_plan"))
+        if result.get("evidence_bundle"):
+            result_context.setdefault("evidence_bundle", result.get("evidence_bundle"))
+        if result.get("reflection_decision"):
+            result_context.setdefault("reflection_decision", result.get("reflection_decision"))
+        if result.get("reflection_history"):
+            result_context.setdefault("reflection_history", result.get("reflection_history"))
+        if not isinstance(result_context.get("autonomous_reasoning"), dict):
+            result_context["autonomous_reasoning"] = {
+                "planner": result_context.get("planner_scratchpad"),
+                "collaboration_plan": result_context.get("collaboration_plan"),
+                "evidence_bundle": result_context.get("evidence_bundle"),
+                "reflection_history": result_context.get("reflection_history", []),
+            }
+        structured_response = result_context.get("structured_response", {})
+
+        actions_taken = None
+        if structured_response and isinstance(structured_response, dict):
+            actions_taken = structured_response.get("actions_taken")
+        if not actions_taken and result_context:
+            actions_taken = result_context.get("actions_taken")
+
+        return {
+            "response": result.get("final_response", "No response generated"),
+            "intent": result.get("user_intent", "unknown"),
+            "route": result.get("routing_decision", "unknown"),
+            "session_id": session_id,
+            "context": result_context,
+            "structured_response": structured_response,
+            "actions_taken": actions_taken,
+            "mcp_tools_used": result_context.get("mcp_tools_used", []),
+            "tool_execution_results": result_context.get(
+                "tool_execution_results", {}
+            ),
+            "available_tools": result.get("available_tools", []),
+            "execution_status": "completed",
+            "pending_approvals": [],
+        }
+
     async def process_warehouse_query(
-        self, message: str, session_id: str = "default", context: Optional[Dict] = None
-    ) -> Dict[str, any]:
+        self,
+        message: str,
+        session_id: str,
+        context: Optional[Dict] = None,
+        approval_context: ApprovalExecutionContext | None = None,
+    ) -> Dict[str, Any]:
         """
         Process a warehouse query through the MCP-enabled planner graph.
 
@@ -1497,10 +2140,25 @@ class MCPPlannerGraph:
             message: User's message/query
             session_id: Session identifier for context
             context: Additional context for the query
+            approval_context: Authenticated approval identity for tool execution
 
         Returns:
             Dictionary containing the response and metadata
         """
+        if (
+            not session_id
+            or not session_id.strip()
+            or session_id.casefold() == "default"
+        ):
+            raise ValueError("A validated non-default session ID is required.")
+        if approval_context is not None and (
+            approval_context.thread_id != session_id
+            or approval_context.checkpoint_ns != CHECKPOINT_NAMESPACE
+        ):
+            raise _ApprovalWorkflowError(
+                "Approval context does not match the workflow checkpoint."
+            )
+
         try:
             # Initialize if needed with timeout
             if not self.initialized:
@@ -1522,13 +2180,15 @@ class MCPPlannerGraph:
             enable_reasoning = context.get("enable_reasoning", False) if context else False
             reasoning_types = context.get("reasoning_types") if context else None
             
+            persisted_context = _sanitize_graph_context(context or {})
             initial_state = MCPWarehouseState(
                 messages=[HumanMessage(content=message)],
                 user_intent=None,
                 routing_decision=None,
+                routing_confidence=None,
                 agent_responses={},
                 final_response=None,
-                context=context or {},
+                context=persisted_context,
                 session_id=session_id,
                 mcp_results=None,
                 tool_execution_plan=None,
@@ -1536,6 +2196,14 @@ class MCPPlannerGraph:
                 enable_reasoning=enable_reasoning,
                 reasoning_types=reasoning_types,
                 reasoning_chain=None,
+                planner_scratchpad=None,
+                primary_route=None,
+                collaboration_plan=None,
+                evidence_bundle=None,
+                reflection_decision=None,
+                reflection_history=[],
+                reflection_iterations=0,
+                max_reflection_iterations=DEFAULT_MAX_REFLECTION_ITERATIONS,
             )
 
             # Run the graph asynchronously with timeout
@@ -1555,12 +2223,38 @@ class MCPPlannerGraph:
                 # Regular queries: Match chat.py timeouts (60s for simple, 90s for complex)
                 graph_timeout = 90.0 if is_complex_query else 60.0  # Increased from 30s to 60s for simple queries
             logger.info(f"Graph timeout set to {graph_timeout}s (complex: {is_complex_query}, reasoning: {enable_reasoning})")
+            graph_config = {
+                "configurable": {
+                    "thread_id": session_id,
+                    "checkpoint_ns": CHECKPOINT_NAMESPACE,
+                }
+            }
             try:
-                result = await asyncio.wait_for(
-                    self.graph.ainvoke(initial_state),
-                    timeout=graph_timeout
-                )
+                if approval_context is None:
+                    result = await asyncio.wait_for(
+                        self.graph.ainvoke(initial_state, config=graph_config),
+                        timeout=graph_timeout,
+                    )
+                else:
+                    with bind_approval_context(approval_context):
+                        result = await asyncio.wait_for(
+                            self.graph.ainvoke(initial_state, config=graph_config),
+                            timeout=graph_timeout,
+                        )
                 logger.info(f"✅ Graph execution completed in time: timeout={graph_timeout}s")
+            except RunCancelled as exc:
+                await get_run_manager().mark_cancelled(
+                    exc.run_id,
+                    "图执行观察到取消请求",
+                )
+                return {
+                    "response": "任务已取消。",
+                    "intent": "cancelled",
+                    "route": "cancelled",
+                    "session_id": session_id,
+                    "context": {},
+                    "execution_status": "cancelled",
+                }
             except asyncio.TimeoutError:
                 # Sanitize user-controlled message before logging
                 safe_message = sanitize_log_data(message, max_length=100)
@@ -1570,33 +2264,93 @@ class MCPPlannerGraph:
                 )
                 return self._create_fallback_response(message, session_id)
 
-            # Ensure structured response is properly included
-            context = result.get("context", {})
-            structured_response = context.get("structured_response", {})
-            
-            # Extract actions_taken from structured_response if available
-            actions_taken = None
-            if structured_response and isinstance(structured_response, dict):
-                actions_taken = structured_response.get("actions_taken")
-            if not actions_taken and context:
-                actions_taken = context.get("actions_taken")
+            return self._format_graph_result(result, session_id)
 
-            return {
-                "response": result.get("final_response", "No response generated"),
-                "intent": result.get("user_intent", "unknown"),
-                "route": result.get("routing_decision", "unknown"),
-                "session_id": session_id,
-                "context": context,
-                "structured_response": structured_response,  # Explicitly include structured response
-                "actions_taken": actions_taken,  # Include actions_taken if available
-                "mcp_tools_used": context.get("mcp_tools_used", []),
-                "tool_execution_results": context.get("tool_execution_results", {}),
-                "available_tools": result.get("available_tools", []),
-            }
-
+        except _ApprovalWorkflowError:
+            raise
         except Exception as e:
             logger.error(f"Error processing MCP warehouse query: {e}")
             return self._create_fallback_response(message, session_id)
+
+    async def resume_approval(
+        self,
+        record: ApprovalRecord,
+        resume_payload: ApprovalResumePayload,
+    ) -> Dict[str, Any]:
+        """Resume the existing checkpoint after an approval decision."""
+        if (
+            not record.thread_id
+            or not record.thread_id.strip()
+            or record.thread_id.casefold() == "default"
+        ):
+            raise _ApprovalWorkflowError(
+                "Approval record has an invalid workflow thread."
+            )
+        if record.checkpoint_ns != CHECKPOINT_NAMESPACE:
+            raise _ApprovalWorkflowError(
+                "Approval record does not match the workflow checkpoint."
+            )
+        if record.approval_id != resume_payload.approval_id:
+            raise _ApprovalWorkflowError(
+                "Approval decision does not match the pending approval."
+            )
+        if self.graph is None:
+            raise _ApprovalWorkflowError("Approval workflow is unavailable.")
+
+        approval_context = ApprovalExecutionContext(
+            thread_id=record.thread_id,
+            checkpoint_ns=record.checkpoint_ns,
+            request_id=record.request_id,
+            requester_id=record.requester_id,
+            requester_username=record.requester_username,
+            run_id=record.run_id,
+        )
+        graph_config = {
+            "configurable": {
+                "thread_id": record.thread_id,
+                "checkpoint_ns": record.checkpoint_ns,
+            }
+        }
+
+        try:
+            if record.run_id is None:
+                with bind_approval_context(approval_context):
+                    result = await asyncio.wait_for(
+                        self.graph.ainvoke(
+                            Command(resume=resume_payload.model_dump(mode="json")),
+                            config=graph_config,
+                        ),
+                        timeout=230.0,
+                    )
+            else:
+                run_context = RunExecutionContext(
+                    run_id=record.run_id,
+                    session_id=record.thread_id,
+                    checkpoint_thread_id=record.thread_id,
+                    request_id=record.request_id,
+                    user_id=record.requester_id,
+                    username=record.requester_username,
+                    user_role="unknown",
+                )
+                with bind_run_context(run_context):
+                    with bind_approval_context(approval_context):
+                        result = await asyncio.wait_for(
+                            self.graph.ainvoke(
+                                Command(resume=resume_payload.model_dump(mode="json")),
+                                config=graph_config,
+                            ),
+                            timeout=230.0,
+                        )
+        except asyncio.TimeoutError as exc:
+            logger.error(
+                "Approval workflow resume timed out for approval %s",
+                record.approval_id,
+            )
+            raise _ApprovalWorkflowError(
+                "Approval workflow resume timed out."
+            ) from exc
+
+        return self._format_graph_result(result, record.thread_id)
     
     def _create_fallback_response(self, message: str, session_id: str) -> Dict[str, any]:
         """Create a fallback response when MCP graph is unavailable."""
@@ -1637,22 +2391,136 @@ class MCPPlannerGraph:
         }
 
 
+async def _emit_run_event(
+    event_type: RunEventType,
+    message: str,
+    *,
+    severity: RunEventSeverity = RunEventSeverity.INFO,
+    agent_name: str | None = None,
+    tool_name: str | None = None,
+    payload: dict[str, Any] | None = None,
+) -> None:
+    """Append a run event when graph execution is bound to a run."""
+
+    context = get_run_context()
+    if context is None:
+        return
+    await get_run_manager().emit_event(
+        run_id=context.run_id,
+        event_type=event_type,
+        message=message,
+        severity=severity,
+        agent_name=agent_name,
+        tool_name=tool_name,
+        payload=payload,
+    )
+
+
+async def _emit_reflection_event(decision: Dict[str, Any]) -> None:
+    """Append a specialized run event for reflection decisions."""
+
+    action = str(decision.get("action") or "finalize")
+    llm_judge = decision.get("llm_judge")
+    judge_summary = llm_judge if isinstance(llm_judge, dict) else {}
+    if action == "replan":
+        event_type = RunEventType.REFLECTION_REPLAN
+        message = f"反思要求重规划：下一路由 {decision.get('next_route') or 'general'}"
+        severity = RunEventSeverity.WARNING
+    elif action == "clarify":
+        event_type = RunEventType.REFLECTION_CLARIFICATION_REQUESTED
+        message = "反思要求补充信息"
+        severity = RunEventSeverity.WARNING
+    else:
+        event_type = RunEventType.REFLECTION_REVIEWED
+        message = "反思检查通过，进入最终汇总"
+        severity = RunEventSeverity.INFO
+
+    await _emit_run_event(
+        event_type,
+        message,
+        severity=severity,
+        agent_name="reflect",
+        payload={
+            "action": action,
+            "iteration": decision.get("iteration"),
+            "max_iterations": decision.get("max_iterations"),
+            "route": decision.get("route"),
+            "next_route": decision.get("next_route"),
+            "confidence": decision.get("confidence"),
+            "reasons": decision.get("reasons", []),
+            "missing_facts": decision.get("missing_facts", []),
+            "judge_status": judge_summary.get("status"),
+            "judge_mode": judge_summary.get("mode"),
+            "judge_decision": judge_summary.get("decision"),
+            "judge_model": judge_summary.get("model"),
+            "quality_score": judge_summary.get("quality_score"),
+            "route_score": judge_summary.get("route_score"),
+            "safety_score": judge_summary.get("safety_score"),
+            "judge_confidence": judge_summary.get("confidence"),
+            "used_rule_fallback": judge_summary.get("used_rule_fallback"),
+            "safety_override_blocked": judge_summary.get("safety_override_blocked"),
+        },
+    )
+
+
+async def _update_current_run_risk_level(risk_level: str) -> None:
+    """Best-effort run risk update for the Run Center list."""
+
+    context = get_run_context()
+    if context is None:
+        return
+    try:
+        await get_run_manager().repository.update_run(
+            context.run_id,
+            RunUpdate(risk_level=risk_level),
+        )
+    except Exception as exc:
+        logger.warning(
+            "Unable to update run risk level for %s: %s",
+            context.run_id,
+            sanitize_log_data(str(exc)),
+        )
+
+
+async def _check_run_cancelled() -> None:
+    """Raise when the current run has requested cancellation."""
+
+    context = get_run_context()
+    if context is not None:
+        await get_run_manager().ensure_not_cancelled(context.run_id)
+
+
 # Global MCP planner graph instance
 _mcp_planner_graph = None
+_mcp_planner_graph_lock = asyncio.Lock()
 
 
 async def get_mcp_planner_graph() -> MCPPlannerGraph:
     """Get the global MCP planner graph instance."""
     global _mcp_planner_graph
     if _mcp_planner_graph is None:
-        _mcp_planner_graph = MCPPlannerGraph()
-        await _mcp_planner_graph.initialize()
+        async with _mcp_planner_graph_lock:
+            if _mcp_planner_graph is None:
+                manager = get_checkpoint_manager()
+                await manager.start()
+                planner_graph = MCPPlannerGraph(checkpointer=manager.saver)
+                await planner_graph.initialize()
+                _mcp_planner_graph = planner_graph
     return _mcp_planner_graph
 
 
+def reset_mcp_planner_graph() -> None:
+    """Drop the cached MCP planner graph instance."""
+    global _mcp_planner_graph
+    _mcp_planner_graph = None
+
+
 async def process_mcp_warehouse_query(
-    message: str, session_id: str = "default", context: Optional[Dict] = None
-) -> Dict[str, any]:
+    message: str,
+    session_id: str,
+    context: Optional[Dict] = None,
+    approval_context: ApprovalExecutionContext | None = None,
+) -> Dict[str, Any]:
     """
     Process a warehouse query through the MCP-enabled planner graph.
 
@@ -1660,9 +2528,28 @@ async def process_mcp_warehouse_query(
         message: User's message/query
         session_id: Session identifier for context
         context: Additional context for the query
+        approval_context: Authenticated approval identity for tool execution
 
     Returns:
         Dictionary containing the response and metadata
     """
     mcp_planner = await get_mcp_planner_graph()
-    return await mcp_planner.process_warehouse_query(message, session_id, context)
+    return await mcp_planner.process_warehouse_query(
+        message=message,
+        session_id=session_id,
+        context=context,
+        approval_context=approval_context,
+    )
+
+
+async def resume_expired_approval(record: ApprovalRecord) -> None:
+    """Reject and resume an approval that exceeded its validity period."""
+    mcp_planner = await get_mcp_planner_graph()
+    resume_payload = ApprovalResumePayload(
+        approval_id=record.approval_id,
+        decision=ApprovalDecision.REJECT,
+        approver_id=None,
+        approver_username="system-expiry",
+        reason="瀹℃壒宸茶秴杩?4灏忔椂鏈夋晥鏈焋",
+    )
+    await mcp_planner.resume_approval(record, resume_payload)

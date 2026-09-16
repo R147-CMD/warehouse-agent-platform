@@ -159,6 +159,26 @@ async def test_assign_uses_current_etag(adapter_and_client) -> None:
 
 
 @pytest.mark.asyncio
+async def test_assign_rejects_an_etag_that_changed_after_approval(
+    adapter_and_client,
+) -> None:
+    adapter, client = adapter_and_client
+    client.get_entity.return_value = open_order(etag='W/"CURRENT-2"')
+
+    with pytest.raises(SAPEWMError) as captured:
+        await adapter.assign_warehouse_order(
+            "2000005003",
+            "RES2",
+            correlation_id="command-1",
+            expected_etag='W/"APPROVED-1"',
+        )
+
+    assert captured.value.code is SAPEWMErrorCode.SAP_ETAG_CONFLICT
+    assert captured.value.status_code == 412
+    client.post_action.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_assign_timeout_is_confirmed_by_readback(
     adapter_and_client,
 ) -> None:

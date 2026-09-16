@@ -46,6 +46,45 @@ import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { documentAPI } from '../services/api';
 import { TabPanel } from '../components/common';
+import { translateStatus } from '../localization/zhCN';
+
+const processingStageLabels: Readonly<Record<string, string>> = {
+  preprocessing: '文档预处理',
+  ocr_extraction: 'OCR 提取',
+  llm_processing: 'LLM 处理',
+  validation: '验证',
+  routing: '路由',
+};
+
+const translateProcessingStage = (stage: string) =>
+  processingStageLabels[stage.trim().toLowerCase().replace(/\s+/g, '_')] || stage;
+
+const routingDecisionLabels: Readonly<Record<string, string>> = {
+  auto_approve: '自动批准',
+  auto_approved: '自动批准',
+  'auto-approved': '自动批准',
+  flag_review: '标记复核',
+  manual_review: '人工复核',
+  rejected: '已拒绝',
+  unknown: '未知',
+};
+
+const translateRoutingDecision = (decision: string) =>
+  routingDecisionLabels[decision.trim().toLowerCase()] || decision;
+
+const documentTypeLabels: Readonly<Record<string, string>> = {
+  invoice: '发票',
+  purchase_order: '采购订单',
+  bill_of_lading: '提单',
+  packing_list: '装箱单',
+  receipt: '收据',
+};
+
+const translateDocumentType = (type: string) =>
+  documentTypeLabels[type.trim().toLowerCase()] || type;
+
+const translateDocumentStatus = (status: string) =>
+  status.toLowerCase() === 'processing' ? '处理中' : translateStatus(status);
 
 interface DocumentProcessingStage {
   name: string;
@@ -191,7 +230,7 @@ const DocumentExtraction: React.FC = () => {
           daily_processing: [0, 0, 0, 0, 0, 0, 0],
           quality_trends: [0, 0, 0, 0, 0, 0, 0],
         },
-        summary: 'Failed to load analytics data',
+        summary: '分析数据加载失败',
       });
     }
   };
@@ -237,16 +276,16 @@ const DocumentExtraction: React.FC = () => {
           uploadTime: new Date(),
           progress: 0,
           stages: [
-            { name: 'Preprocessing', completed: false, current: true, description: 'Document preprocessing with NeMo Retriever' },
-            { name: 'OCR Extraction', completed: false, current: false, description: 'Intelligent OCR with NeMoRetriever-OCR-v1' },
-            { name: 'LLM Processing', completed: false, current: false, description: 'Small LLM processing with Llama Nemotron Nano VL 8B' },
-            { name: 'Validation', completed: false, current: false, description: 'Large LLM judge and validator' },
-            { name: 'Routing', completed: false, current: false, description: 'Intelligent routing based on quality scores' },
+            { name: '文档预处理', completed: false, current: true, description: '使用 NeMo Retriever 进行文档预处理' },
+            { name: 'OCR 提取', completed: false, current: false, description: '使用 NeMoRetriever-OCR-v1 进行智能 OCR' },
+            { name: 'LLM 处理', completed: false, current: false, description: '使用 Llama Nemotron Nano VL 8B 小型 LLM 处理' },
+            { name: '验证', completed: false, current: false, description: '大型 LLM 判定与验证' },
+            { name: '路由', completed: false, current: false, description: '根据质量得分进行智能路由' },
           ]
         };
         
         setProcessingDocuments(prev => [...prev, newDocument]);
-        setSnackbarMessage('Document uploaded successfully!');
+        setSnackbarMessage('文档上传成功！');
         setSnackbarOpen(true);
         
         console.log('Starting to monitor document processing for:', documentId);
@@ -258,18 +297,18 @@ const DocumentExtraction: React.FC = () => {
         setFilePreview(null);
         
       } else {
-        throw new Error(response.message || 'Upload failed');
+        throw new Error(response.message || '上传失败');
       }
       
     } catch (error) {
       console.error('Upload failed:', error);
-      let errorMessage = 'Upload failed';
+      let errorMessage = '上传失败';
       
       if (error instanceof Error) {
         if (error.message.includes('Unsupported file type')) {
-          errorMessage = 'Unsupported file type. Please upload PDF, PNG, JPG, JPEG, TIFF, or BMP files only.';
+          errorMessage = '不支持此文件类型。请仅上传 PDF、PNG、JPG、JPEG、TIFF 或 BMP 文件。';
         } else {
-          errorMessage = error.message;
+          errorMessage = '上传失败，请检查文件后重试。';
         }
       }
       
@@ -294,11 +333,11 @@ const DocumentExtraction: React.FC = () => {
             if (doc.id === documentId) {
               // Create a mapping from backend stage names to frontend stage names
               const stageMapping: { [key: string]: string } = {
-                'preprocessing': 'Preprocessing',
-                'ocr_extraction': 'OCR Extraction',
-                'llm_processing': 'LLM Processing',
-                'validation': 'Validation',
-                'routing': 'Routing'
+                'preprocessing': '文档预处理',
+                'ocr_extraction': 'OCR 提取',
+                'llm_processing': 'LLM 处理',
+                'validation': '验证',
+                'routing': '路由'
               };
               
               console.log('Backend status:', status);
@@ -365,10 +404,10 @@ const DocumentExtraction: React.FC = () => {
                     return [...prevCompleted, {
                       ...updatedDoc,
                       id: documentId,
-                      filename: updatedDoc.filename || doc.filename || 'Unknown',
+                      filename: updatedDoc.filename || doc.filename || '未知',
                       status: 'completed',
                       progress: 100,
-                      routingDecision: 'Auto-Approved',
+                      routingDecision: '自动批准',
                       // Preserve stages for display
                       stages: updatedDoc.stages || doc.stages || []
                     }];
@@ -623,7 +662,7 @@ const DocumentExtraction: React.FC = () => {
     } catch (error) {
       console.error('Failed to get document results:', error);
       setLoadingResults(false);
-      setSnackbarMessage('Failed to load document results');
+      setSnackbarMessage('文档结果加载失败');
       setSnackbarOpen(true);
     }
   };
@@ -647,16 +686,16 @@ const DocumentExtraction: React.FC = () => {
             mb: 2,
           }}
         >
-          NVIDIA NeMo Processing Pipeline
+          智能文档处理流程
         </Typography>
         <List dense>
           {[
-            { name: '1. Document Preprocessing', description: 'NeMo Retriever Extraction', color: 'primary' },
-            { name: '2. Intelligent OCR', description: 'NeMoRetriever-OCR-v1 + Nemotron Parse', color: 'primary' },
-            { name: '3. Small LLM Processing', description: 'Llama Nemotron Nano VL 8B', color: 'primary' },
-            { name: '4. Embedding & Indexing', description: 'llama-nemotron-embed-vl-1b-v2', color: 'primary' },
-            { name: '5. Large LLM Judge', description: 'Llama 3.3 Nemotron Super 49B', color: 'primary' },
-            { name: '6. Intelligent Routing', description: 'Quality-based routing', color: 'primary' },
+            { name: '1. 文档预处理', description: 'NeMo Retriever 提取', color: 'primary' },
+            { name: '2. 智能 OCR', description: 'NeMoRetriever-OCR-v1 + Nemotron 解析', color: 'primary' },
+            { name: '3. 小型 LLM 处理', description: 'Llama Nemotron Nano VL 8B', color: 'primary' },
+            { name: '4. 嵌入与索引', description: 'llama-nemotron-embed-vl-1b-v2', color: 'primary' },
+            { name: '5. 大型 LLM 判定', description: 'Llama 3.3 Nemotron Super 49B', color: 'primary' },
+            { name: '6. 智能路由', description: '基于质量的路由', color: 'primary' },
           ].map((stage, index) => (
             <ListItem key={index} sx={{ py: 0.5 }}>
               <ListItemIcon sx={{ minWidth: 40 }}>
@@ -723,7 +762,7 @@ const DocumentExtraction: React.FC = () => {
             mb: 2,
           }}
         >
-          Upload Documents
+          上传文档
         </Typography>
         
         {isUploading && (
@@ -736,7 +775,7 @@ const DocumentExtraction: React.FC = () => {
                 fontSize: '0.875rem',
               }}
             >
-              Uploading document... {uploadProgress}%
+              正在上传文档... {uploadProgress}%
             </Typography>
             <LinearProgress 
               variant="determinate" 
@@ -783,7 +822,7 @@ const DocumentExtraction: React.FC = () => {
                 const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
                 
                 if (!allowedTypes.includes(fileExtension)) {
-                  setSnackbarMessage('Unsupported file type. Please upload PDF, PNG, JPG, JPEG, TIFF, or BMP files only.');
+                  setSnackbarMessage('不支持此文件类型。请仅上传 PDF、PNG、JPG、JPEG、TIFF 或 BMP 文件。');
                   setSnackbarOpen(true);
                   return;
                 }
@@ -812,7 +851,7 @@ const DocumentExtraction: React.FC = () => {
                     {selectedFile.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    PDF Document • {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    PDF 文档 • {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                   </Typography>
                 </Box>
               ) : filePreview === 'document' ? (
@@ -822,14 +861,14 @@ const DocumentExtraction: React.FC = () => {
                     {selectedFile.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Document • {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    文档 • {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                   </Typography>
                 </Box>
               ) : (
                 <Box sx={{ mb: 2 }}>
                   <img 
                     src={filePreview} 
-                    alt="Preview" 
+                    alt="文档预览" 
                     style={{ 
                       maxWidth: '300px', 
                       maxHeight: '200px', 
@@ -871,7 +910,7 @@ const DocumentExtraction: React.FC = () => {
                     },
                   }}
                 >
-                  {isUploading ? 'Uploading...' : 'Upload Document'}
+                  {isUploading ? '正在上传...' : '上传文档'}
                 </Button>
                 <Button 
                   variant="outlined" 
@@ -896,7 +935,7 @@ const DocumentExtraction: React.FC = () => {
                     },
                   }}
                 >
-                  Cancel
+                  取消
                 </Button>
               </Box>
             </Box>
@@ -904,13 +943,13 @@ const DocumentExtraction: React.FC = () => {
             <Box>
               <UploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
               <Typography variant="h6" gutterBottom>
-                {isUploading ? 'Uploading...' : 'Click to Select Document'}
+                {isUploading ? '正在上传...' : '点击选择文档'}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Supported formats: PDF, PNG, JPG, JPEG, TIFF, BMP
+                支持的格式：PDF、PNG、JPG、JPEG、TIFF、BMP
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Maximum file size: 50MB
+                文件最大为 50 MB
               </Typography>
             </Box>
           )}
@@ -931,8 +970,7 @@ const DocumentExtraction: React.FC = () => {
           }}
         >
           <Typography variant="body2" sx={{ fontSize: '0.875rem' }}>
-            Documents are processed through NVIDIA's NeMo models for intelligent extraction, 
-            validation, and routing. Processing typically takes 30-60 seconds.
+            文档将通过视觉与语言模型进行智能提取、验证和路由，通常需要 30–60 秒。
           </Typography>
         </Alert>
       </CardContent>
@@ -964,7 +1002,7 @@ const DocumentExtraction: React.FC = () => {
             {document.filename}
           </Typography>
           <Chip 
-            label={document.status} 
+            label={translateDocumentStatus(document.status)} 
             size="small"
             sx={{
               backgroundColor: document.status === 'completed' ? '#3FB950' : '#76B900',
@@ -997,7 +1035,7 @@ const DocumentExtraction: React.FC = () => {
             fontSize: '0.875rem',
           }}
         >
-          {document.progress}% Complete
+          完成 {document.progress}%
         </Typography>
         
         <List dense>
@@ -1035,7 +1073,7 @@ const DocumentExtraction: React.FC = () => {
                     </Typography>
                     {stage.current && (
                       <Chip 
-                        label="Processing" 
+                        label="处理中" 
                         size="small"
                         sx={{
                           backgroundColor: '#76B900',
@@ -1048,7 +1086,7 @@ const DocumentExtraction: React.FC = () => {
                     )}
                     {stage.completed && (
                       <Chip 
-                        label="Complete" 
+                        label="已完成" 
                         size="small"
                         sx={{
                           backgroundColor: '#3FB950',
@@ -1111,7 +1149,7 @@ const DocumentExtraction: React.FC = () => {
             </Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Chip 
-                label="Completed" 
+                label="已完成" 
                 size="small"
                 sx={{
                   backgroundColor: '#3FB950',
@@ -1121,7 +1159,7 @@ const DocumentExtraction: React.FC = () => {
                 }}
               />
               <Chip 
-                label={document.routingDecision || "Auto-Approved"} 
+                label={translateRoutingDecision(document.routingDecision || 'auto_approved')} 
                 size="small"
                 sx={{
                   backgroundColor: '#76B900',
@@ -1142,7 +1180,7 @@ const DocumentExtraction: React.FC = () => {
                   fontSize: '0.875rem',
                 }}
               >
-                Quality Score:
+                质量得分：
               </Typography>
               <Box
                 sx={{
@@ -1196,7 +1234,7 @@ const DocumentExtraction: React.FC = () => {
                   fontSize: '0.875rem',
                 }}
               >
-                {document.qualityScore ? `${document.qualityScore}/5.0` : 'N/A'}
+                {document.qualityScore ? `${document.qualityScore}/5.0` : '暂无'}
               </Typography>
             </Box>
             <Typography 
@@ -1206,7 +1244,7 @@ const DocumentExtraction: React.FC = () => {
                 fontSize: '0.875rem',
               }}
             >
-              Processing Time: {document.processingTime ? `${document.processingTime}s` : 'N/A'}
+              处理时间：{document.processingTime ? `${document.processingTime} 秒` : '暂无'}
             </Typography>
           </Box>
           
@@ -1226,7 +1264,7 @@ const DocumentExtraction: React.FC = () => {
                 },
               }}
             >
-              View Results
+              查看结果
             </Button>
             <Button 
               size="small" 
@@ -1242,7 +1280,7 @@ const DocumentExtraction: React.FC = () => {
                 },
               }}
             >
-              Download
+              下载
             </Button>
           </Box>
         </CardContent>
@@ -1263,7 +1301,7 @@ const DocumentExtraction: React.FC = () => {
             mb: 1,
           }}
         >
-          Document Extraction & Processing
+          文档提取与处理
         </Typography>
         <Typography 
           variant="body1" 
@@ -1273,7 +1311,7 @@ const DocumentExtraction: React.FC = () => {
             fontSize: '0.9375rem',
           }}
         >
-          Upload warehouse documents for intelligent extraction and processing using NVIDIA NeMo models
+          上传仓库文档，使用智能文档模型进行提取和处理
         </Typography>
       </Box>
 
@@ -1281,7 +1319,7 @@ const DocumentExtraction: React.FC = () => {
         <Tabs 
           value={activeTab} 
           onChange={handleTabChange} 
-          aria-label="document processing tabs"
+          aria-label="文档处理标签页"
           sx={{
             '& .MuiTab-root': {
               color: '#8B949E',
@@ -1298,10 +1336,10 @@ const DocumentExtraction: React.FC = () => {
             },
           }}
         >
-          <Tab label="Upload Documents" icon={<UploadIcon />} iconPosition="start" />
-          <Tab label="Processing Status" icon={<SearchIcon />} iconPosition="start" />
-          <Tab label="Completed Documents" icon={<ApprovedIcon />} iconPosition="start" />
-          <Tab label="Analytics" icon={<AnalyticsIcon />} iconPosition="start" />
+          <Tab label="上传文档" icon={<UploadIcon />} iconPosition="start" />
+          <Tab label="处理状态" icon={<SearchIcon />} iconPosition="start" />
+          <Tab label="已完成文档" icon={<ApprovedIcon />} iconPosition="start" />
+          <Tab label="分析" icon={<AnalyticsIcon />} iconPosition="start" />
         </Tabs>
       </Box>
 
@@ -1337,7 +1375,7 @@ const DocumentExtraction: React.FC = () => {
                     mb: 1,
                   }}
                 >
-                  No documents currently processing
+                  当前没有正在处理的文档
                 </Typography>
                 <Typography 
                   variant="body2" 
@@ -1346,7 +1384,7 @@ const DocumentExtraction: React.FC = () => {
                     fontSize: '0.875rem',
                   }}
                 >
-                  Upload a document to see processing status
+                  上传文档后即可查看处理状态
                 </Typography>
               </Paper>
             </Grid>
@@ -1380,7 +1418,7 @@ const DocumentExtraction: React.FC = () => {
                     mb: 1,
                   }}
                 >
-                  No completed documents
+                  暂无已完成文档
                 </Typography>
                 <Typography 
                   variant="body2" 
@@ -1389,7 +1427,7 @@ const DocumentExtraction: React.FC = () => {
                     fontSize: '0.875rem',
                   }}
                 >
-                  Processed documents will appear here
+                  处理完成的文档将显示在此处
                 </Typography>
               </Paper>
             </Grid>
@@ -1423,24 +1461,24 @@ const DocumentExtraction: React.FC = () => {
                     mb: 2,
                   }}
                 >
-                  Processing Statistics
+                  处理统计
                 </Typography>
                 {analyticsData ? (
                   <List>
                     <ListItem>
-                      <ListItemText primary="Total Documents" secondary={analyticsData.metrics.total_documents.toLocaleString()} />
+                      <ListItemText primary="文档总数" secondary={analyticsData.metrics.total_documents.toLocaleString()} />
                     </ListItem>
                     <ListItem>
-                      <ListItemText primary="Processed Today" secondary={analyticsData.metrics.processed_today.toString()} />
+                      <ListItemText primary="今日已处理" secondary={analyticsData.metrics.processed_today.toString()} />
                     </ListItem>
                     <ListItem>
-                      <ListItemText primary="Average Quality" secondary={`${analyticsData.metrics.average_quality}/5.0`} />
+                      <ListItemText primary="平均质量" secondary={`${analyticsData.metrics.average_quality}/5.0`} />
                     </ListItem>
                     <ListItem>
-                      <ListItemText primary="Auto-Approved" secondary={`${analyticsData.metrics.auto_approved}%`} />
+                      <ListItemText primary="自动批准" secondary={`${analyticsData.metrics.auto_approved}%`} />
                     </ListItem>
                     <ListItem>
-                      <ListItemText primary="Success Rate" secondary={`${analyticsData.metrics.success_rate}%`} />
+                      <ListItemText primary="成功率" secondary={`${analyticsData.metrics.success_rate}%`} />
                     </ListItem>
                   </List>
                 ) : (
@@ -1470,7 +1508,7 @@ const DocumentExtraction: React.FC = () => {
                     mb: 2,
                   }}
                 >
-                  Quality Score Trends
+                  质量得分趋势
                 </Typography>
                 {analyticsData && analyticsData.trends && analyticsData.trends.quality_trends ? (
                   analyticsData.trends.quality_trends.length > 0 ? (
@@ -1478,7 +1516,7 @@ const DocumentExtraction: React.FC = () => {
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                           data={analyticsData.trends.quality_trends.map((score, index) => ({
-                            day: `Day ${index + 1}`,
+                            day: `第 ${index + 1} 天`,
                             quality: score,
                           }))}
                           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -1491,10 +1529,10 @@ const DocumentExtraction: React.FC = () => {
                           <YAxis 
                             domain={[0, 5]}
                             tick={{ fontSize: 12 }}
-                            label={{ value: 'Quality Score', angle: -90, position: 'insideLeft' }}
+                            label={{ value: '质量得分', angle: -90, position: 'insideLeft' }}
                           />
                           <Tooltip 
-                            formatter={(value: number) => [`${value.toFixed(2)}/5.0`, 'Quality Score']}
+                            formatter={(value: number) => [`${value.toFixed(2)}/5.0`, '质量得分']}
                             labelFormatter={(label) => `${label}`}
                           />
                           <Line 
@@ -1511,10 +1549,10 @@ const DocumentExtraction: React.FC = () => {
                   ) : (
                     <Box sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 2 }}>
                       <Typography variant="body2" color="text.secondary">
-                        No quality score data available yet
+                        暂无质量得分数据
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Process documents to see quality trends
+                        处理文档后即可查看质量趋势
                       </Typography>
                     </Box>
                   )
@@ -1531,7 +1569,7 @@ const DocumentExtraction: React.FC = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Processing Volume Trends
+                  处理量趋势
                 </Typography>
                 {analyticsData && analyticsData.trends && analyticsData.trends.daily_processing ? (
                   analyticsData.trends.daily_processing.length > 0 ? (
@@ -1539,7 +1577,7 @@ const DocumentExtraction: React.FC = () => {
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart
                           data={analyticsData.trends.daily_processing.map((count, index) => ({
-                            day: `Day ${index + 1}`,
+                            day: `第 ${index + 1} 天`,
                             documents: count,
                           }))}
                           margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
@@ -1551,10 +1589,10 @@ const DocumentExtraction: React.FC = () => {
                           />
                           <YAxis 
                             tick={{ fontSize: 12 }}
-                            label={{ value: 'Documents Processed', angle: -90, position: 'insideLeft' }}
+                            label={{ value: '已处理文档', angle: -90, position: 'insideLeft' }}
                           />
                           <Tooltip 
-                            formatter={(value: number) => [`${value}`, 'Documents']}
+                            formatter={(value: number) => [`${value}`, '文档数']}
                             labelFormatter={(label) => `${label}`}
                           />
                           <Line 
@@ -1571,10 +1609,10 @@ const DocumentExtraction: React.FC = () => {
                   ) : (
                     <Box sx={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 2 }}>
                       <Typography variant="body2" color="text.secondary">
-                        No processing volume data available yet
+                        暂无处理量数据
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Process documents to see volume trends
+                        处理文档后即可查看处理量趋势
                       </Typography>
                     </Box>
                   )
@@ -1618,7 +1656,7 @@ const DocumentExtraction: React.FC = () => {
                 color: '#E6EDF3',
               }}
             >
-              Document Results - {selectedDocument?.filename}
+              文档结果 - {selectedDocument?.filename}
             </Typography>
             <Button
               onClick={() => setResultsDialogOpen(false)}
@@ -1632,7 +1670,7 @@ const DocumentExtraction: React.FC = () => {
                 },
               }}
             >
-              Close
+              关闭
             </Button>
           </Box>
         </DialogTitle>
@@ -1648,8 +1686,8 @@ const DocumentExtraction: React.FC = () => {
               {documentResults.is_mock_data && (
                 <Alert severity="warning" sx={{ mb: 3 }}>
                   <Typography variant="body2">
-                    <strong>⚠️ Mock Data Warning:</strong> This document is showing default/mock data because the original file is no longer available or processing results were not stored. 
-                    The displayed information may not reflect the actual uploaded document.
+                    <strong>⚠️ 模拟数据警告：</strong>由于原始文件已不可用或处理结果未保存，当前显示的是默认/模拟数据。
+                    显示的信息可能与实际上传的文档不符。
                   </Typography>
                 </Alert>
               )}
@@ -1657,17 +1695,17 @@ const DocumentExtraction: React.FC = () => {
               <Card sx={{ mb: 3, bgcolor: 'primary.50' }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom color="primary">
-                    📄 Document Overview
+                    📄 文档概览
                   </Typography>
                   <Grid container spacing={2}>
                     <Grid item xs={12} sm={6}>
                       <Typography variant="body2" color="text.secondary">
-                        <strong>Document Type:</strong> {documentResults.extracted_data?.document_type || 'Unknown'}
+                        <strong>文档类型：</strong> {documentResults.extracted_data?.document_type ? translateDocumentType(documentResults.extracted_data.document_type) : '未知'}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
                       <Typography variant="body2" color="text.secondary">
-                        <strong>Total Pages:</strong> {documentResults.extracted_data?.total_pages || 'N/A'}
+                        <strong>总页数：</strong> {documentResults.extracted_data?.total_pages || '暂无'}
                       </Typography>
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -1678,7 +1716,7 @@ const DocumentExtraction: React.FC = () => {
                           fontSize: '0.875rem',
                         }}
                       >
-                        <strong style={{ color: '#E6EDF3' }}>Quality Score:</strong>{' '}
+                        <strong style={{ color: '#E6EDF3' }}>质量得分：</strong>{' '}
                         <Chip 
                           label={`${documentResults.quality_score}/5.0`}
                           size="small"
@@ -1700,9 +1738,9 @@ const DocumentExtraction: React.FC = () => {
                           fontSize: '0.875rem',
                         }}
                       >
-                        <strong style={{ color: '#E6EDF3' }}>Routing Decision:</strong>{' '}
+                        <strong style={{ color: '#E6EDF3' }}>路由决策：</strong>{' '}
                         <Chip 
-                          label={documentResults.routing_decision}
+                          label={translateRoutingDecision(documentResults.routing_decision)}
                           size="small"
                           sx={{ 
                             ml: 1,
@@ -1722,7 +1760,7 @@ const DocumentExtraction: React.FC = () => {
               {loadingResults ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
                   <CircularProgress />
-                  <Typography variant="body2" sx={{ ml: 2 }}>Loading document results...</Typography>
+                  <Typography variant="body2" sx={{ ml: 2 }}>正在加载文档结果...</Typography>
                 </Box>
               ) : documentResults && documentResults.extracted_data && Object.keys(documentResults.extracted_data).length > 0 ? (
                 <>
@@ -1731,7 +1769,7 @@ const DocumentExtraction: React.FC = () => {
                     <Card sx={{ mb: 3 }}>
                       <CardContent>
                         <Typography variant="h6" gutterBottom>
-                          📝 Extracted Text
+                          📝 已提取文本
                         </Typography>
                         <Box sx={{ 
                           p: 2, 
@@ -1748,7 +1786,7 @@ const DocumentExtraction: React.FC = () => {
                         </Box>
                         <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
                           <Typography variant="caption" color="text.secondary">
-                            Confidence: 
+                            置信度：
                           </Typography>
                           <Chip 
                             label={`${Math.round((documentResults.confidence_scores?.extracted_text || documentResults.confidence_scores?.text || 0) * 100)}%`}
@@ -1766,7 +1804,7 @@ const DocumentExtraction: React.FC = () => {
                     <Card sx={{ mb: 3 }}>
                       <CardContent>
                         <Typography variant="h6" gutterBottom>
-                          🎯 Quality Assessment
+                          🎯 质量评估
                         </Typography>
                         <Grid container spacing={2}>
                           {(() => {
@@ -1792,7 +1830,7 @@ const DocumentExtraction: React.FC = () => {
                               return (
                                 <Grid item xs={12}>
                                   <Typography variant="body2" color="error">
-                                    Error displaying quality assessment data
+                                    质量评估数据显示失败
                                   </Typography>
                                 </Grid>
                               );
@@ -1843,10 +1881,10 @@ const DocumentExtraction: React.FC = () => {
                     // Combine all processing information
                     const combinedInfo = {
                       ...metadata,
-                      models_used: allModels.length > 0 ? allModels.join(', ') : metadata.model_used || 'N/A',
+                      models_used: allModels.length > 0 ? allModels.join(', ') : metadata.model_used || '暂无',
                       model_count: allModels.length || 1,
                       timestamp: metadata.timestamp || new Date().toISOString(),
-                      multimodal: metadata.multimodal !== undefined ? String(metadata.multimodal) : 'false',
+                      multimodal: metadata.multimodal !== undefined ? metadata.multimodal : false,
                       ...processingInfo,
                     };
                     
@@ -1855,7 +1893,7 @@ const DocumentExtraction: React.FC = () => {
                         <Card sx={{ mb: 3 }}>
                           <CardContent>
                             <Typography variant="h6" gutterBottom>
-                              ⚙️ Processing Information
+                              ⚙️ 处理信息
                             </Typography>
                             <Grid container spacing={2}>
                               {Object.entries(combinedInfo).map(([key, value]) => (
@@ -1869,7 +1907,9 @@ const DocumentExtraction: React.FC = () => {
                                     <strong style={{ color: '#E6EDF3' }}>
                                       {key.replace(/_/g, ' ').toUpperCase()}:
                                     </strong>{' '}
-                                    <span style={{ color: '#8B949E' }}>{String(value)}</span>
+                                    <span style={{ color: '#8B949E' }}>
+                                      {typeof value === 'boolean' ? (value ? '是' : '否') : String(value)}
+                                    </span>
                                   </Typography>
                                 </Grid>
                               ))}
@@ -1885,15 +1925,15 @@ const DocumentExtraction: React.FC = () => {
                   <Card sx={{ mb: 3 }}>
                     <CardContent>
                       <Typography variant="h6" gutterBottom>
-                        🔍 All Extracted Data
+                        🔍 全部提取数据
                       </Typography>
                       <TableContainer component={Paper} sx={{ maxHeight: 400 }}>
                         <Table size="small">
                           <TableHead>
                             <TableRow>
-                              <TableCell><strong>Field</strong></TableCell>
-                              <TableCell><strong>Value</strong></TableCell>
-                              <TableCell><strong>Confidence</strong></TableCell>
+                              <TableCell><strong>字段</strong></TableCell>
+                              <TableCell><strong>值</strong></TableCell>
+                              <TableCell><strong>置信度</strong></TableCell>
                             </TableRow>
                           </TableHead>
                           <TableBody>
@@ -1988,7 +2028,7 @@ const DocumentExtraction: React.FC = () => {
                                   <TableRow>
                                     <TableCell colSpan={3} align="center">
                                       <Typography variant="body2" color="text.secondary">
-                                        No extracted fields available. The document may still be processing.
+                                        暂无可用的提取字段，文档可能仍在处理中。
                                       </Typography>
                                     </TableCell>
                                   </TableRow>
@@ -2000,13 +2040,15 @@ const DocumentExtraction: React.FC = () => {
                                 let displayValue: string;
                                 if (typeof value === 'object' && value !== null) {
                                   if (Array.isArray(value)) {
-                                    displayValue = value.length > 0 ? `[${value.length} items]` : '[]';
+                                    displayValue = value.length > 0 ? `[共 ${value.length} 项]` : '[]';
                                   } else if ('value' in value && typeof value.value !== 'object') {
                                     displayValue = String(value.value);
                                   } else {
                                     displayValue = JSON.stringify(value).substring(0, 200);
                                     if (JSON.stringify(value).length > 200) displayValue += '...';
                                   }
+                                } else if (typeof value === 'boolean') {
+                                  displayValue = value ? '是' : '否';
                                 } else {
                                   displayValue = String(value);
                                 }
@@ -2059,10 +2101,10 @@ const DocumentExtraction: React.FC = () => {
                 <Card sx={{ mb: 3 }}>
                   <CardContent>
                     <Typography variant="h6" gutterBottom color="warning.main">
-                      ⚠️ No Extracted Data Available
+                      ⚠️ 暂无提取数据
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      The document processing may not have completed successfully or the data structure is different than expected.
+                      文档处理可能未成功完成，或数据结构与预期不符。
                     </Typography>
                   </CardContent>
                 </Card>
@@ -2072,17 +2114,17 @@ const DocumentExtraction: React.FC = () => {
               <Card sx={{ mb: 3 }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    🔄 Processing Stages
+                    🔄 处理阶段
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                     {documentResults.processing_stages?.map((stage, index) => (
                       <Chip 
                         key={stage}
-                        label={`${index + 1}. ${stage.replace(/_/g, ' ').toUpperCase()}`}
+                        label={`${index + 1}. ${translateProcessingStage(stage)}`}
                         color="primary"
                         variant="outlined"
                       />
-                    )) || <Typography variant="body2" color="text.secondary">No processing stages available</Typography>}
+                    )) || <Typography variant="body2" color="text.secondary">暂无处理阶段</Typography>}
                   </Box>
                 </CardContent>
               </Card>
@@ -2090,17 +2132,17 @@ const DocumentExtraction: React.FC = () => {
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', p: 4 }}>
               <Typography variant="h6" color="text.secondary" gutterBottom>
-                No Results Available
+                暂无结果
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Document processing may still be in progress or failed to complete.
+                文档可能仍在处理中，或处理未能完成。
               </Typography>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setResultsDialogOpen(false)}>
-            Close
+            关闭
           </Button>
         </DialogActions>
       </Dialog>

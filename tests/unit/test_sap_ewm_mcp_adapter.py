@@ -1,5 +1,6 @@
 """Service and MCP boundary tests for the four SAP EWM tools."""
 
+from datetime import UTC, datetime
 from decimal import Decimal
 from unittest.mock import AsyncMock
 
@@ -21,6 +22,7 @@ from src.api.services.mcp.adapters.sap_ewm_adapter import (
     SAPEWMMCPAdapterConfig,
     get_sap_ewm_mcp_adapter,
 )
+from src.api.services.execution.models import Command
 from src.api.services.mcp.adapters.wms_adapter import WMSAdapter, WMSConfig
 from src.api.services.wms.integration_service import WMSIntegrationService
 
@@ -144,31 +146,31 @@ async def test_stock_tool_delegates_with_one_request_id() -> None:
 
 
 @pytest.mark.asyncio
-async def test_only_four_tools_are_exposed() -> None:
+async def test_agent_facing_adapter_exposes_only_read_tools() -> None:
     service = AsyncMock(spec=WMSIntegrationService)
     service.adapters = {}
     service.add_wms_connection.return_value = True
-    adapter = SAPEWMMCPAdapter(
-        SAPEWMMCPAdapterConfig(), sap_config(), service
-    )
+    adapter = SAPEWMMCPAdapter(SAPEWMMCPAdapterConfig(), sap_config(), service)
 
     assert await adapter.initialize() is True
     assert set(adapter.tools) == {
         "sap_ewm_get_physical_stock",
         "sap_ewm_list_orders_and_tasks",
-        "sap_ewm_assign_warehouse_order",
-        "sap_ewm_confirm_warehouse_task",
     }
     assert adapter.tools["sap_ewm_get_physical_stock"].metadata == {
         "read_only": True,
         "mutating": False,
         "requires_approval": False,
     }
-    assert adapter.tools["sap_ewm_assign_warehouse_order"].metadata == {
-        "read_only": False,
-        "mutating": True,
-        "requires_approval": True,
-    }
+    with pytest.raises(ValueError, match="not found"):
+        await adapter.execute_tool(
+            "sap_ewm_assign_warehouse_order",
+            {
+                "warehouse_order": "2000005003",
+                "resource": "RES2",
+                "reason": "balance workload",
+            },
+        )
 
 
 @pytest.mark.asyncio
@@ -203,64 +205,54 @@ async def test_order_tool_serializes_domain_result() -> None:
 
 
 @pytest.mark.asyncio
-async def test_write_tools_validate_reason_and_delegate() -> None:
-    service = AsyncMock(spec=WMSIntegrationService)
-    service.adapters = {}
-    service.add_wms_connection.return_value = True
-    service.assign_warehouse_order.return_value = SAPWriteResult(
-        operation="assign_warehouse_order",
-        entity_id="2000005003",
-        status="ASSIGNED",
+async def test_wms_service_executes_and_reads_back_an_approved_command() -> None:
+    now = datetime.now(UTC)
+    command = Command(
+        command_id="command-1",
+        tenant_id="tenant-1",
+        capability="sap.ewm.order.assign",
+        action_id="action-1",
+        action_hash="a" * 64,
+        idempotency_key="tenant-1:assign:2000005003:RES2",
+        target={
+            "resource_type": "warehouse_order",
+            "resource_id": "2000005003",
+            "warehouse_id": "EW01",
+            "expected_version": 'W/"APPROVED-1"',
+        },
+        arguments={"warehouse_order": "2000005003", "resource": "RES2"},
+        expected_version='W/"APPROVED-1"',
+        created_at=now,
+        updated_at=now,
     )
-    service.confirm_warehouse_task.return_value = SAPWriteResult(
-        operation="confirm_warehouse_task_exact",
-        entity_id="1000004703",
-        status="CONFIRMED",
-    )
-    request_ids = iter(["request-assign", "request-confirm"])
-    adapter = SAPEWMMCPAdapter(
-        SAPEWMMCPAdapterConfig(),
-        sap_config(),
-        service,
-        request_id_factory=lambda: next(request_ids),
-    )
-    await adapter.initialize()
-
-    with pytest.raises(ValidationError):
-        await adapter.execute_tool(
-            "sap_ewm_assign_warehouse_order",
-            {"warehouse_order": "2000005003", "resource": "RES2"},
+    service = WMSIntegrationService()
+    adapter = SAPEWMAdapter(sap_config(), client=AsyncMock())
+    adapter.connected = True
+    adapter.assign_warehouse_order = AsyncMock(
+        return_value=SAPWriteResult(
+            operation="assign_warehouse_order",
+            entity_id="2000005003",
+            status="ASSIGNED",
         )
-
-    assigned = await adapter.execute_tool(
-        "sap_ewm_assign_warehouse_order",
-        {
-            "warehouse_order": "2000005003",
-            "resource": "RES2",
-            "reason": "balance workload",
-        },
     )
-    confirmed = await adapter.execute_tool(
-        "sap_ewm_confirm_warehouse_task",
-        {
-            "warehouse_task": "1000004703",
-            "reason": "physical move verified",
-        },
+    adapter.get_warehouse_order = AsyncMock(
+        return_value=order_result()
+        .orders[0]
+        .model_copy(update={"executing_resource": "RES2"})
     )
+    service.adapters["sap-ewm-default"] = adapter
 
-    assert assigned["data"]["status"] == "ASSIGNED"
-    assert confirmed["data"]["status"] == "CONFIRMED"
-    service.assign_warehouse_order.assert_awaited_once_with(
-        "sap-ewm-default",
+    submitted = await service.execute(command, connection_id="sap-ewm-default")
+    verified = await service.read_back(command, connection_id="sap-ewm-default")
+
+    assert submitted.accepted is True
+    assert verified.verified is True
+    assert verified.data["executing_resource"] == "RES2"
+    adapter.assign_warehouse_order.assert_awaited_once_with(
         "2000005003",
         "RES2",
-        "request-assign",
-    )
-    service.confirm_warehouse_task.assert_awaited_once_with(
-        "sap-ewm-default",
-        "1000004703",
-        "0",
-        "request-confirm",
+        correlation_id="command-1",
+        expected_etag='W/"APPROVED-1"',
     )
 
 
@@ -269,9 +261,7 @@ async def test_tool_schema_forbids_unknown_connection_or_credentials() -> None:
     service = AsyncMock(spec=WMSIntegrationService)
     service.adapters = {}
     service.add_wms_connection.return_value = True
-    adapter = SAPEWMMCPAdapter(
-        SAPEWMMCPAdapterConfig(), sap_config(), service
-    )
+    adapter = SAPEWMMCPAdapter(SAPEWMMCPAdapterConfig(), sap_config(), service)
     await adapter.initialize()
 
     schema = adapter.tools["sap_ewm_get_physical_stock"].parameters

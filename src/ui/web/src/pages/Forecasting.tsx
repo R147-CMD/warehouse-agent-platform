@@ -76,6 +76,29 @@ import { useQuery } from '@tanstack/react-query';
 import { forecastingAPI } from '../services/forecastingAPI';
 import { trainingAPI, TrainingRequest, TrainingStatus } from '../services/trainingAPI';
 import { TabPanel } from '../components/common';
+import {
+  formatZhDate,
+  formatZhDateTime,
+  translatePriority,
+  translateStatus,
+  translateTrainingMessage,
+} from '../localization/zhCN';
+
+const trendLabels: Readonly<Record<string, string>> = {
+  increasing: '上升',
+  decreasing: '下降',
+  stable: '稳定',
+};
+
+const translateTrend = (trend: string) => trendLabels[trend.toLowerCase()] || trend;
+
+const translateTrainingType = (type: string) => {
+  const normalized = type.toLowerCase();
+  return normalized === 'advanced' ? '高级' : normalized === 'basic' ? '基础' : type;
+};
+
+const translateModelStatus = (status: string) =>
+  status.toUpperCase() === 'WARNING' ? '警告' : translateStatus(status);
 
 const ForecastingPage: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState(0);
@@ -194,12 +217,12 @@ const ForecastingPage: React.FC = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
-          Error loading forecasting data: {dashboardError instanceof Error ? dashboardError.message : 'Unknown error'}
+          预测数据加载失败，请检查服务连接后重试。
         </Alert>
         <Button onClick={() => {
           refetchDashboard();
         }} variant="contained">
-          Retry
+          重试
         </Button>
       </Box>
     );
@@ -210,7 +233,7 @@ const ForecastingPage: React.FC = () => {
       <Box sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" component="h1" gutterBottom>
-            Demand Forecasting Dashboard
+            需求预测仪表板
           </Typography>
           <CircularProgress size={24} />
         </Box>
@@ -223,7 +246,7 @@ const ForecastingPage: React.FC = () => {
                 <CardContent>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <CircularProgress size={20} sx={{ mr: 1 }} />
-                    <Typography variant="h6">Loading...</Typography>
+                    <Typography variant="h6">正在加载...</Typography>
                   </Box>
                   <Typography variant="h4" sx={{ mt: 1 }}>
                     --
@@ -235,7 +258,7 @@ const ForecastingPage: React.FC = () => {
         </Grid>
         
         <Typography variant="body1" sx={{ textAlign: 'center', color: 'text.secondary' }}>
-          Loading forecasting data... This may take a few seconds.
+          正在加载预测数据，可能需要几秒钟。
         </Typography>
       </Box>
     );
@@ -245,9 +268,9 @@ const ForecastingPage: React.FC = () => {
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          Demand Forecasting Dashboard
+          需求预测仪表板
         </Typography>
-        <IconButton onClick={() => {
+        <IconButton aria-label="刷新预测数据" onClick={() => {
           refetchDashboard();
         }} color="primary">
           <RefreshIcon />
@@ -258,14 +281,13 @@ const ForecastingPage: React.FC = () => {
       <Alert severity="success" sx={{ mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', mr: 1 }}>
-            🚀 XGBoost Integration Complete!
+            🚀 XGBoost 集成已完成！
           </Typography>
-          <Chip label="NEW" color="primary" size="small" />
+          <Chip label="新" color="primary" size="small" />
         </Box>
         <Typography variant="body2">
-          Our demand forecasting system now includes <strong>XGBoost</strong> as part of our advanced ensemble model. 
-          XGBoost provides enhanced accuracy with hyperparameter optimization and is now actively generating predictions 
-          alongside Random Forest, Gradient Boosting, and other models.
+          需求预测系统现已将 <strong>XGBoost</strong> 纳入高级集成模型。
+          XGBoost 通过超参数优化提高预测准确度，并已与随机森林、梯度提升等模型协同生成预测。
         </Typography>
       </Alert>
 
@@ -277,7 +299,7 @@ const ForecastingPage: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <AnalyticsIcon color="primary" sx={{ mr: 1 }} />
                 <Typography variant="h6" component="div">
-                  Products Forecasted
+                  已预测产品
                 </Typography>
               </Box>
               <Typography variant="h4" component="div" sx={{ mt: 1 }}>
@@ -292,7 +314,7 @@ const ForecastingPage: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <WarningIcon color="warning" sx={{ mr: 1 }} />
                 <Typography variant="h6" component="div">
-                  Reorder Alerts
+                  补货警报
                 </Typography>
               </Box>
               <Typography variant="h4" component="div" sx={{ mt: 1 }}>
@@ -309,13 +331,13 @@ const ForecastingPage: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <SpeedIcon color="info" sx={{ mr: 1 }} />
                 <Typography variant="h6" component="div">
-                  Avg Accuracy
+                  平均准确率
                 </Typography>
               </Box>
               <Typography variant="h4" component="div" sx={{ mt: 1 }}>
                 {(dashboardData as any)?.model_performance ? 
                   `${((dashboardData as any).model_performance.reduce((acc: number, m: any) => acc + m.accuracy_score, 0) / (dashboardData as any).model_performance.length * 100).toFixed(1)}%` 
-                  : 'N/A'
+                  : '暂无'
                 }
               </Typography>
             </CardContent>
@@ -327,7 +349,7 @@ const ForecastingPage: React.FC = () => {
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <InventoryIcon color="success" sx={{ mr: 1 }} />
                 <Typography variant="h6" component="div">
-                  Models Active
+                  活跃模型
                 </Typography>
               </Box>
               <Typography variant="h4" component="div" sx={{ mt: 1 }}>
@@ -340,30 +362,30 @@ const ForecastingPage: React.FC = () => {
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={selectedTab} onChange={handleTabChange} aria-label="forecasting tabs">
-          <Tab label="Forecast Summary" />
-          <Tab label="Reorder Recommendations" />
-          <Tab label="Model Performance" />
-          <Tab label="Business Intelligence" />
-          <Tab label="Training" />
+        <Tabs value={selectedTab} onChange={handleTabChange} aria-label="预测功能标签页">
+          <Tab label="预测摘要" />
+          <Tab label="补货建议" />
+          <Tab label="模型性能" />
+          <Tab label="商业智能" />
+          <Tab label="训练" />
         </Tabs>
       </Box>
 
       {/* Forecast Summary Tab */}
       <TabPanel value={selectedTab} index={0} idPrefix="forecast">
         <Typography variant="h5" gutterBottom>
-          Product Demand Forecasts
+          产品需求预测
         </Typography>
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
                 <TableCell>SKU</TableCell>
-                <TableCell>Avg Daily Demand</TableCell>
-                <TableCell>Min Demand</TableCell>
-                <TableCell>Max Demand</TableCell>
-                <TableCell>Trend</TableCell>
-                <TableCell>Forecast Date</TableCell>
+                <TableCell>平均日需求</TableCell>
+                <TableCell>最低需求</TableCell>
+                <TableCell>最高需求</TableCell>
+                <TableCell>趋势</TableCell>
+                <TableCell>预测日期</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -381,12 +403,12 @@ const ForecastingPage: React.FC = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       {getTrendIcon(data.trend)}
                       <Typography variant="body2" sx={{ ml: 1, textTransform: 'capitalize' }}>
-                        {data.trend}
+                        {translateTrend(data.trend)}
                       </Typography>
                     </Box>
                   </TableCell>
                   <TableCell>
-                    {new Date(data.forecast_date).toLocaleDateString()}
+                    {formatZhDate(data.forecast_date)}
                   </TableCell>
                 </TableRow>
               ))}
@@ -398,7 +420,7 @@ const ForecastingPage: React.FC = () => {
       {/* Reorder Recommendations Tab */}
       <TabPanel value={selectedTab} index={1} idPrefix="forecast">
         <Typography variant="h5" gutterBottom>
-          Reorder Recommendations
+          补货建议
         </Typography>
         {(dashboardData as any)?.reorder_recommendations && (dashboardData as any).reorder_recommendations.length > 0 ? (
           <TableContainer component={Paper}>
@@ -406,11 +428,11 @@ const ForecastingPage: React.FC = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>SKU</TableCell>
-                  <TableCell>Current Stock</TableCell>
-                  <TableCell>Recommended Order</TableCell>
-                  <TableCell>Urgency</TableCell>
-                  <TableCell>Reason</TableCell>
-                  <TableCell>Confidence</TableCell>
+                  <TableCell>当前库存</TableCell>
+                  <TableCell>建议订货量</TableCell>
+                  <TableCell>紧迫程度</TableCell>
+                  <TableCell>原因</TableCell>
+                  <TableCell>置信度</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -425,7 +447,7 @@ const ForecastingPage: React.FC = () => {
                     <TableCell>{rec.recommended_order_quantity}</TableCell>
                     <TableCell>
                       <Chip 
-                        label={rec.urgency_level} 
+                        label={translatePriority(rec.urgency_level)} 
                         color={getUrgencyColor(rec.urgency_level.toLowerCase()) as any}
                         size="small"
                       />
@@ -439,7 +461,7 @@ const ForecastingPage: React.FC = () => {
           </TableContainer>
         ) : (
           <Alert severity="info">
-            No reorder recommendations available at this time.
+            当前暂无补货建议。
           </Alert>
         )}
       </TabPanel>
@@ -447,7 +469,7 @@ const ForecastingPage: React.FC = () => {
       {/* Model Performance Tab */}
       <TabPanel value={selectedTab} index={2} idPrefix="forecast">
         <Typography variant="h5" gutterBottom>
-          Model Performance Metrics
+          模型性能指标
         </Typography>
         
         {/* Model Comparison Cards */}
@@ -469,7 +491,7 @@ const ForecastingPage: React.FC = () => {
                     </Typography>
                     {model.model_name === 'XGBoost' && (
                       <Chip 
-                        label="NEW" 
+                        label="新" 
                         size="small" 
                         color="primary" 
                         sx={{ ml: 1, fontSize: '0.7rem' }}
@@ -479,7 +501,7 @@ const ForecastingPage: React.FC = () => {
                   
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Accuracy Score
+                      准确率得分
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <LinearProgress 
@@ -505,7 +527,7 @@ const ForecastingPage: React.FC = () => {
                     </Grid>
                     <Grid item xs={6}>
                       <Typography variant="body2" color="text.secondary">
-                        Drift Score
+                        漂移得分
                       </Typography>
                       <Typography variant="body2" fontWeight="bold">
                         {model.drift_score.toFixed(2)}
@@ -516,12 +538,12 @@ const ForecastingPage: React.FC = () => {
                   <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Chip
                       icon={model.status === 'HEALTHY' ? <CheckCircleIcon /> : <WarningIcon />}
-                      label={model.status}
+                      label={translateModelStatus(model.status)}
                       color={model.status === 'HEALTHY' ? 'success' : model.status === 'WARNING' ? 'warning' : 'error'}
                       size="small"
                     />
                     <Typography variant="caption" color="text.secondary">
-                      {new Date(model.last_training_date).toLocaleDateString()}
+                      {formatZhDate(model.last_training_date)}
                     </Typography>
                   </Box>
                 </CardContent>
@@ -532,20 +554,20 @@ const ForecastingPage: React.FC = () => {
         
         {/* Detailed Model Performance Table */}
         <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-          Detailed Performance Metrics
+          详细性能指标
         </Typography>
         {(dashboardData as any)?.model_performance && (dashboardData as any).model_performance.length > 0 ? (
           <TableContainer component={Paper}>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Model Name</TableCell>
-                  <TableCell>Accuracy</TableCell>
+                  <TableCell>模型名称</TableCell>
+                  <TableCell>准确率</TableCell>
                   <TableCell>MAPE</TableCell>
-                  <TableCell>Drift Score</TableCell>
-                  <TableCell>Predictions</TableCell>
-                  <TableCell>Last Trained</TableCell>
-                  <TableCell>Status</TableCell>
+                  <TableCell>漂移得分</TableCell>
+                  <TableCell>预测数</TableCell>
+                  <TableCell>最后训练</TableCell>
+                  <TableCell>状态</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -560,7 +582,7 @@ const ForecastingPage: React.FC = () => {
                         </Typography>
                         {model.model_name === 'XGBoost' && (
                           <Chip 
-                            label="NEW" 
+                            label="新" 
                             size="small" 
                             color="primary" 
                             sx={{ ml: 1, fontSize: '0.7rem' }}
@@ -589,12 +611,12 @@ const ForecastingPage: React.FC = () => {
                       </Typography>
                     </TableCell>
                     <TableCell>
-                      {new Date(model.last_training_date).toLocaleDateString()}
+                      {formatZhDate(model.last_training_date)}
                     </TableCell>
                     <TableCell>
                       <Chip 
                         icon={model.status === 'HEALTHY' ? <CheckCircleIcon /> : <WarningIcon />}
-                        label={model.status} 
+                        label={translateModelStatus(model.status)} 
                         color={model.status === 'HEALTHY' ? 'success' : model.status === 'WARNING' ? 'warning' : 'error'}
                         size="small"
                       />
@@ -606,7 +628,7 @@ const ForecastingPage: React.FC = () => {
           </TableContainer>
         ) : (
           <Alert severity="info">
-            No model performance data available.
+            暂无模型性能数据。
           </Alert>
         )}
       </TabPanel>
@@ -615,7 +637,7 @@ const ForecastingPage: React.FC = () => {
       <TabPanel value={selectedTab} index={3} idPrefix="forecast">
         <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AnalyticsIcon color="primary" />
-          Enhanced Business Intelligence Dashboard
+          增强型商业智能仪表板
         </Typography>
         
         {(dashboardData as any)?.business_intelligence ? (
@@ -631,7 +653,7 @@ const ForecastingPage: React.FC = () => {
                           {(dashboardData as any).business_intelligence.inventory_analytics?.total_skus || 0}
                         </Typography>
                         <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                          Total SKUs
+                          SKU 总数
                         </Typography>
                       </Box>
                       <InventoryIcon sx={{ fontSize: 40, opacity: 0.8 }} />
@@ -649,7 +671,7 @@ const ForecastingPage: React.FC = () => {
                           {(dashboardData as any).business_intelligence.inventory_analytics?.total_quantity?.toLocaleString() || '0'}
                         </Typography>
                         <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                          Total Quantity
+                          总数量
                         </Typography>
                       </Box>
                       <StorageIcon sx={{ fontSize: 40, opacity: 0.8 }} />
@@ -667,7 +689,7 @@ const ForecastingPage: React.FC = () => {
                           {(dashboardData as any).business_intelligence.business_kpis?.forecast_coverage || 0}%
                         </Typography>
                         <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                          Forecast Coverage
+                          预测覆盖率
                         </Typography>
                       </Box>
                       <AssessmentIcon sx={{ fontSize: 40, opacity: 0.8 }} />
@@ -685,7 +707,7 @@ const ForecastingPage: React.FC = () => {
                           {(dashboardData as any).business_intelligence.model_analytics?.avg_accuracy || 0}%
                         </Typography>
                         <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                          Avg Accuracy
+                          平均准确率
                         </Typography>
                       </Box>
                       <SpeedIcon sx={{ fontSize: 40, opacity: 0.8 }} />
@@ -703,14 +725,14 @@ const ForecastingPage: React.FC = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                       <WarningIcon color="error" />
                       <Typography variant="h6" color="error">
-                        Stockout Risk
+                        缺货风险
                       </Typography>
                     </Box>
                     <Typography variant="h3" color="error" fontWeight="bold">
                       {(dashboardData as any).business_intelligence.business_kpis?.stockout_risk || 0}%
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {(dashboardData as any).business_intelligence.inventory_analytics?.low_stock_items || 0} items below reorder point
+                      有 {(dashboardData as any).business_intelligence.inventory_analytics?.low_stock_items || 0} 个产品低于补货点
                     </Typography>
                   </CardContent>
                 </Card>
@@ -722,14 +744,14 @@ const ForecastingPage: React.FC = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                       <InfoIcon color="warning" />
                       <Typography variant="h6" color="warning.main">
-                        Overstock Alert
+                        库存过量警报
                       </Typography>
                     </Box>
                     <Typography variant="h3" color="warning.main" fontWeight="bold">
                       {(dashboardData as any).business_intelligence.business_kpis?.overstock_percentage || 0}%
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {(dashboardData as any).business_intelligence.inventory_analytics?.overstock_items || 0} items overstocked
+                      有 {(dashboardData as any).business_intelligence.inventory_analytics?.overstock_items || 0} 个产品库存过量
                     </Typography>
                   </CardContent>
                 </Card>
@@ -741,14 +763,14 @@ const ForecastingPage: React.FC = () => {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                       <TimelineIcon color="info" />
                       <Typography variant="h6" color="info.main">
-                        Demand Volatility
+                        需求波动性
                       </Typography>
                     </Box>
                     <Typography variant="h3" color="info.main" fontWeight="bold">
                       {(dashboardData as any).business_intelligence.business_kpis?.demand_volatility || 0}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Coefficient of variation
+                      变异系数
                     </Typography>
                   </CardContent>
                 </Card>
@@ -762,16 +784,16 @@ const ForecastingPage: React.FC = () => {
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <BarChartIcon color="primary" />
-                      Category Performance
+                      品类表现
                     </Typography>
                     <TableContainer>
                       <Table size="small">
                         <TableHead>
                           <TableRow>
-                            <TableCell>Category</TableCell>
+                            <TableCell>品类</TableCell>
                             <TableCell align="right">SKUs</TableCell>
-                            <TableCell align="right">Value</TableCell>
-                            <TableCell align="right">Low Stock</TableCell>
+                            <TableCell align="right">数值</TableCell>
+                            <TableCell align="right">低库存</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -808,7 +830,7 @@ const ForecastingPage: React.FC = () => {
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <ShowChartIcon color="primary" />
-                      Forecast Trends
+                      预测趋势
                     </Typography>
                     {(dashboardData as any).business_intelligence.forecast_analytics ? (
                       <Box>
@@ -819,7 +841,7 @@ const ForecastingPage: React.FC = () => {
                               <Typography variant="h4" color="success.dark" fontWeight="bold">
                                 {(dashboardData as any).business_intelligence.forecast_analytics.trending_up}
                               </Typography>
-                              <Typography variant="body2">Trending Up</Typography>
+                              <Typography variant="body2">上升趋势</Typography>
                             </Box>
                           </Grid>
                           <Grid item xs={4}>
@@ -828,7 +850,7 @@ const ForecastingPage: React.FC = () => {
                               <Typography variant="h4" color="error.dark" fontWeight="bold">
                                 {(dashboardData as any).business_intelligence.forecast_analytics.trending_down}
                               </Typography>
-                              <Typography variant="body2">Trending Down</Typography>
+                              <Typography variant="body2">下降趋势</Typography>
                             </Box>
                           </Grid>
                           <Grid item xs={4}>
@@ -837,17 +859,17 @@ const ForecastingPage: React.FC = () => {
                               <Typography variant="h4" color="info.dark" fontWeight="bold">
                                 {(dashboardData as any).business_intelligence.forecast_analytics.stable_trends}
                               </Typography>
-                              <Typography variant="body2">Stable</Typography>
+                              <Typography variant="body2">稳定</Typography>
                             </Box>
                           </Grid>
                         </Grid>
                         <Typography variant="body2" color="text.secondary" sx={{ mt: 2, textAlign: 'center' }}>
-                          Total Predicted Demand: {(dashboardData as any).business_intelligence.forecast_analytics.total_predicted_demand?.toLocaleString()}
+                          预测需求总量：{(dashboardData as any).business_intelligence.forecast_analytics.total_predicted_demand?.toLocaleString()}
                         </Typography>
                       </Box>
                     ) : (
                       <Typography variant="body2" color="text.secondary">
-                        Forecast analytics not available
+                        暂无预测分析数据
                       </Typography>
                     )}
                   </CardContent>
@@ -862,15 +884,15 @@ const ForecastingPage: React.FC = () => {
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <StarIcon color="primary" />
-                      Top Performers
+                      表现最佳
                     </Typography>
                     <TableContainer>
                       <Table size="small">
                         <TableHead>
                           <TableRow>
                             <TableCell>SKU</TableCell>
-                            <TableCell align="right">Demand</TableCell>
-                            <TableCell align="right">Avg Daily</TableCell>
+                            <TableCell align="right">需求量</TableCell>
+                            <TableCell align="right">日均需求</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -898,15 +920,15 @@ const ForecastingPage: React.FC = () => {
                   <CardContent>
                     <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <StarBorderIcon color="secondary" />
-                      Bottom Performers
+                      表现最弱
                     </Typography>
                     <TableContainer>
                       <Table size="small">
                         <TableHead>
                           <TableRow>
                             <TableCell>SKU</TableCell>
-                            <TableCell align="right">Demand</TableCell>
-                            <TableCell align="right">Avg Daily</TableCell>
+                            <TableCell align="right">需求量</TableCell>
+                            <TableCell align="right">日均需求</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -935,7 +957,7 @@ const ForecastingPage: React.FC = () => {
               <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <InfoIcon color="primary" />
-                  AI Recommendations
+                  AI 建议
                 </Typography>
                 <Grid container spacing={2}>
                   {(dashboardData as any).business_intelligence.recommendations?.map((rec: any, index: number) => (
@@ -965,7 +987,7 @@ const ForecastingPage: React.FC = () => {
               <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <MemoryIcon color="primary" />
-                  Model Performance Analytics
+                  模型性能分析
                 </Typography>
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={3}>
@@ -974,7 +996,7 @@ const ForecastingPage: React.FC = () => {
                         {(dashboardData as any).business_intelligence.model_analytics?.total_models || 0}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Active Models
+                        活跃模型
                       </Typography>
                     </Box>
                   </Grid>
@@ -984,7 +1006,7 @@ const ForecastingPage: React.FC = () => {
                         {(dashboardData as any).business_intelligence.model_analytics?.models_above_80 || 0}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        High Accuracy (&gt;80%)
+                        高准确率（&gt;80%）
                       </Typography>
                     </Box>
                   </Grid>
@@ -994,17 +1016,17 @@ const ForecastingPage: React.FC = () => {
                         {(dashboardData as any).business_intelligence.model_analytics?.models_below_70 || 0}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Low Accuracy (&lt;70%)
+                        低准确率（&lt;70%）
                       </Typography>
                     </Box>
                   </Grid>
                   <Grid item xs={12} md={3}>
                     <Box sx={{ textAlign: 'center', p: 2 }}>
                       <Typography variant="h4" color="info.main" fontWeight="bold">
-                        {(dashboardData as any).business_intelligence.model_analytics?.best_model || 'N/A'}
+                        {(dashboardData as any).business_intelligence.model_analytics?.best_model || '暂无'}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Best Model
+                        最佳模型
                       </Typography>
                     </Box>
                   </Grid>
@@ -1014,7 +1036,7 @@ const ForecastingPage: React.FC = () => {
           </Box>
         ) : (
           <Alert severity="info">
-            Enhanced business intelligence data is being generated...
+            正在生成增强型商业智能数据...
           </Alert>
         )}
       </TabPanel>
@@ -1022,7 +1044,7 @@ const ForecastingPage: React.FC = () => {
       {/* Training Tab */}
       <TabPanel value={selectedTab} index={4} idPrefix="forecast">
         <Typography variant="h5" gutterBottom>
-          Model Training & Management
+          模型训练与管理
         </Typography>
         
         {/* Training Controls */}
@@ -1031,17 +1053,17 @@ const ForecastingPage: React.FC = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Manual Training
+                  手动训练
                 </Typography>
                 <FormControl fullWidth sx={{ mb: 2 }}>
-                  <InputLabel>Training Type</InputLabel>
+                  <InputLabel>训练类型</InputLabel>
                   <Select
                     value={trainingType}
-                    label="Training Type"
+                    label="训练类型"
                     onChange={(e) => setTrainingType(e.target.value as 'basic' | 'advanced')}
                   >
-                    <MenuItem value="basic">Basic (Phase 1 & 2)</MenuItem>
-                    <MenuItem value="advanced">Advanced (Phase 3)</MenuItem>
+                    <MenuItem value="basic">基础（阶段 1 和 2）</MenuItem>
+                    <MenuItem value="advanced">高级（阶段 3）</MenuItem>
                   </Select>
                 </FormControl>
                 <Box sx={{ display: 'flex', gap: 2 }}>
@@ -1052,7 +1074,7 @@ const ForecastingPage: React.FC = () => {
                     disabled={(trainingStatus as any)?.is_running}
                     color="primary"
                   >
-                    Start Training
+                    开始训练
                   </Button>
                   <Button
                     variant="outlined"
@@ -1061,7 +1083,7 @@ const ForecastingPage: React.FC = () => {
                     disabled={!(trainingStatus as any)?.is_running}
                     color="error"
                   >
-                    Stop Training
+                    停止训练
                   </Button>
                 </Box>
               </CardContent>
@@ -1072,11 +1094,11 @@ const ForecastingPage: React.FC = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Scheduled Training
+                  定时训练
                 </Typography>
                 <TextField
                   fullWidth
-                  label="Schedule Time"
+                  label="计划时间"
                   type="datetime-local"
                   value={scheduleTime}
                   onChange={(e) => setScheduleTime(e.target.value)}
@@ -1089,7 +1111,7 @@ const ForecastingPage: React.FC = () => {
                   onClick={() => setScheduleDialogOpen(true)}
                   fullWidth
                 >
-                  Schedule Training
+                  计划训练
                 </Button>
               </CardContent>
             </Card>
@@ -1101,18 +1123,18 @@ const ForecastingPage: React.FC = () => {
           <Card sx={{ mb: 3 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Training Status
+                训练状态
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <Chip
                   icon={(trainingStatus as any).is_running ? <BuildIcon /> : <CheckCircleIcon />}
-                  label={(trainingStatus as any).is_running ? 'Training in Progress' : 'Idle'}
+                  label={(trainingStatus as any).is_running ? '训练进行中' : '空闲'}
                   color={(trainingStatus as any).is_running ? 'primary' : 'default'}
                   sx={{ mr: 2 }}
                 />
                 {(trainingStatus as any).is_running && (
                   <Typography variant="body2" color="text.secondary">
-                    {(trainingStatus as any).current_step}
+                    {translateTrainingMessage((trainingStatus as any).current_step)}
                   </Typography>
                 )}
               </Box>
@@ -1121,11 +1143,11 @@ const ForecastingPage: React.FC = () => {
                 <Box sx={{ mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                     <Typography variant="body2" sx={{ mr: 2 }}>
-                      Progress: {(trainingStatus as any).progress}%
+                      进度：{(trainingStatus as any).progress}%
                     </Typography>
                     {(trainingStatus as any).estimated_completion && (
                       <Typography variant="body2" color="text.secondary">
-                        ETA: {new Date((trainingStatus as any).estimated_completion).toLocaleTimeString()}
+                        预计完成时间：{formatZhDateTime((trainingStatus as any).estimated_completion)}
                       </Typography>
                     )}
                   </Box>
@@ -1139,7 +1161,7 @@ const ForecastingPage: React.FC = () => {
               
               {(trainingStatus as any).error && (
                 <Alert severity="error" sx={{ mt: 2 }}>
-                  {(trainingStatus as any).error}
+                  {translateTrainingMessage((trainingStatus as any).error)}
                 </Alert>
               )}
             </CardContent>
@@ -1151,7 +1173,7 @@ const ForecastingPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Training Logs
+                训练日志
               </Typography>
               <Box sx={{ 
                 maxHeight: 300, 
@@ -1166,7 +1188,7 @@ const ForecastingPage: React.FC = () => {
               }}>
                 {(trainingStatus as any).logs.map((log: any, index: number) => (
                   <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
-                    {log}
+                    {translateTrainingMessage(log)}
                   </Typography>
                 ))}
               </Box>
@@ -1179,18 +1201,18 @@ const ForecastingPage: React.FC = () => {
           <Card sx={{ mt: 3 }}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Training History
+                训练历史
               </Typography>
               <TableContainer>
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Training ID</TableCell>
-                      <TableCell>Type</TableCell>
-                      <TableCell>Start Time</TableCell>
-                      <TableCell>Duration</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Models Trained</TableCell>
+                      <TableCell>训练 ID</TableCell>
+                      <TableCell>类型</TableCell>
+                      <TableCell>开始时间</TableCell>
+                      <TableCell>持续时间</TableCell>
+                      <TableCell>状态</TableCell>
+                      <TableCell>已训练模型</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -1199,13 +1221,13 @@ const ForecastingPage: React.FC = () => {
                         <TableCell>{session.id}</TableCell>
                         <TableCell>
                           <Chip 
-                            label={session.type} 
+                            label={translateTrainingType(session.type)} 
                             size="small" 
                             color={session.type === 'advanced' ? 'primary' : 'default'}
                           />
                         </TableCell>
                         <TableCell>
-                          {new Date(session.start_time).toLocaleString()}
+                          {formatZhDateTime(session.start_time)}
                         </TableCell>
                         <TableCell>
                           {(() => {
@@ -1213,22 +1235,22 @@ const ForecastingPage: React.FC = () => {
                             if (session.duration_seconds !== undefined) {
                               const seconds = session.duration_seconds;
                               if (seconds < 60) {
-                                return `${seconds} sec`;
+                                return `${seconds} 秒`;
                               } else {
                                 const mins = Math.floor(seconds / 60);
                                 const secs = seconds % 60;
-                                return secs > 0 ? `${mins}m ${secs}s` : `${mins} min`;
+                                return secs > 0 ? `${mins} 分 ${secs} 秒` : `${mins} 分钟`;
                               }
                             }
                             // Fallback to duration_minutes
                             return session.duration_minutes > 0 
-                              ? `${session.duration_minutes} min` 
-                              : '< 1 min';
+                              ? `${session.duration_minutes} 分钟` 
+                              : '少于 1 分钟';
                           })()}
                         </TableCell>
                         <TableCell>
                           <Chip 
-                            label={session.status} 
+                            label={translateStatus(session.status)} 
                             size="small" 
                             color={session.status === 'completed' ? 'success' : 'default'}
                           />
@@ -1246,14 +1268,14 @@ const ForecastingPage: React.FC = () => {
 
       {/* Schedule Training Dialog */}
       <Dialog open={scheduleDialogOpen} onClose={() => setScheduleDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Schedule Training</DialogTitle>
+        <DialogTitle>计划训练</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Schedule {trainingType} training for a specific time. The training will run automatically at the scheduled time.
+            将{translateTrainingType(trainingType)}训练安排在指定时间，系统将在计划时间自动开始训练。
           </Typography>
           <TextField
             fullWidth
-            label="Schedule Time"
+            label="计划时间"
             type="datetime-local"
             value={scheduleTime}
             onChange={(e) => setScheduleTime(e.target.value)}
@@ -1261,39 +1283,39 @@ const ForecastingPage: React.FC = () => {
             sx={{ mb: 2 }}
           />
           <FormControl fullWidth>
-            <InputLabel>Training Type</InputLabel>
+            <InputLabel>训练类型</InputLabel>
             <Select
               value={trainingType}
-              label="Training Type"
+              label="训练类型"
               onChange={(e) => setTrainingType(e.target.value as 'basic' | 'advanced')}
             >
-              <MenuItem value="basic">Basic (Phase 1 & 2) - 5-10 minutes</MenuItem>
-              <MenuItem value="advanced">Advanced (Phase 3) - 10-20 minutes</MenuItem>
+              <MenuItem value="basic">基础（阶段 1 和 2）- 5–10 分钟</MenuItem>
+              <MenuItem value="advanced">高级（阶段 3）- 10–20 分钟</MenuItem>
             </Select>
           </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setScheduleDialogOpen(false)}>Cancel</Button>
+          <Button onClick={() => setScheduleDialogOpen(false)}>取消</Button>
           <Button 
             onClick={handleScheduleTraining} 
             variant="contained"
             disabled={!scheduleTime}
           >
-            Schedule Training
+            计划训练
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Training Progress Dialog */}
       <Dialog open={trainingDialogOpen} onClose={() => setTrainingDialogOpen(false)} maxWidth="md" fullWidth>
-        <DialogTitle>Training in Progress</DialogTitle>
+        <DialogTitle>训练进行中</DialogTitle>
         <DialogContent>
           {(trainingStatus as any)?.is_running ? (
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <CircularProgress size={24} sx={{ mr: 2 }} />
                 <Typography variant="h6">
-                  {(trainingStatus as any).current_step}
+                  {translateTrainingMessage((trainingStatus as any).current_step)}
                 </Typography>
               </Box>
               <LinearProgress 
@@ -1302,9 +1324,9 @@ const ForecastingPage: React.FC = () => {
                 sx={{ height: 8, borderRadius: 4, mb: 2 }}
               />
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Progress: {(trainingStatus as any).progress}%
+                进度：{(trainingStatus as any).progress}%
                 {(trainingStatus as any).estimated_completion && (
-                  <> • ETA: {new Date((trainingStatus as any).estimated_completion).toLocaleTimeString()}</>
+                  <> • 预计完成时间：{formatZhDateTime((trainingStatus as any).estimated_completion)}</>
                 )}
               </Typography>
               <Box sx={{ 
@@ -1320,7 +1342,7 @@ const ForecastingPage: React.FC = () => {
               }}>
                 {(trainingStatus as any).logs.slice(-10).map((log: any, index: number) => (
                   <Typography key={index} variant="body2" sx={{ mb: 0.5 }}>
-                    {log}
+                    {translateTrainingMessage(log)}
                   </Typography>
                 ))}
               </Box>
@@ -1329,17 +1351,17 @@ const ForecastingPage: React.FC = () => {
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <CheckCircleIcon color="success" sx={{ fontSize: 48, mb: 2 }} />
               <Typography variant="h6" gutterBottom>
-                Training Completed!
+                训练已完成！
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                The models have been successfully trained and are ready for use.
+                模型已成功训练，可以投入使用。
               </Typography>
             </Box>
           )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setTrainingDialogOpen(false)}>
-            {(trainingStatus as any)?.is_running ? 'Minimize' : 'Close'}
+            {(trainingStatus as any)?.is_running ? '最小化' : '关闭'}
           </Button>
         </DialogActions>
       </Dialog>

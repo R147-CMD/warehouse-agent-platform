@@ -58,7 +58,7 @@ const TopBar: React.FC<TopBarProps> = ({
         {/* Warehouse Selector */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2" sx={{ color: 'text.primary', minWidth: '80px', fontWeight: 500 }}>
-            Warehouse:
+            仓库：
           </Typography>
           <Select
             value={warehouse}
@@ -79,7 +79,7 @@ const TopBar: React.FC<TopBarProps> = ({
         {/* Role Selector */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2" sx={{ color: 'text.primary', minWidth: '50px', fontWeight: 500 }}>
-            Role:
+            角色：
           </Typography>
           <Select
             value={role}
@@ -91,16 +91,16 @@ const TopBar: React.FC<TopBarProps> = ({
               minWidth: 120,
             }}
           >
-            <MenuItem value="operator">Operator</MenuItem>
-            <MenuItem value="supervisor">Supervisor</MenuItem>
-            <MenuItem value="manager">Manager</MenuItem>
-            <MenuItem value="admin">Admin</MenuItem>
+            <MenuItem value="operator">操作员</MenuItem>
+            <MenuItem value="supervisor">主管</MenuItem>
+            <MenuItem value="manager">经理</MenuItem>
+            <MenuItem value="admin">管理员</MenuItem>
           </Select>
         </Box>
 
         {/* Environment */}
         <Chip
-          label={environment}
+          label={environment === 'Prod' ? '生产环境' : environment === 'Dev' ? '开发环境' : environment}
           size="small"
           sx={{
             backgroundColor: environment === 'Prod' ? '#f44336' : '#76B900',
@@ -111,22 +111,22 @@ const TopBar: React.FC<TopBarProps> = ({
 
         {/* Connection Health */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
-          <Tooltip title="NIM Connection">
+          <Tooltip title="模型服务连接">
             <IconButton size="small" sx={{ color: connections.nim ? '#76B900' : '#999999' }}>
               {getConnectionIcon(connections.nim)}
             </IconButton>
           </Tooltip>
-          <Tooltip title="Database Connection">
+          <Tooltip title="数据库连接">
             <IconButton size="small" sx={{ color: connections.db ? '#76B900' : '#999999' }}>
               {getConnectionIcon(connections.db)}
             </IconButton>
           </Tooltip>
-          <Tooltip title="Milvus Connection">
+          <Tooltip title="向量检索服务连接">
             <IconButton size="small" sx={{ color: connections.milvus ? '#76B900' : '#999999' }}>
               {getConnectionIcon(connections.milvus)}
             </IconButton>
           </Tooltip>
-          <Tooltip title="Kafka Connection">
+          <Tooltip title="消息队列连接">
             <IconButton size="small" sx={{ color: connections.kafka ? '#76B900' : '#999999' }}>
               {getConnectionIcon(connections.kafka)}
             </IconButton>
@@ -135,11 +135,11 @@ const TopBar: React.FC<TopBarProps> = ({
 
         {/* Time Window */}
         <Typography variant="body2" sx={{ color: 'text.secondary', minWidth: '100px' }}>
-          {new Date().toLocaleTimeString()}
+          {new Date().toLocaleTimeString('zh-CN', { hour12: false })}
         </Typography>
 
         {/* Settings */}
-        <IconButton size="small" sx={{ color: 'text.primary' }}>
+        <IconButton aria-label="设置" size="small" sx={{ color: 'text.primary' }}>
           <SettingsIcon />
         </IconButton>
       </Toolbar>

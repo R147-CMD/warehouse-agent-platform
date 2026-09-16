@@ -39,6 +39,7 @@ from src.api.services.mcp.tool_discovery import (
     ToolCategory,
 )
 from src.api.services.mcp.base import MCPManager
+from src.api.services.approval import ApprovalRejectedError
 from src.api.services.reasoning import (
     get_reasoning_engine,
     ReasoningType,
@@ -1000,7 +1001,11 @@ Return only valid JSON.""",
                 )
 
                 # Execute the tool
-                result = await self.tool_discovery.execute_tool(tool_id, arguments)
+                result = await self.tool_discovery.execute_tool(
+                    tool_id,
+                    arguments,
+                    action_index=step["approval_action_index"],
+                )
 
                 result_dict = {
                     "tool_name": tool_name,
@@ -1025,6 +1030,17 @@ Return only valid JSON.""",
             except GraphInterrupt:
                 # LangGraph must own pause/checkpoint/resume semantics.
                 raise
+
+            except ApprovalRejectedError as e:
+                logger.info(f"Tool {tool_name} was rejected during approval")
+                result_dict = {
+                    "tool_name": tool_name,
+                    "success": False,
+                    "approval_status": "rejected",
+                    "error": str(e),
+                    "execution_time": datetime.utcnow().isoformat(),
+                }
+                return (tool_id, result_dict)
 
             except SAPEWMError as e:
                 logger.warning(
@@ -1061,29 +1077,57 @@ Return only valid JSON.""",
                 dependent_tools.append(step)
             else:
                 independent_tools.append(step)
+
+        execution_order = [*independent_tools, *dependent_tools]
+        for action_index, step in enumerate(execution_order):
+            step["approval_action_index"] = action_index
+
+        try:
+            requires_serial_execution = any(
+                self.tool_discovery.requires_approval(step["tool_id"])
+                for step in execution_order
+            )
+        except Exception as e:
+            logger.warning(
+                "Could not determine tool approval requirements; "
+                f"executing plan serially: {e}"
+            )
+            requires_serial_execution = True
         
-        # Execute independent tools in parallel first
-        if independent_tools:
-            execution_tasks = [execute_single_tool(step) for step in independent_tools]
-            execution_results = await asyncio.gather(*execution_tasks, return_exceptions=True)
-            
-            # Process independent tool results
-            for result in execution_results:
-                if isinstance(result, Exception):
-                    logger.error(f"Unexpected error in tool execution: {result}")
-                    continue
-                
-                tool_id, result_dict = result
+        if requires_serial_execution:
+            for step in execution_order:
+                tool_id, result_dict = await execute_single_tool(
+                    step, previous_results=results
+                )
                 results[tool_id] = result_dict
-        
-        # Execute dependent tools sequentially, using results from previous tools
-        for step in dependent_tools:
-            tool_id, result_dict = await execute_single_tool(step, previous_results=results)
-            results[tool_id] = result_dict
+        else:
+            # Execute independent tools in parallel first
+            if independent_tools:
+                execution_tasks = [execute_single_tool(step) for step in independent_tools]
+                execution_results = await asyncio.gather(*execution_tasks, return_exceptions=True)
+                
+                # Process independent tool results
+                for result in execution_results:
+                    if isinstance(result, Exception):
+                        logger.error(f"Unexpected error in tool execution: {result}")
+                        continue
+                    
+                    tool_id, result_dict = result
+                    results[tool_id] = result_dict
+            
+            # Execute dependent tools sequentially, using results from previous tools
+            for step in dependent_tools:
+                tool_id, result_dict = await execute_single_tool(step, previous_results=results)
+                results[tool_id] = result_dict
 
         successful_count = len([r for r in results.values() if r.get('success')])
         failed_count = len([r for r in results.values() if not r.get('success')])
-        logger.info(f"Executed {len(execution_plan)} tools ({len(independent_tools)} parallel, {len(dependent_tools)} sequential), {successful_count} successful, {failed_count} failed")
+        execution_mode = (
+            "serial approval order"
+            if requires_serial_execution
+            else f"{len(independent_tools)} parallel, {len(dependent_tools)} sequential"
+        )
+        logger.info(f"Executed {len(execution_plan)} tools ({execution_mode}), {successful_count} successful, {failed_count} failed")
         # Log equipment tool execution results specifically
         equipment_results = {k: v for k, v in results.items() if "equipment" in v.get('tool_name', '').lower() or "dispatch" in v.get('tool_name', '').lower()}
         if equipment_results:

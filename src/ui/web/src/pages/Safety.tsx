@@ -18,10 +18,29 @@ import {
   MenuItem,
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { zhCN as dataGridZhCN } from '@mui/x-data-grid/locales';
 import { Report as ReportIcon } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { safetyAPI, SafetyIncident, userAPI, User } from '../services/api';
 import { useDialogForm } from '../components/common';
+import {
+  formatZhDate,
+  translateRole,
+  translateSafetyPolicyName,
+  translateSafetyPolicySummary,
+  translateStatus,
+} from '../localization/zhCN';
+
+const severityLabels: Readonly<Record<string, string>> = {
+  low: '低',
+  medium: '中',
+  high: '高',
+  critical: '严重',
+};
+
+const translateSeverity = (severity: string) => severityLabels[severity.toLowerCase()] || severity;
+const translatePolicyStatus = (status: string) =>
+  status.toLowerCase() === 'active' ? '有效' : translateStatus(status);
 
 const Safety: React.FC = () => {
   const {
@@ -71,22 +90,22 @@ const Safety: React.FC = () => {
     { field: 'id', headerName: 'ID', width: 80 },
     {
       field: 'severity',
-      headerName: 'Severity',
+      headerName: '严重程度',
       width: 120,
       renderCell: (params) => {
         const severity = params.value;
         const color = severity === 'high' ? 'error' : 
                      severity === 'medium' ? 'warning' : 'info';
-        return <Chip label={severity} color={color} size="small" />;
+        return <Chip label={translateSeverity(severity)} color={color} size="small" />;
       },
     },
-    { field: 'description', headerName: 'Description', width: 300 },
-    { field: 'reported_by', headerName: 'Reported By', width: 150 },
+    { field: 'description', headerName: '事件描述', width: 300 },
+    { field: 'reported_by', headerName: '报告人', width: 150 },
     {
       field: 'occurred_at',
-      headerName: 'Occurred At',
+      headerName: '发生日期',
       width: 150,
-      renderCell: (params) => new Date(params.value).toLocaleDateString(),
+      renderCell: (params) => formatZhDate(params.value),
     },
   ];
 
@@ -94,10 +113,10 @@ const Safety: React.FC = () => {
     return (
       <Box>
         <Typography variant="h4" gutterBottom>
-          Safety & Compliance
+          安全与合规
         </Typography>
         <Alert severity="error">
-          Failed to load safety data. Please try again.
+          安全数据加载失败，请重试。
         </Alert>
       </Box>
     );
@@ -107,14 +126,14 @@ const Safety: React.FC = () => {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">
-          Safety & Compliance
+          安全与合规
         </Typography>
         <Button
           variant="contained"
           startIcon={<ReportIcon />}
           onClick={() => handleOpen()}
         >
-          Report Incident
+          报告事件
         </Button>
       </Box>
 
@@ -122,18 +141,18 @@ const Safety: React.FC = () => {
       {policies && (
         <Paper sx={{ p: 2, mb: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Safety Policies
+            安全政策
           </Typography>
           <Grid container spacing={2}>
             {policies.map((policy: any) => (
               <Grid item xs={12} md={6} key={policy.id}>
                 <Box sx={{ p: 2, border: 1, borderColor: 'divider', borderRadius: 1 }}>
-                  <Typography variant="subtitle1">{policy.name}</Typography>
+                  <Typography variant="subtitle1">{translateSafetyPolicyName(policy.name)}</Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {policy.summary}
+                    {translateSafetyPolicySummary(policy.summary)}
                   </Typography>
                   <Chip
-                    label={policy.status}
+                    label={translatePolicyStatus(policy.status)}
                     color={policy.status === 'Active' ? 'success' : 'default'}
                     size="small"
                     sx={{ mt: 1 }}
@@ -150,6 +169,7 @@ const Safety: React.FC = () => {
         <DataGrid
           rows={incidents || []}
           columns={columns}
+          localeText={dataGridZhCN.components.MuiDataGrid.defaultProps.localeText}
           loading={isLoading}
           initialState={{
             pagination: {
@@ -163,30 +183,30 @@ const Safety: React.FC = () => {
 
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {selectedIncident ? 'Edit Incident' : 'Report New Incident'}
+          {selectedIncident ? '编辑事件' : '报告新事件'}
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
               <FormControl fullWidth>
-                <InputLabel>Severity</InputLabel>
+                <InputLabel>严重程度</InputLabel>
                 <Select
                   value={formData.severity || ''}
                   onChange={(e) => setFormData({ ...formData, severity: e.target.value })}
-                  label="Severity"
+                  label="严重程度"
                   required
                 >
-                  <MenuItem value="low">Low</MenuItem>
-                  <MenuItem value="medium">Medium</MenuItem>
-                  <MenuItem value="high">High</MenuItem>
-                  <MenuItem value="critical">Critical</MenuItem>
+                  <MenuItem value="low">低</MenuItem>
+                  <MenuItem value="medium">中</MenuItem>
+                  <MenuItem value="high">高</MenuItem>
+                  <MenuItem value="critical">严重</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Description"
+                label="事件描述"
                 multiline
                 rows={4}
                 value={formData.description || ''}
@@ -196,25 +216,25 @@ const Safety: React.FC = () => {
             </Grid>
             <Grid item xs={12}>
               <FormControl fullWidth>
-                <InputLabel>Reported By</InputLabel>
+                <InputLabel>报告人</InputLabel>
                 <Select
                   value={formData.reported_by || ''}
                   onChange={(e) => setFormData({ ...formData, reported_by: e.target.value })}
-                  label="Reported By"
+                  label="报告人"
                   required
                 >
                   {usersLoading ? (
-                    <MenuItem value="" disabled>Loading users...</MenuItem>
+                    <MenuItem value="" disabled>正在加载用户...</MenuItem>
                   ) : usersError ? (
-                    <MenuItem value="" disabled>Error loading users</MenuItem>
+                    <MenuItem value="" disabled>用户加载失败</MenuItem>
                   ) : users && users.length > 0 ? (
                     users.map((user: User) => (
                       <MenuItem key={user.id} value={user.full_name || user.username}>
-                        {user.full_name || user.username} ({user.role})
+                        {user.full_name || user.username}（{translateRole(user.role)}）
                       </MenuItem>
                     ))
                   ) : (
-                    <MenuItem value="" disabled>No users available</MenuItem>
+                    <MenuItem value="" disabled>暂无可用用户</MenuItem>
                   )}
                 </Select>
               </FormControl>
@@ -222,13 +242,13 @@ const Safety: React.FC = () => {
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleClose}>取消</Button>
           <Button
             onClick={handleSubmit}
             variant="contained"
             disabled={reportMutation.isPending}
           >
-            {selectedIncident ? 'Update' : 'Report'}
+            {selectedIncident ? '更新' : '报告'}
           </Button>
         </DialogActions>
       </Dialog>

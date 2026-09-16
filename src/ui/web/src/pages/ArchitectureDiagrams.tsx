@@ -56,238 +56,238 @@ const ArchitectureDiagrams: React.FC = () => {
 
   const architectureComponents = [
     {
-      name: "Frontend Layer",
-      description: "React-based user interface with Material-UI components",
+      name: "前端层",
+      description: "基于 React 和 Material-UI 组件的用户界面",
       technologies: ["React", "TypeScript", "Material-UI", "React Router"],
       responsibilities: [
-        "User interface rendering",
-        "Real-time chat interface",
-        "Dashboard visualizations",
-        "Equipment management UI",
-        "Operations monitoring",
-        "Safety incident reporting"
+        "用户界面渲染",
+        "实时聊天界面",
+        "仪表板可视化",
+        "设备管理 UI",
+        "运营监控",
+        "安全事件报告"
       ],
-      status: "✅ Complete"
+      status: "✅ 已完成"
     },
     {
-      name: "API Gateway",
-      description: "FastAPI-based API gateway with authentication and routing",
+      name: "API 网关",
+      description: "基于 FastAPI、具备身份验证与路由能力的 API 网关",
       technologies: ["FastAPI", "Python", "JWT", "OpenAPI"],
       responsibilities: [
-        "Request routing and load balancing",
-        "Authentication and authorization",
-        "API documentation (Swagger)",
-        "Rate limiting and throttling",
-        "Request/response validation",
-        "Error handling and logging"
+        "请求路由与负载均衡",
+        "身份验证与授权",
+        "API 文档（Swagger）",
+        "速率限制与节流",
+        "请求/响应验证",
+        "错误处理与日志记录"
       ],
-      status: "✅ Complete"
+      status: "✅ 已完成"
     },
     {
-      name: "Multi-Agent System",
-      description: "LangGraph-orchestrated multi-agent system with specialized agents",
-      technologies: ["LangGraph", "NVIDIA NIMs", "MCP Framework", "Python"],
+      name: "多智能体系统",
+      description: "由 LangGraph 编排、包含专业智能体的多智能体系统",
+      technologies: ["LangGraph", "模型服务", "MCP 框架", "Python"],
       responsibilities: [
-        "Intent classification and routing",
-        "Agent orchestration and coordination",
-        "Tool discovery and execution",
-        "Context management and memory",
-        "Response generation and formatting",
-        "Error handling and fallbacks"
+        "意图分类与路由",
+        "智能体编排与协调",
+        "工具发现与执行",
+        "上下文管理与记忆",
+        "响应生成与格式化",
+        "错误处理与回退"
       ],
-      status: "✅ Complete"
+      status: "✅ 已完成"
     },
     {
-      name: "Specialized Agents",
-      description: "Domain-specific agents for equipment, operations, and safety",
-      technologies: ["Python", "MCP Tools", "NVIDIA NIMs", "Custom Logic"],
+      name: "专业智能体",
+      description: "面向设备、运营和安全领域的专业智能体",
+      technologies: ["Python", "MCP 工具", "模型服务", "自定义逻辑"],
       responsibilities: [
-        "Equipment & Asset Operations",
-        "Operations Coordination",
-        "Safety & Compliance",
-        "Tool execution and validation",
-        "Domain-specific reasoning",
-        "Action planning and execution"
+        "设备与资产运营",
+        "运营协调",
+        "安全与合规",
+        "工具执行与验证",
+        "领域特定推理",
+        "行动规划与执行"
       ],
-      status: "✅ Complete"
+      status: "✅ 已完成"
     },
     {
-      name: "MCP Framework",
-      description: "Model Context Protocol for dynamic tool discovery and execution",
-      technologies: ["MCP Protocol", "Python", "HTTP/WebSocket", "Tool Registry"],
+      name: "MCP 框架",
+      description: "用于动态工具发现与执行的模型上下文协议",
+      technologies: ["MCP 协议", "Python", "HTTP/WebSocket", "工具注册中心"],
       responsibilities: [
-        "Dynamic tool discovery",
-        "Tool binding and execution",
-        "Service discovery and registry",
-        "Tool validation and monitoring",
-        "Multi-server communication",
-        "Resource management"
+        "动态工具发现",
+        "工具绑定与执行",
+        "服务发现与注册",
+        "工具验证与监控",
+        "多服务器通信",
+        "资源管理"
       ],
-      status: "✅ Complete"
+      status: "✅ 已完成"
     },
     {
-      name: "Reasoning Engine",
-      description: "Advanced reasoning capabilities with multiple reasoning types",
-      technologies: ["NVIDIA NIMs", "Chain-of-Thought", "Multi-Hop", "Scenario Analysis"],
+      name: "推理引擎",
+      description: "支持多种推理类型的高级推理能力",
+      technologies: ["模型服务", "思维链", "多跳推理", "情景分析"],
       responsibilities: [
-        "Chain-of-thought reasoning",
-        "Multi-hop reasoning",
-        "Scenario analysis",
-        "Causal reasoning",
-        "Pattern recognition",
-        "Confidence scoring"
+        "思维链推理",
+        "多跳推理",
+        "情景分析",
+        "因果推理",
+        "模式识别",
+        "置信度评分"
       ],
-      status: "✅ Complete"
+      status: "✅ 已完成"
     },
     {
-      name: "Data Layer",
-      description: "Hybrid data storage with PostgreSQL/TimescaleDB and Milvus",
+      name: "数据层",
+      description: "采用 PostgreSQL/TimescaleDB 和 Milvus 的混合数据存储",
       technologies: ["PostgreSQL", "TimescaleDB", "Milvus", "Redis", "SQL"],
       responsibilities: [
-        "Structured data storage",
-        "Time-series data management",
-        "Vector similarity search",
-        "Caching and session management",
-        "Data migration and versioning",
-        "Backup and recovery"
+        "结构化数据存储",
+        "时序数据管理",
+        "向量相似性搜索",
+        "缓存与会话管理",
+        "数据迁移与版本管理",
+        "备份与恢复"
       ],
-      status: "✅ Complete"
+      status: "✅ 已完成"
     },
     {
-      name: "External Integrations",
-      description: "Adapters for WMS, IoT, RFID/Barcode, and Time Attendance systems",
-      technologies: ["REST APIs", "WebSocket", "Database Connectors", "Protocol Adapters"],
+      name: "外部集成",
+      description: "面向 WMS、IoT、RFID/条码和考勤系统的适配器",
+      technologies: ["REST API", "WebSocket", "数据库连接器", "协议适配器"],
       responsibilities: [
-        "WMS system integration",
-        "IoT sensor data collection",
-        "RFID/Barcode scanning",
-        "Time and attendance tracking",
-        "ERP system integration",
-        "Third-party API management"
+        "WMS 系统集成",
+        "IoT 传感器数据收集",
+        "RFID/条码扫描",
+        "考勤跟踪",
+        "ERP 系统集成",
+        "第三方 API 管理"
       ],
-      status: "🔄 In Progress"
+      status: "🔄 进行中"
     },
     {
-      name: "Monitoring Stack",
-      description: "Comprehensive monitoring with Prometheus, Grafana, and Alertmanager",
+      name: "监控栈",
+      description: "使用 Prometheus、Grafana 和 Alertmanager 的全面监控",
       technologies: ["Prometheus", "Grafana", "Alertmanager", "Node Exporter"],
       responsibilities: [
-        "Metrics collection and storage",
-        "Visualization and dashboards",
-        "Alert routing and notifications",
-        "Performance monitoring",
-        "Health checks and status",
-        "Log aggregation and analysis"
+        "指标收集与存储",
+        "可视化与仪表板",
+        "告警路由与通知",
+        "性能监控",
+        "健康检查与状态",
+        "日志聚合与分析"
       ],
-      status: "✅ Complete"
+      status: "✅ 已完成"
     }
   ];
 
   const dataFlowSteps = [
     {
       step: 1,
-      title: "User Input",
-      description: "User sends message through React frontend",
-      components: ["React UI", "Chat Interface", "WebSocket/HTTP"],
-      details: "User types message in chat interface, frontend validates input and sends to API gateway"
+      title: "用户输入",
+      description: "用户通过 React 前端发送消息",
+      components: ["React UI", "聊天界面", "WebSocket/HTTP"],
+      details: "用户在聊天界面中输入消息，前端验证输入并将其发送到 API 网关"
     },
     {
       step: 2,
-      title: "API Gateway Processing",
-      description: "FastAPI gateway handles authentication and routing",
-      components: ["FastAPI", "JWT Validation", "Rate Limiting"],
-      details: "Gateway validates JWT token, applies rate limiting, and routes request to appropriate service"
+      title: "API 网关处理",
+      description: "FastAPI 网关处理身份验证与路由",
+      components: ["FastAPI", "JWT 验证", "速率限制"],
+      details: "网关验证 JWT 令牌、应用速率限制，并将请求路由到适当的服务"
     },
     {
       step: 3,
-      title: "Intent Classification",
-      description: "NVIDIA NIMs classifies user intent and determines routing",
-      components: ["NVIDIA NIMs", "Intent Classifier", "Routing Logic"],
-      details: "LLM analyzes user message to determine intent (equipment, operations, safety) and routing strategy"
+      title: "意图分类",
+      description: "模型服务对用户意图进行分类并确定路由",
+      components: ["模型服务", "意图分类器", "路由逻辑"],
+      details: "LLM 分析用户消息以确定意图（设备、运营或安全）和路由策略"
     },
     {
       step: 4,
-      title: "Agent Selection",
-      description: "LangGraph selects appropriate specialized agent",
-      components: ["LangGraph", "Agent Router", "Context Manager"],
-      details: "Based on intent classification, system selects Equipment, Operations, or Safety agent"
+      title: "智能体选择",
+      description: "LangGraph 选择合适的专业智能体",
+      components: ["LangGraph", "智能体路由器", "上下文管理器"],
+      details: "系统根据意图分类选择设备、运营或安全智能体"
     },
     {
       step: 5,
-      title: "Tool Discovery",
-      description: "MCP framework discovers available tools for the task",
-      components: ["MCP Server", "Tool Registry", "Service Discovery"],
-      details: "MCP framework queries tool registry to find relevant tools for the agent's task"
+      title: "工具发现",
+      description: "MCP 框架为任务发现可用工具",
+      components: ["MCP 服务端", "工具注册中心", "服务发现"],
+      details: "MCP 框架查询工具注册中心，为智能体任务查找相关工具"
     },
     {
       step: 6,
-      title: "Tool Execution",
-      description: "Selected tools are executed with proper parameters",
-      components: ["MCP Client", "Tool Binding", "Execution Engine"],
-      details: "Tools are bound to execution context and executed with validated parameters"
+      title: "工具执行",
+      description: "使用适当的参数执行所选工具",
+      components: ["MCP 客户端", "工具绑定", "执行引擎"],
+      details: "工具绑定到执行上下文，并使用经过验证的参数执行"
     },
     {
       step: 7,
-      title: "Data Retrieval",
-      description: "Hybrid RAG system retrieves relevant data",
-      components: ["PostgreSQL", "Milvus", "Vector Search", "SQL Queries"],
-      details: "System queries both structured (PostgreSQL) and vector (Milvus) databases for relevant information"
+      title: "数据检索",
+      description: "混合 RAG 系统检索相关数据",
+      components: ["PostgreSQL", "Milvus", "向量搜索", "SQL 查询"],
+      details: "系统同时查询结构化数据库（PostgreSQL）和向量数据库（Milvus）以获取相关信息"
     },
     {
       step: 8,
-      title: "Reasoning Analysis",
-      description: "Advanced reasoning engine processes results",
-      components: ["Reasoning Engine", "Chain-of-Thought", "Scenario Analysis"],
-      details: "Reasoning engine applies appropriate reasoning type to analyze retrieved data and generate insights"
+      title: "推理分析",
+      description: "高级推理引擎处理结果",
+      components: ["推理引擎", "思维链", "情景分析"],
+      details: "推理引擎应用合适的推理类型来分析检索到的数据并生成洞察"
     },
     {
       step: 9,
-      title: "Response Generation",
-      description: "NVIDIA NIMs generates final response",
-      components: ["NVIDIA NIMs", "Response Formatter", "Structured Data"],
-      details: "LLM generates natural language response with structured data and recommendations"
+      title: "响应生成",
+      description: "模型服务生成最终响应",
+      components: ["模型服务", "响应格式化器", "结构化数据"],
+      details: "LLM 生成包含结构化数据和建议的自然语言响应"
     },
     {
       step: 10,
-      title: "Response Delivery",
-      description: "Response is sent back to user through API gateway",
-      components: ["API Gateway", "WebSocket/HTTP", "React UI"],
-      details: "Response is formatted and sent back through API gateway to frontend for display"
+      title: "响应交付",
+      description: "通过 API 网关将响应发回用户",
+      components: ["API 网关", "WebSocket/HTTP", "React UI"],
+      details: "响应经过格式化后，通过 API 网关返回前端显示"
     }
   ];
 
   const systemArchitecture = {
-    title: "System Architecture Overview",
-    description: "High-level view of the Multi-Agent-Intelligent-Warehouse architecture showing all major components and their relationships",
+    title: "系统架构概览",
+    description: "多智能体智慧仓储系统架构的高层视图，展示所有主要组件及其关系",
     components: [
-      { name: "Frontend", type: "UI Layer", color: "#1976d2" },
-      { name: "API Gateway", type: "Gateway Layer", color: "#388e3c" },
-      { name: "Multi-Agent System", type: "Processing Layer", color: "#f57c00" },
-      { name: "MCP Framework", type: "Tool Layer", color: "#7b1fa2" },
-      { name: "Data Layer", type: "Storage Layer", color: "#d32f2f" },
-      { name: "External Systems", type: "Integration Layer", color: "#455a64" },
-      { name: "Monitoring", type: "Observability Layer", color: "#00796b" }
+      { name: "前端", type: "UI 层", color: "#1976d2" },
+      { name: "API 网关", type: "网关层", color: "#388e3c" },
+      { name: "多智能体系统", type: "处理层", color: "#f57c00" },
+      { name: "MCP 框架", type: "工具层", color: "#7b1fa2" },
+      { name: "数据层", type: "存储层", color: "#d32f2f" },
+      { name: "外部系统", type: "集成层", color: "#455a64" },
+      { name: "监控", type: "可观测性层", color: "#00796b" }
     ]
   };
 
   const agentFlowDiagram = {
-    title: "Agent Flow Diagram",
-    description: "Detailed flow showing how requests are processed through the multi-agent system",
+    title: "智能体流程图",
+    description: "展示请求如何通过多智能体系统处理的详细流程",
     flow: [
-      "User Input → Intent Classification → Agent Selection → Tool Discovery → Tool Execution → Data Retrieval → Reasoning → Response Generation → User Output"
+      "用户输入 → 意图分类 → 智能体选择 → 工具发现 → 工具执行 → 数据检索 → 推理 → 响应生成 → 用户输出"
     ]
   };
 
   const mcpArchitecture = {
-    title: "MCP Framework Architecture",
-    description: "Model Context Protocol framework showing tool discovery, binding, and execution",
+    title: "MCP 框架架构",
+    description: "展示工具发现、绑定与执行的模型上下文协议框架",
     components: [
-      "MCP Server (Tool Registration)",
-      "MCP Client (Multi-Server Communication)",
-      "Tool Discovery Service (Dynamic Registration)",
-      "Tool Binding Service (Intelligent Binding)",
-      "Tool Routing Service (Context-Aware Routing)",
-      "Service Discovery Registry (Health Monitoring)"
+      "MCP 服务端（工具注册）",
+      "MCP 客户端（多服务器通信）",
+      "工具发现服务（动态注册）",
+      "工具绑定服务（智能绑定）",
+      "工具路由服务（上下文感知路由）",
+      "服务发现注册中心（健康监控）"
     ]
   };
 
@@ -296,37 +296,37 @@ const ArchitectureDiagrams: React.FC = () => {
       {/* Breadcrumbs */}
       <Breadcrumbs sx={{ mb: 2 }}>
         <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/documentation')}>
-          Documentation
+          文档
         </Button>
-        <Typography color="text.primary">Architecture Diagrams</Typography>
+        <Typography color="text.primary">架构图</Typography>
       </Breadcrumbs>
 
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          Architecture Diagrams
+          架构图
         </Typography>
         <Typography variant="h5" component="h2" gutterBottom color="text.secondary">
-          System Architecture and Flow Diagrams
+          系统架构与流程图
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          Comprehensive visual documentation of the Multi-Agent-Intelligent-Warehouse architecture, 
-          including system components, data flow, agent interactions, and MCP framework design.
+          多智能体智慧仓储系统架构的完整可视化文档，
+          涵盖系统组件、数据流、智能体交互和 MCP 框架设计。
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
-          <Chip label="System Architecture" color="primary" />
-          <Chip label="Data Flow" color="secondary" />
-          <Chip label="Agent Interactions" color="info" />
-          <Chip label="MCP Framework" color="warning" />
-          <Chip label="Production Ready" color="success" />
+          <Chip label="系统架构" color="primary" />
+          <Chip label="数据流" color="secondary" />
+          <Chip label="智能体交互" color="info" />
+          <Chip label="MCP 框架" color="warning" />
+          <Chip label="生产就绪" color="success" />
         </Box>
       </Box>
 
       {/* Status Alert */}
       <Alert severity="success" sx={{ mb: 4 }}>
-        <AlertTitle>🏗️ Complete Architecture Documentation</AlertTitle>
-        The system architecture is fully documented with detailed component descriptions, 
-        data flow diagrams, and interaction patterns for all major system components.
+        <AlertTitle>🏗️ 完整架构文档</AlertTitle>
+        系统架构文档已完备，包含所有主要系统组件的详细说明、
+        数据流程图和交互模式。
       </Alert>
 
       {/* System Architecture Overview */}
@@ -334,7 +334,7 @@ const ArchitectureDiagrams: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ArchitectureIcon color="primary" />
-            System Architecture Overview
+            系统架构概览
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -360,7 +360,7 @@ const ArchitectureDiagrams: React.FC = () => {
                       {component.description}
                     </Typography>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>Technologies:</Typography>
+                      <Typography variant="subtitle2" gutterBottom>技术：</Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {component.technologies.map((tech, techIndex) => (
                           <Chip key={techIndex} label={tech} size="small" variant="outlined" />
@@ -368,7 +368,7 @@ const ArchitectureDiagrams: React.FC = () => {
                       </Box>
                     </Box>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>Responsibilities:</Typography>
+                      <Typography variant="subtitle2" gutterBottom>职责：</Typography>
                       <List dense>
                         {component.responsibilities.map((responsibility, respIndex) => (
                           <ListItem key={respIndex} sx={{ py: 0 }}>
@@ -398,17 +398,17 @@ const ArchitectureDiagrams: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <TimelineIcon color="primary" />
-            Data Flow Diagram
+            数据流程图
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Box sx={{ mb: 3 }}>
             <Typography variant="h5" gutterBottom>
-              Request Processing Flow
+              请求处理流程
             </Typography>
             <Typography variant="body1" sx={{ mb: 2 }}>
-              Detailed step-by-step flow showing how user requests are processed through the entire system, 
-              from frontend input to response delivery.
+              展示用户请求如何在整个系统中处理的详细分步流程，
+              从前端输入一直到响应交付。
             </Typography>
           </Box>
 
@@ -418,14 +418,14 @@ const ArchitectureDiagrams: React.FC = () => {
                 <Card variant="outlined">
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                      <Chip label={`Step ${step.step}`} color="primary" />
+                      <Chip label={`步骤 ${step.step}`} color="primary" />
                       <Typography variant="h6">{step.title}</Typography>
                     </Box>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                       {step.description}
                     </Typography>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>Components:</Typography>
+                      <Typography variant="subtitle2" gutterBottom>组件：</Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {step.components.map((component, compIndex) => (
                           <Chip key={compIndex} label={component} size="small" variant="outlined" />
@@ -448,7 +448,7 @@ const ArchitectureDiagrams: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <AccountTreeIcon color="primary" />
-            Agent Flow Diagram
+            智能体流程图
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -464,7 +464,7 @@ const ArchitectureDiagrams: React.FC = () => {
           <Card variant="outlined">
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Multi-Agent Processing Flow
+                多智能体处理流程
               </Typography>
               <Paper sx={{ p: 3, bgcolor: 'grey.50', textAlign: 'center' }}>
                 <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '1.1rem' }}>
@@ -479,20 +479,20 @@ const ArchitectureDiagrams: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Equipment Agent
+                    设备智能体
                   </Typography>
                   <List dense>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Equipment lookup and status" primaryTypographyProps={{ variant: 'body2' }} />
+                      <ListItemText primary="设备查询与状态" primaryTypographyProps={{ variant: 'body2' }} />
                     </ListItem>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Equipment dispatch and assignment" primaryTypographyProps={{ variant: 'body2' }} />
+                      <ListItemText primary="设备调度与分配" primaryTypographyProps={{ variant: 'body2' }} />
                     </ListItem>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Maintenance scheduling" primaryTypographyProps={{ variant: 'body2' }} />
+                      <ListItemText primary="维护计划" primaryTypographyProps={{ variant: 'body2' }} />
                     </ListItem>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Availability checking" primaryTypographyProps={{ variant: 'body2' }} />
+                      <ListItemText primary="可用性检查" primaryTypographyProps={{ variant: 'body2' }} />
                     </ListItem>
                   </List>
                 </CardContent>
@@ -502,20 +502,20 @@ const ArchitectureDiagrams: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Operations Agent
+                    运营智能体
                   </Typography>
                   <List dense>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Pick wave creation" primaryTypographyProps={{ variant: 'body2' }} />
+                      <ListItemText primary="创建拣货波次" primaryTypographyProps={{ variant: 'body2' }} />
                     </ListItem>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Task assignment" primaryTypographyProps={{ variant: 'body2' }} />
+                      <ListItemText primary="任务分配" primaryTypographyProps={{ variant: 'body2' }} />
                     </ListItem>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Workflow optimization" primaryTypographyProps={{ variant: 'body2' }} />
+                      <ListItemText primary="工作流优化" primaryTypographyProps={{ variant: 'body2' }} />
                     </ListItem>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Performance monitoring" primaryTypographyProps={{ variant: 'body2' }} />
+                      <ListItemText primary="性能监控" primaryTypographyProps={{ variant: 'body2' }} />
                     </ListItem>
                   </List>
                 </CardContent>
@@ -525,20 +525,20 @@ const ArchitectureDiagrams: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Safety Agent
+                    安全智能体
                   </Typography>
                   <List dense>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Incident reporting" primaryTypographyProps={{ variant: 'body2' }} />
+                      <ListItemText primary="事件报告" primaryTypographyProps={{ variant: 'body2' }} />
                     </ListItem>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Safety compliance" primaryTypographyProps={{ variant: 'body2' }} />
+                      <ListItemText primary="安全合规" primaryTypographyProps={{ variant: 'body2' }} />
                     </ListItem>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Risk assessment" primaryTypographyProps={{ variant: 'body2' }} />
+                      <ListItemText primary="风险评估" primaryTypographyProps={{ variant: 'body2' }} />
                     </ListItem>
                     <ListItem sx={{ py: 0 }}>
-                      <ListItemText primary="Training management" primaryTypographyProps={{ variant: 'body2' }} />
+                      <ListItemText primary="培训管理" primaryTypographyProps={{ variant: 'body2' }} />
                     </ListItem>
                   </List>
                 </CardContent>
@@ -553,7 +553,7 @@ const ArchitectureDiagrams: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <BuildIcon color="primary" />
-            MCP Framework Architecture
+            MCP 框架架构
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -576,7 +576,7 @@ const ArchitectureDiagrams: React.FC = () => {
                       <Typography variant="h6">{component}</Typography>
                     </Box>
                     <Typography variant="body2" color="text.secondary">
-                      Core component of the MCP framework providing essential functionality for tool management and execution.
+                      MCP 框架的核心组件，为工具管理与执行提供关键功能。
                     </Typography>
                   </CardContent>
                 </Card>
@@ -591,7 +591,7 @@ const ArchitectureDiagrams: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CodeIcon color="primary" />
-            Technology Stack
+            技术栈
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -600,31 +600,31 @@ const ArchitectureDiagrams: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Frontend Technologies
+                    前端技术
                   </Typography>
                   <List dense>
                     <ListItem>
                       <ListItemText 
                         primary="React 18" 
-                        secondary="Modern React with hooks and concurrent features"
+                        secondary="采用 hooks 和并发特性的现代 React"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
                         primary="TypeScript" 
-                        secondary="Type-safe JavaScript development"
+                        secondary="类型安全的 JavaScript 开发"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
                         primary="Material-UI" 
-                        secondary="Google Material Design components"
+                        secondary="Google Material Design 组件"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
                         primary="React Router" 
-                        secondary="Client-side routing and navigation"
+                        secondary="客户端路由与导航"
                       />
                     </ListItem>
                   </List>
@@ -635,31 +635,31 @@ const ArchitectureDiagrams: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Backend Technologies
+                    后端技术
                   </Typography>
                   <List dense>
                     <ListItem>
                       <ListItemText 
                         primary="FastAPI" 
-                        secondary="Modern Python web framework with automatic API docs"
+                        secondary="自动生成 API 文档的现代 Python Web 框架"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
                         primary="LangGraph" 
-                        secondary="Multi-agent orchestration and workflow management"
+                        secondary="多智能体编排与工作流管理"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="NVIDIA NIMs" 
-                        secondary="Llama 3.3 Nemotron Super 49B + NV-EmbedQA-E5-v5 embeddings"
+                        primary="模型服务" 
+                        secondary="Llama 3.3 Nemotron Super 49B + NV-EmbedQA-E5-v5 嵌入模型"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="MCP Framework" 
-                        secondary="Model Context Protocol for tool discovery and execution"
+                        primary="MCP 框架" 
+                        secondary="用于工具发现与执行的模型上下文协议"
                       />
                     </ListItem>
                   </List>
@@ -670,31 +670,31 @@ const ArchitectureDiagrams: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Data Technologies
+                    数据技术
                   </Typography>
                   <List dense>
                     <ListItem>
                       <ListItemText 
                         primary="PostgreSQL" 
-                        secondary="Primary relational database for structured data"
+                        secondary="用于结构化数据的主关系数据库"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
                         primary="TimescaleDB" 
-                        secondary="Time-series data extension for telemetry"
+                        secondary="用于遥测的时序数据扩展"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
                         primary="Milvus" 
-                        secondary="Vector database for semantic search"
+                        secondary="用于语义搜索的向量数据库"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
                         primary="Redis" 
-                        secondary="In-memory caching and session storage"
+                        secondary="内存缓存与会话存储"
                       />
                     </ListItem>
                   </List>
@@ -705,31 +705,31 @@ const ArchitectureDiagrams: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Infrastructure Technologies
+                    基础设施技术
                   </Typography>
                   <List dense>
                     <ListItem>
                       <ListItemText 
                         primary="Docker" 
-                        secondary="Containerization for consistent deployments"
+                        secondary="用于一致部署的容器化技术"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
                         primary="Kubernetes" 
-                        secondary="Container orchestration for production"
+                        secondary="用于生产环境的容器编排"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
                         primary="Prometheus" 
-                        secondary="Metrics collection and monitoring"
+                        secondary="指标收集与监控"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
                         primary="Grafana" 
-                        secondary="Visualization and dashboarding"
+                        secondary="可视化与仪表板"
                       />
                     </ListItem>
                   </List>
@@ -743,7 +743,7 @@ const ArchitectureDiagrams: React.FC = () => {
       {/* Footer */}
       <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
         <Typography variant="body2" color="text.secondary" align="center">
-          Architecture Diagrams - Multi-Agent-Intelligent-Warehouse
+          架构图——多智能体智慧仓储系统
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
           <Button 
@@ -753,10 +753,10 @@ const ArchitectureDiagrams: React.FC = () => {
             target="_blank"
             rel="noopener noreferrer"
           >
-            View Source
+            查看源代码
           </Button>
           <Button variant="outlined" startIcon={<DashboardIcon />}>
-            Live Demo
+            在线演示
           </Button>
         </Box>
       </Box>

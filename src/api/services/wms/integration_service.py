@@ -21,8 +21,17 @@ import asyncio
 from typing import Dict, List, Optional, Any, Union
 from datetime import datetime
 import logging
+from pydantic import BaseModel, ConfigDict, Field
+
 from src.adapters.wms import WMSAdapterFactory, BaseWMSAdapter
-from src.adapters.wms.base import InventoryItem, Task, Order, Location, TaskStatus, TaskType
+from src.adapters.wms.base import (
+    InventoryItem,
+    Task,
+    Order,
+    Location,
+    TaskStatus,
+    TaskType,
+)
 from src.adapters.wms.sap_ewm import SAPEWMAdapter
 from src.adapters.wms.sap_ewm_config import SAPEWMConfig
 from src.adapters.wms.sap_ewm_models import (
@@ -31,8 +40,26 @@ from src.adapters.wms.sap_ewm_models import (
     SAPStockItem,
     SAPWriteResult,
 )
+from src.api.services.execution.models import Command
 
 logger = logging.getLogger(__name__)
+
+
+class SubmissionResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    accepted: bool
+    external_reference: str
+    provider_result: dict[str, Any] = Field(default_factory=dict)
+
+
+class VerificationResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    verified: bool
+    external_reference: str
+    data: dict[str, Any] = Field(default_factory=dict)
+    source_version: str | None = None
 
 
 class WMSIntegrationService:
@@ -330,7 +357,9 @@ class WMSIntegrationService:
                 status=TaskStatus.PENDING,
                 assigned_to=assigned_workers[0] if assigned_workers else None,
                 location=constraints.get("zone") if constraints else None,
-                priority=constraints.get("priority", "medium") if constraints else "medium",
+                priority=(
+                    constraints.get("priority", "medium") if constraints else "medium"
+                ),
                 quantity=quantity,
                 created_at=datetime.now(),
             )
@@ -454,7 +483,9 @@ class WMSIntegrationService:
                 status_enum = status_map.get(status.lower())
 
             # Get tasks from all connections
-            all_tasks = await self.get_tasks_all(status=status_enum, assigned_to=worker_id)
+            all_tasks = await self.get_tasks_all(
+                status=status_enum, assigned_to=worker_id
+            )
 
             # Convert to work queue entry format
             entries = []
@@ -467,16 +498,18 @@ class WMSIntegrationService:
                     if task_type and task.task_type.value.lower() != task_type.lower():
                         continue
 
-                    entries.append({
-                        "task_id": task.task_id,
-                        "task_type": task.task_type.value,
-                        "status": task.status.value,
-                        "assigned_to": task.assigned_to,
-                        "location": task.location,
-                        "priority": task.priority,
-                        "quantity": task.quantity,
-                        "connection_id": connection_id,
-                    })
+                    entries.append(
+                        {
+                            "task_id": task.task_id,
+                            "task_type": task.task_type.value,
+                            "status": task.status.value,
+                            "assigned_to": task.assigned_to,
+                            "location": task.location,
+                            "priority": task.priority,
+                            "quantity": task.quantity,
+                            "connection_id": connection_id,
+                        }
+                    )
 
             return entries
 
@@ -674,6 +707,99 @@ class WMSIntegrationService:
         return await adapter.confirm_warehouse_task_exact(
             warehouse_task, warehouse_task_item, correlation_id
         )
+
+    async def execute(
+        self,
+        command: Command,
+        *,
+        connection_id: str | None = None,
+    ) -> SubmissionResult:
+        """Submit one approved command to its concrete WMS adapter."""
+
+        if not command.expected_version:
+            raise ValueError("SAP write command requires an approved ETag")
+        adapter, resolved_connection = await self._command_sap_adapter(connection_id)
+        if command.capability == "sap.ewm.order.assign":
+            order_id = str(command.arguments["warehouse_order"])
+            result = await adapter.assign_warehouse_order(
+                order_id,
+                str(command.arguments["resource"]),
+                correlation_id=command.command_id,
+                expected_etag=command.expected_version,
+            )
+            entity = f"warehouse-order:{order_id}"
+        elif command.capability == "sap.ewm.task.confirm":
+            task_id = str(command.arguments["warehouse_task"])
+            task_item = str(command.arguments.get("warehouse_task_item", "0"))
+            result = await adapter.confirm_warehouse_task_exact(
+                task_id,
+                task_item,
+                correlation_id=command.command_id,
+                expected_etag=command.expected_version,
+            )
+            entity = f"warehouse-task:{task_id}:{task_item}"
+        else:
+            raise ValueError(
+                f"unsupported WMS command capability: {command.capability}"
+            )
+        return SubmissionResult(
+            accepted=True,
+            external_reference=f"sap-ewm:{resolved_connection}:{entity}",
+            provider_result=result.model_dump(mode="json"),
+        )
+
+    async def read_back(
+        self,
+        command: Command,
+        *,
+        connection_id: str | None = None,
+    ) -> VerificationResult:
+        """Read authoritative state after submission and verify the intended effect."""
+
+        adapter, resolved_connection = await self._command_sap_adapter(connection_id)
+        if command.capability == "sap.ewm.order.assign":
+            order_id = str(command.arguments["warehouse_order"])
+            resource = str(command.arguments["resource"])
+            current = await adapter.get_warehouse_order(
+                order_id, correlation_id=command.command_id
+            )
+            verified = current.executing_resource == resource
+            entity = f"warehouse-order:{order_id}"
+        elif command.capability == "sap.ewm.task.confirm":
+            task_id = str(command.arguments["warehouse_task"])
+            task_item = str(command.arguments.get("warehouse_task_item", "0"))
+            current = await adapter.get_warehouse_task(
+                task_id, task_item, correlation_id=command.command_id
+            )
+            verified = current.status == "C"
+            entity = f"warehouse-task:{task_id}:{task_item}"
+        else:
+            raise ValueError(
+                f"unsupported WMS command capability: {command.capability}"
+            )
+        return VerificationResult(
+            verified=verified,
+            external_reference=f"sap-ewm:{resolved_connection}:{entity}",
+            data=current.model_dump(mode="json"),
+            source_version=current.etag,
+        )
+
+    async def _command_sap_adapter(
+        self, connection_id: str | None
+    ) -> tuple[SAPEWMAdapter, str]:
+        if connection_id is None:
+            candidates = [
+                item_id
+                for item_id, adapter in self.adapters.items()
+                if isinstance(adapter, SAPEWMAdapter)
+            ]
+            if len(candidates) != 1:
+                raise ValueError("SAP command requires one explicit WMS connection")
+            connection_id = candidates[0]
+        adapter = self._get_sap_adapter(connection_id)
+        if not adapter.connected and not await adapter.connect():
+            raise ConnectionError(f"WMS connection unavailable: {connection_id}")
+        return adapter, connection_id
 
     async def get_aggregated_inventory(
         self, location: Optional[str] = None, sku: Optional[str] = None

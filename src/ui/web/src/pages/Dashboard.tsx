@@ -15,6 +15,14 @@ import {
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { healthAPI, equipmentAPI, operationsAPI, safetyAPI } from '../services/api';
+import {
+  formatZhDate,
+  translateAssetType,
+  translatePriority,
+  translateStatus,
+  translateTaskKind,
+  translateWarehouseLocation,
+} from '../localization/zhCN';
 
 const Dashboard: React.FC = () => {
   const { data: healthStatus } = useQuery({ queryKey: ['health'], queryFn: healthAPI.check });
@@ -32,25 +40,25 @@ const Dashboard: React.FC = () => {
 
   const stats = [
     {
-      title: 'Total Equipment Assets',
+      title: '设备资产总数',
       value: equipmentAssets?.length || 0,
       icon: <EquipmentIcon />,
       color: 'primary',
     },
     {
-      title: 'Maintenance Needed',
+      title: '需要维护',
       value: maintenanceNeeded.length,
       icon: <EquipmentIcon />,
       color: 'warning',
     },
     {
-      title: 'Pending Tasks',
+      title: '待处理任务',
       value: pendingTasks.length,
       icon: <OperationsIcon />,
       color: 'info',
     },
     {
-      title: 'Recent Incidents',
+      title: '近期事件',
       value: recentIncidents.length,
       icon: <SafetyIcon />,
       color: 'error',
@@ -60,15 +68,15 @@ const Dashboard: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Dashboard
+        仪表盘
       </Typography>
       
       {/* System Status */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Typography variant="h6">System Status</Typography>
+          <Typography variant="h6">系统状态</Typography>
           <Chip
-            label={healthStatus?.ok ? 'Online' : 'Offline'}
+            label={healthStatus?.ok ? '在线' : '离线'}
             color={healthStatus?.ok ? 'success' : 'error'}
             variant="outlined"
           />
@@ -105,33 +113,33 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Equipment Maintenance Needed
+              待维护设备
             </Typography>
             {maintenanceNeeded.length > 0 ? (
               <Box>
                 {maintenanceNeeded.map((asset) => (
                   <Box key={asset.asset_id} sx={{ mb: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body1">{asset.asset_id} - {asset.type}</Typography>
+                      <Typography variant="body1">{asset.asset_id} - {translateAssetType(asset.type)}</Typography>
                       <Chip 
-                        label={asset.status} 
+                        label={translateStatus(asset.status)}
                         color={asset.status === 'maintenance' ? 'error' : 'warning'} 
                         size="small" 
                       />
                     </Box>
                     <Typography variant="body2" color="text.secondary">
-                      Model: {asset.model || 'N/A'} | Zone: {asset.zone || 'N/A'}
+                      型号：{asset.model || '暂无'} | 区域：{translateWarehouseLocation(asset.zone)}
                     </Typography>
                     {asset.next_pm_due && (
                       <Typography variant="body2" color="text.secondary">
-                        Next PM: {new Date(asset.next_pm_due).toLocaleDateString()}
+                        下次预防性维护：{formatZhDate(asset.next_pm_due)}
                       </Typography>
                     )}
                   </Box>
                 ))}
               </Box>
             ) : (
-              <Typography color="text.secondary">All equipment is in good condition</Typography>
+              <Typography color="text.secondary">所有设备状态良好</Typography>
             )}
           </Paper>
         </Grid>
@@ -140,24 +148,24 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Recent Tasks
+              近期任务
             </Typography>
             {pendingTasks.length > 0 ? (
               <Box>
                 {pendingTasks.slice(0, 5).map((task) => (
                   <Box key={task.id} sx={{ mb: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="body1">{task.kind}</Typography>
-                      <Chip label={task.status} color="info" size="small" />
+                      <Typography variant="body1">{translateTaskKind(task.kind)}</Typography>
+                      <Chip label={translateStatus(task.status)} color="info" size="small" />
                     </Box>
                     <Typography variant="body2" color="text.secondary">
-                      Assignee: {task.assignee || 'Unassigned'}
+                      执行人：{task.assignee || '未分配'}
                     </Typography>
                   </Box>
                 ))}
               </Box>
             ) : (
-              <Typography color="text.secondary">No pending tasks</Typography>
+              <Typography color="text.secondary">暂无待处理任务</Typography>
             )}
           </Paper>
         </Grid>
@@ -166,7 +174,7 @@ const Dashboard: React.FC = () => {
         <Grid item xs={12}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Recent Safety Incidents
+              近期安全事件
             </Typography>
             {recentIncidents.length > 0 ? (
               <Box>
@@ -174,16 +182,16 @@ const Dashboard: React.FC = () => {
                   <Box key={incident.id} sx={{ mb: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography variant="body1">{incident.description}</Typography>
-                      <Chip label={incident.severity} color="error" size="small" />
+                      <Chip label={translatePriority(incident.severity)} color="error" size="small" />
                     </Box>
                     <Typography variant="body2" color="text.secondary">
-                      Reported by: {incident.reported_by} | {new Date(incident.occurred_at).toLocaleDateString()}
+                      报告人：{incident.reported_by} | {formatZhDate(incident.occurred_at)}
                     </Typography>
                   </Box>
                 ))}
               </Box>
             ) : (
-              <Typography color="text.secondary">No recent incidents</Typography>
+              <Typography color="text.secondary">暂无近期安全事件</Typography>
             )}
           </Paper>
         </Grid>

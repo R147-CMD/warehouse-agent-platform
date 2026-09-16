@@ -13,14 +13,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, field_validator
 from typing import Optional, Dict, Any, List, Union
 import logging
 import asyncio
 import re
 import time
-from src.api.graphs.mcp_integrated_planner_graph import get_mcp_planner_graph
+from src.api.graphs.mcp_integrated_planner_graph import (
+    CHECKPOINT_NAMESPACE,
+    get_mcp_planner_graph,
+)
+from src.api.routers.approvals import sanitize_pending_approvals
+from src.api.services.approval import ApprovalExecutionContext
+from src.api.services.auth.dependencies import CurrentUser, get_current_user_context
+from src.api.services.runs import (
+    RunCancelled,
+    RunCreate,
+    RunExecutionContext,
+    RunType,
+    bind_run_context,
+    get_run_manager,
+)
 from src.api.services.guardrails.guardrails_service import guardrails_service
 from src.api.services.evidence.evidence_integration import (
     get_evidence_integration_service,
@@ -39,6 +53,8 @@ from src.api.utils.log_utils import sanitize_log_data
 from src.api.services.cache.query_cache import get_query_cache
 from src.api.services.deduplication.request_deduplicator import get_request_deduplicator
 from src.api.services.monitoring.performance_monitor import get_performance_monitor
+from src.api.services.chat_sessions import validate_session_id
+from src.api.services.checkpointing import get_checkpoint_manager
 import uuid
 
 logger = logging.getLogger(__name__)
@@ -458,10 +474,15 @@ def _clean_response_text(response: str) -> str:
 
 class ChatRequest(BaseModel):
     message: str
-    session_id: Optional[str] = "default"
+    session_id: str
     context: Optional[Dict[str, Any]] = None
     enable_reasoning: bool = False  # Enable advanced reasoning capability
     reasoning_types: Optional[List[str]] = None  # Specific reasoning types to use
+
+    @field_validator("session_id")
+    @classmethod
+    def validate_checkpoint_session_id(cls, value: str) -> str:
+        return validate_session_id(value)
 
 
 class ChatResponse(BaseModel):
@@ -469,6 +490,7 @@ class ChatResponse(BaseModel):
     route: str
     intent: str
     session_id: str
+    run_id: Optional[str] = None
     context: Optional[Dict[str, Any]] = None
     structured_data: Optional[Dict[str, Any]] = None
     recommendations: Optional[List[str]] = None
@@ -497,6 +519,8 @@ class ChatResponse(BaseModel):
     # Reasoning fields
     reasoning_chain: Optional[Dict[str, Any]] = None  # Complete reasoning chain
     reasoning_steps: Optional[List[Dict[str, Any]]] = None  # Individual reasoning steps
+    execution_status: str = "completed"
+    pending_approvals: Optional[List[Dict[str, Any]]] = None
 
 
 def _create_fallback_chat_response(
@@ -506,15 +530,74 @@ def _create_fallback_chat_response(
     route: str,
     intent: str,
     confidence: float,
+    run_id: str | None = None,
 ) -> ChatResponse:
     """Create a ChatResponse with standardized fields."""
+    del message
     return ChatResponse(
         reply=reply,
         route=route,
         intent=intent,
         session_id=session_id,
+        run_id=run_id,
         confidence=confidence,
+        execution_status="completed",
+        pending_approvals=[],
     )
+
+
+def _create_error_chat_response(
+    reply: str,
+    error_message: str,
+    error_type: str,
+    session_id: str,
+    confidence: float,
+    run_id: str | None = None,
+) -> ChatResponse:
+    """Create a credential-safe error ChatResponse."""
+
+    return ChatResponse(
+        reply=reply,
+        route="error",
+        intent="error",
+        session_id=session_id,
+        run_id=run_id,
+        context={"error": _sanitize_log_data(error_message), "error_type": error_type},
+        confidence=confidence,
+        execution_status="failed",
+        pending_approvals=[],
+    )
+
+
+def _summarize_run_title(message: str) -> str:
+    """Return a compact title for run list display."""
+
+    title = str(message or "").replace("\x00", "").strip()
+    return title[:60] if title else "智能体任务"
+
+
+def _sanitize_run_payload(value: Any, *, depth: int = 0) -> Any:
+    """Keep retry payload JSON-safe and remove obvious credentials."""
+
+    if depth > 6:
+        return "[TRUNCATED]"
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, dict):
+        safe: dict[str, Any] = {}
+        for raw_key, item in value.items():
+            key = str(raw_key)
+            if re.search(
+                r"(?i)(password|passwd|secret|token|api[_-]?key|authorization|cookie|credential)",
+                key,
+            ):
+                safe[key] = "[REDACTED]"
+            else:
+                safe[key] = _sanitize_run_payload(item, depth=depth + 1)
+        return safe
+    if isinstance(value, (list, tuple)):
+        return [_sanitize_run_payload(item, depth=depth + 1) for item in value]
+    return str(value)[:1000]
 
 
 def _create_safety_violation_response(
@@ -546,6 +629,8 @@ def _create_safety_violation_response(
         recommendations=[],
         confidence=confidence,
         actions_taken=[],
+        execution_status="completed",
+        pending_approvals=[],
     )
 
 
@@ -596,7 +681,10 @@ class ConversationSearchRequest(BaseModel):
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest):
+async def chat(
+    req: ChatRequest,
+    current_user: CurrentUser = Depends(get_current_user_context),
+):
     """
     Process warehouse operational queries through the multi-agent planner with guardrails.
 
@@ -607,13 +695,44 @@ async def chat(req: ChatRequest):
     
     Includes timeout protection for async operations to prevent hanging requests.
     """
+    session_id = req.session_id
+
     # Log immediately when request is received
-    logger.info(f"📥 Received chat request: message='{_sanitize_log_data(req.message[:100])}...', reasoning={req.enable_reasoning}, session={_sanitize_log_data(req.session_id or 'default')}")
+    logger.info(f"📥 Received chat request: message='{_sanitize_log_data(req.message[:100])}...', reasoning={req.enable_reasoning}, session={_sanitize_log_data(session_id)}")
     
     # Generate unique request ID for tracking
     request_id = str(uuid.uuid4())
     performance_monitor = get_performance_monitor()
     await performance_monitor.start_request(request_id)
+    run_manager = get_run_manager()
+    run_record = await run_manager.repository.create_run(
+        RunCreate(
+            session_id=session_id,
+            checkpoint_thread_id=session_id,
+            user_id=current_user.user.id,
+            username=current_user.user.username,
+            user_role=current_user.user.role.value,
+            run_type=RunType.CHAT,
+            title=_summarize_run_title(req.message),
+            input_summary=_summarize_run_title(req.message),
+            input_payload={
+                "message": req.message,
+                "session_id": session_id,
+                "context": _sanitize_run_payload(req.context or {}),
+                "enable_reasoning": req.enable_reasoning,
+                "reasoning_types": req.reasoning_types or [],
+            },
+        )
+    )
+    run_context = RunExecutionContext(
+        run_id=run_record.run_id,
+        session_id=session_id,
+        checkpoint_thread_id=session_id,
+        request_id=request_id,
+        user_id=current_user.user.id,
+        username=current_user.user.username,
+        user_role=current_user.user.role.value,
+    )
     
     # Check cache first (skip cache for reasoning queries as they may vary)
     query_cache = get_query_cache()
@@ -621,27 +740,31 @@ async def chat(req: ChatRequest):
     if not req.enable_reasoning:
         cached_result = await query_cache.get(
             req.message,
-            req.session_id or "default",
+            session_id,
             req.context
         )
         if cached_result:
             logger.info(f"Returning cached result for query: {req.message[:50]}...")
             cache_hit = True
+            await run_manager.mark_running(run_record.run_id)
+            await run_manager.mark_completed(run_record.run_id, "命中缓存")
             await performance_monitor.end_request(
                 request_id,
                 route=cached_result.get("route"),
                 intent=cached_result.get("intent"),
                 cache_hit=True
             )
+            cached_result["run_id"] = str(run_record.run_id)
             return ChatResponse(**cached_result)
     
     # Request deduplication - prevent duplicate concurrent requests
     deduplicator = get_request_deduplicator()
     request_key = deduplicator._generate_request_key(
         req.message,
-        req.session_id or "default",
+        session_id,
         req.context
     )
+    request_key = f"{request_key}:user:{current_user.user.id}"
     
     async def process_query():
         """Inner function to process the query (used for deduplication)."""
@@ -765,6 +888,14 @@ async def chat(req: ChatRequest):
                     message=req.message,
                     session_id=req.session_id or "default",
                     context=planner_context,
+                    approval_context=ApprovalExecutionContext(
+                        thread_id=req.session_id or "default",
+                        checkpoint_ns=CHECKPOINT_NAMESPACE,
+                        request_id=request_id,
+                        requester_id=current_user.user.id,
+                        requester_username=current_user.user.username,
+                        run_id=run_record.run_id,
+                    ),
                 )
             )
             
@@ -795,6 +926,37 @@ async def chat(req: ChatRequest):
                     pass
                 # Re-raise to be caught by outer exception handler
                 raise
+
+            if result and result.get("execution_status") == "approval_required":
+                pending_approvals = sanitize_pending_approvals(
+                    result.get("pending_approvals")
+                )
+                response = ChatResponse(
+                    reply=_clean_response_text(
+                        str(
+                            result.get("response")
+                            or "Approval is required before this action can continue."
+                        )
+                    ),
+                    route=str(result.get("route") or "approval"),
+                    intent=str(result.get("intent") or "approval_required"),
+                    session_id=req.session_id or "default",
+                    context={},
+                    execution_status="approval_required",
+                    pending_approvals=pending_approvals,
+                )
+                await performance_monitor.end_request(
+                    request_id,
+                    route="action_pending",
+                    intent=response.intent,
+                    cache_hit=False,
+                    error="approval_required",
+                    tool_count=tool_count,
+                    tool_execution_time_ms=tool_execution_time_ms,
+                    guardrails_method=guardrails_method,
+                    guardrails_time_ms=guardrails_time_ms,
+                )
+                return response
             
             # Handle empty or invalid results
             # Check for empty, None, or "No response generated" responses
@@ -1534,6 +1696,8 @@ async def chat(req: ChatRequest):
                 # Reasoning fields - use cleaned versions
                 reasoning_chain=cleaned_reasoning_chain,
                 reasoning_steps=cleaned_reasoning_steps,
+                execution_status=result.get("execution_status", "completed"),
+                pending_approvals=[],
             )
             logger.info("✅ Response created successfully")
             
@@ -1575,7 +1739,7 @@ async def chat(req: ChatRequest):
                     reply=formatted_reply if formatted_reply else (base_response if base_response else f"I received your message: '{req.message}'. However, there was an issue formatting the response."),
                     route=result.get("route", "general") if result else "general",
                     intent=result.get("intent", "unknown") if result else "unknown",
-                    session_id=req.session_id or "default",
+                    session_id=session_id,
                     context={},  # Empty context to avoid circular references
                     structured_data=None,  # Remove structured data
                     recommendations=[],
@@ -1608,7 +1772,7 @@ async def chat(req: ChatRequest):
             # Return a minimal response
             error_response = _create_fallback_chat_response(
                 req.message,
-                req.session_id or "default",
+                session_id,
                 formatted_reply if formatted_reply else f"I received your message: '{req.message}'. However, there was an issue formatting the response.",
                 "general",
                 "general",
@@ -1632,7 +1796,7 @@ async def chat(req: ChatRequest):
                 "The request timed out. Please try again with a simpler question or try again in a moment.",
                 "Request timed out",
                 "TimeoutError",
-                req.session_id or "default",
+                session_id,
                 0.0,
             )
             await performance_monitor.end_request(
@@ -1651,7 +1815,7 @@ async def chat(req: ChatRequest):
                 "I'm sorry, I encountered an unexpected error. Please try again or contact support if the issue persists.",
                 str(query_error)[:200],
                 type(query_error).__name__,
-                req.session_id or "default",
+                session_id,
                 0.0,
             )
             await performance_monitor.end_request(
@@ -1665,9 +1829,53 @@ async def chat(req: ChatRequest):
             )
             return error_response
     
+    async def run_scoped_process_query():
+        """Run the existing chat flow inside a durable run context."""
+
+        with bind_run_context(run_context):
+            await run_manager.mark_running(run_record.run_id)
+            try:
+                response = await process_query()
+                if isinstance(response, ChatResponse):
+                    response.run_id = str(run_record.run_id)
+                    if response.execution_status == "approval_required":
+                        await run_manager.mark_waiting_approval(run_record.run_id)
+                    elif response.execution_status == "cancelled":
+                        await run_manager.mark_cancelled(run_record.run_id, "聊天任务已取消")
+                    elif response.execution_status == "failed" or response.route == "error":
+                        await run_manager.mark_failed(
+                            run_record.run_id,
+                            response.context.get("error") if response.context else "Chat request failed",
+                            error_code=response.intent or "chat_error",
+                        )
+                    else:
+                        await run_manager.mark_completed(
+                            run_record.run_id,
+                            response.reply[:200] if response.reply else None,
+                        )
+                return response
+            except RunCancelled as exc:
+                await run_manager.mark_cancelled(exc.run_id, "聊天任务已取消")
+                return ChatResponse(
+                    reply="任务已取消。",
+                    route="cancelled",
+                    intent="cancelled",
+                    session_id=session_id,
+                    execution_status="cancelled",
+                    pending_approvals=[],
+                    run_id=str(run_record.run_id),
+                )
+            except Exception as error:
+                await run_manager.mark_failed(
+                    run_record.run_id,
+                    error,
+                    error_code=type(error).__name__,
+                )
+                raise
+
     # Use deduplicator to process query (prevents duplicate concurrent requests)
     try:
-        result = await deduplicator.get_or_create_task(request_key, process_query)
+        result = await deduplicator.get_or_create_task(request_key, run_scoped_process_query)
         return result
     except Exception as e:
         logger.error(f"Error in request deduplication: {_sanitize_log_data(str(e))}")
@@ -1676,9 +1884,11 @@ async def chat(req: ChatRequest):
             "I'm sorry, I encountered an unexpected error. Please try again.",
             str(e)[:200],
             type(e).__name__,
-            req.session_id or "default",
+            session_id,
             0.0,
+            run_id=str(run_record.run_id),
         )
+        await run_manager.mark_failed(run_record.run_id, e, error_code="deduplication_error")
         await performance_monitor.end_request(
             request_id,
             route="error",
@@ -1744,8 +1954,14 @@ async def clear_conversation(session_id: str):
     for the specified session.
     """
     try:
+        session_id = validate_session_id(session_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    try:
         memory_service = await get_conversation_memory_service()
         await memory_service.clear_conversation(session_id)
+        await get_checkpoint_manager().delete_thread(session_id)
 
         return {
             "success": True,
@@ -1756,7 +1972,7 @@ async def clear_conversation(session_id: str):
         logger.error(f"Error clearing conversation: {_sanitize_log_data(str(e))}")
         from src.api.utils.error_handler import sanitize_error_message
         error_msg = sanitize_error_message(e, "Clear conversation")
-        return {"success": False, "error": error_msg}
+        raise HTTPException(status_code=500, detail=error_msg) from e
 
 
 @router.post("/chat/validate")

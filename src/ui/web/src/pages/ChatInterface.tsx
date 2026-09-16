@@ -37,7 +37,7 @@ const ChatInterface: React.FC = () => {
   const [allMessages, setAllMessages] = useState<Message[]>([
     {
       id: '1',
-      content: 'Hello! I\'m your Multi-Agent-Intelligent-Warehouse assistant. How can I help you today?',
+      content: '您好！我是您的多智能体智能仓库助手。今天有什么可以帮您？',
       sender: 'assistant',
       timestamp: new Date(),
     },
@@ -68,6 +68,16 @@ const ChatInterface: React.FC = () => {
 
   const hasMoreMessages = messagesToShow < allMessages.length;
 
+  const getRouteLabel = (route?: string) => {
+    const labels: Record<string, string> = {
+      equipment: '设备智能体',
+      operations: '运营智能体',
+      safety: '安全智能体',
+      general: '通用助手',
+    };
+    return route ? (labels[route] || route) : '助手';
+  };
+
   const sendMessageMutation = useMutation({
     mutationFn: chatAPI.sendMessage,
     onSuccess: (response) => {
@@ -87,16 +97,16 @@ const ChatInterface: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('Error sending message:', error);
-      let errorContent = 'Sorry, I encountered an error. Please try again.';
+      let errorContent = '抱歉，发生错误，请重试。';
       
       if (error?.response?.status === 401) {
-        errorContent = 'Authentication failed. Please log in again.';
+        errorContent = '身份验证失败，请重新登录。';
       } else if (error?.response?.status === 403) {
-        errorContent = 'Access denied. Please check your permissions.';
+        errorContent = '访问被拒绝，请检查您的权限。';
       } else if (error?.code === 'ECONNABORTED') {
-        errorContent = 'Request timeout. Please try again.';
+        errorContent = '请求超时，请重试。';
       } else if (error?.response?.data?.detail) {
-        errorContent = `Error: ${error.response.data.detail}`;
+        errorContent = `错误：${error.response.data.detail}`;
       }
       
       const errorMessage: Message = {
@@ -116,7 +126,7 @@ const ChatInterface: React.FC = () => {
     if (!isAuthenticated) {
       const errorMessage: Message = {
         id: Date.now().toString(),
-        content: 'Please log in to use the chat interface.',
+        content: '请登录后使用聊天界面。',
         sender: 'assistant',
         timestamp: new Date(),
       };
@@ -156,7 +166,7 @@ const ChatInterface: React.FC = () => {
   return (
     <Box sx={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
       <Typography variant="h4" gutterBottom>
-        Chat Assistant
+        聊天助手
       </Typography>
       
       <Paper
@@ -187,7 +197,7 @@ const ChatInterface: React.FC = () => {
                 variant="outlined"
                 size="small"
               >
-                Load More Messages ({allMessages.length - messagesToShow} older)
+                加载更多消息（还有 {allMessages.length - messagesToShow} 条较早消息）
               </Button>
             </Box>
           )}
@@ -221,7 +231,7 @@ const ChatInterface: React.FC = () => {
                 {message.confidence && (
                   <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                     <Chip
-                      label={`${message.route} (${Math.round(message.confidence * 100)}%)`}
+                      label={`${getRouteLabel(message.route)}（${Math.round(message.confidence * 100)}%）`}
                       size="small"
                       color="secondary"
                     />
@@ -238,7 +248,7 @@ const ChatInterface: React.FC = () => {
                 {message.structured_data && message.structured_data.items && message.structured_data.items.length > 0 && (
                   <Box sx={{ mt: 2 }}>
                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                      Equipment Details:
+                      设备详情：
                     </Typography>
                     {message.structured_data.items.map((item: any, index: number) => (
                       <Box key={index} sx={{ 
@@ -253,16 +263,16 @@ const ChatInterface: React.FC = () => {
                           {item.name} ({item.sku})
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          <strong>Stock Level:</strong> {item.quantity} units
+                          <strong>库存量：</strong> {item.quantity} 件
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          <strong>Location:</strong> {item.location}
+                          <strong>位置：</strong> {item.location}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          <strong>Reorder Point:</strong> {item.reorder_point} units
+                          <strong>补货点：</strong> {item.reorder_point} 件
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          <strong>Status:</strong> {item.quantity <= item.reorder_point ? 'Low Stock' : 'In Stock'}
+                          <strong>状态：</strong> {item.quantity <= item.reorder_point ? '库存不足' : '库存充足'}
                         </Typography>
                       </Box>
                     ))}
@@ -272,7 +282,7 @@ const ChatInterface: React.FC = () => {
                 {message.recommendations && message.recommendations.length > 0 && (
                   <Box sx={{ mt: 1 }}>
                     <Typography variant="caption" color="text.secondary">
-                      Recommendations:
+                      建议：
                     </Typography>
                     {message.recommendations.map((rec, index) => (
                       <Typography key={index} variant="caption" display="block">
@@ -299,7 +309,7 @@ const ChatInterface: React.FC = () => {
               <Box sx={{ p: 2, borderRadius: 2, bgcolor: 'grey.100' }}>
                 <CircularProgress size={20} />
                 <Typography variant="body2" sx={{ ml: 1, display: 'inline' }}>
-                  Thinking...
+                  正在思考...
                 </Typography>
               </Box>
             </Box>
@@ -323,7 +333,7 @@ const ChatInterface: React.FC = () => {
             fullWidth
             multiline
             maxRows={4}
-            placeholder="Ask me about equipment, operations, safety, or anything warehouse-related..."
+            placeholder="您可以询问设备、运营、安全或任何仓库相关问题..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
@@ -332,6 +342,7 @@ const ChatInterface: React.FC = () => {
             size="small"
           />
           <IconButton
+            aria-label="发送消息"
             color="primary"
             onClick={handleSendMessage}
             disabled={!inputValue.trim() || isLoading}

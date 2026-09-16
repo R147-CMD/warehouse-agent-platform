@@ -33,6 +33,17 @@ from .reasoning_engine import (
     CausalRelationship,
     get_reasoning_engine,
 )
+from .reflection_loop import (
+    DEFAULT_MAX_REFLECTION_ITERATIONS,
+    build_planner_decision,
+    review_agent_outcome,
+    review_agent_outcome_with_judge,
+)
+from .evidence_join import (
+    build_collaboration_plan,
+    join_agent_evidence,
+    summarize_agent_evidence,
+)
 
 __all__ = [
     "AdvancedReasoningEngine",
@@ -42,4 +53,11 @@ __all__ = [
     "PatternInsight",
     "CausalRelationship",
     "get_reasoning_engine",
+    "DEFAULT_MAX_REFLECTION_ITERATIONS",
+    "build_planner_decision",
+    "review_agent_outcome",
+    "review_agent_outcome_with_judge",
+    "build_collaboration_plan",
+    "join_agent_evidence",
+    "summarize_agent_evidence",
 ]

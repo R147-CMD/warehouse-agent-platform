@@ -14,22 +14,23 @@
 // limitations under the License.
 
 import { createTheme } from '@mui/material/styles';
+import { zhCN } from '@mui/material/locale';
 
 /**
- * NVIDIA Professional Dark Theme
- * Formal, sleek, and professional design system matching NVIDIA's brand guidelines
+ * 智能仓储运营平台主题
+ * 深色、清晰且适合运营监控场景的界面设计系统
  */
-export const nvidiaTheme = createTheme({
+export const warehouseTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#76B900', // NVIDIA Green - Primary brand color
+      main: '#76B900', // 平台主色
       light: '#8FD600', // Lighter green for hover states
       dark: '#5A8A00', // Darker green for active states
       contrastText: '#000000', // Black text on green for maximum contrast
     },
     secondary: {
-      main: '#00D9FF', // NVIDIA Cyan - Secondary accent
+      main: '#00D9FF', // 辅助强调色
       light: '#33E1FF',
       dark: '#00A8CC',
       contrastText: '#000000',
@@ -632,5 +633,4 @@ export const nvidiaTheme = createTheme({
       },
     },
   },
-});
-
+}, zhCN);

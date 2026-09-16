@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('user_info', JSON.stringify(userData));
       setUser(userData);
     } else {
-      throw new Error('No token received');
+      throw new Error('登录失败：未收到访问令牌');
     }
   };
 

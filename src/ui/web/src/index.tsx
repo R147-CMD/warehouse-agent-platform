@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import App from './App';
-import { nvidiaTheme } from './theme/nvidiaTheme';
+import { warehouseTheme } from './theme/nvidiaTheme';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -28,7 +28,7 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={nvidiaTheme}>
+      <ThemeProvider theme={warehouseTheme}>
         <CssBaseline />
         <BrowserRouter
           future={{

@@ -18,10 +18,17 @@ import {
   MenuItem,
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { zhCN as dataGridZhCN } from '@mui/x-data-grid/locales';
 import { } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { operationsAPI, Task, userAPI, User } from '../services/api';
 import { useDialogForm } from '../components/common';
+import {
+  formatZhDate,
+  translateRole,
+  translateStatus,
+  translateTaskKind,
+} from '../localization/zhCN';
 
 const Operations: React.FC = () => {
   const {
@@ -68,35 +75,40 @@ const Operations: React.FC = () => {
 
   const columns: GridColDef[] = [
     { field: 'id', headerName: 'ID', width: 80 },
-    { field: 'kind', headerName: 'Task Type', width: 150 },
+    {
+      field: 'kind',
+      headerName: '任务类型',
+      width: 150,
+      renderCell: (params) => translateTaskKind(params.value),
+    },
     {
       field: 'status',
-      headerName: 'Status',
+      headerName: '状态',
       width: 120,
       renderCell: (params) => {
         const status = params.value;
         const color = status === 'completed' ? 'success' : 
                      status === 'in_progress' ? 'info' : 'warning';
-        return <Chip label={status} color={color} size="small" />;
+        return <Chip label={translateStatus(status)} color={color} size="small" />;
       },
     },
-    { field: 'assignee', headerName: 'Assignee', width: 150 },
+    { field: 'assignee', headerName: '负责人', width: 150 },
     {
       field: 'created_at',
-      headerName: 'Created',
+      headerName: '创建日期',
       width: 150,
-      renderCell: (params) => new Date(params.value).toLocaleDateString(),
+      renderCell: (params) => formatZhDate(params.value),
     },
     {
       field: 'actions',
-      headerName: 'Actions',
+      headerName: '操作',
       width: 120,
       renderCell: (params) => (
         <Button
           size="small"
           onClick={() => handleOpen(params.row)}
         >
-          Assign
+          分配
         </Button>
       ),
     },
@@ -106,10 +118,10 @@ const Operations: React.FC = () => {
     return (
       <Box>
         <Typography variant="h4" gutterBottom>
-          Operations Management
+          运营管理
         </Typography>
         <Alert severity="error">
-          Failed to load operations data. Please try again.
+          运营数据加载失败，请重试。
         </Alert>
       </Box>
     );
@@ -118,14 +130,14 @@ const Operations: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Operations Management
+        运营管理
       </Typography>
 
       {/* Workforce Status */}
       {workforceStatus && (
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Workforce Status
+            人力状态
           </Typography>
           <Grid container spacing={3}>
             <Grid item xs={12} sm={6} md={3}>
@@ -142,7 +154,7 @@ const Operations: React.FC = () => {
                   {workforceStatus.total_workers}
                 </Typography>
                 <Typography variant="body2">
-                  Total Workers
+                  员工总数
                 </Typography>
               </Box>
             </Grid>
@@ -160,7 +172,7 @@ const Operations: React.FC = () => {
                   {workforceStatus.active_workers}
                 </Typography>
                 <Typography variant="body2">
-                  Active Workers
+                  活跃员工
                 </Typography>
               </Box>
             </Grid>
@@ -178,7 +190,7 @@ const Operations: React.FC = () => {
                   {workforceStatus.available_workers}
                 </Typography>
                 <Typography variant="body2">
-                  Available Workers
+                  可用员工
                 </Typography>
               </Box>
             </Grid>
@@ -196,7 +208,7 @@ const Operations: React.FC = () => {
                   {workforceStatus.tasks_in_progress}
                 </Typography>
                 <Typography variant="body2">
-                  Tasks in Progress
+                  进行中任务
                 </Typography>
               </Box>
             </Grid>
@@ -214,7 +226,7 @@ const Operations: React.FC = () => {
                   {workforceStatus.tasks_pending}
                 </Typography>
                 <Typography variant="body2">
-                  Pending Tasks
+                  待处理任务
                 </Typography>
               </Box>
             </Grid>
@@ -232,7 +244,7 @@ const Operations: React.FC = () => {
                   {Math.round((workforceStatus.active_workers / workforceStatus.total_workers) * 100)}%
                 </Typography>
                 <Typography variant="body2">
-                  Workforce Utilization
+                  人力利用率
                 </Typography>
               </Box>
             </Grid>
@@ -245,6 +257,7 @@ const Operations: React.FC = () => {
         <DataGrid
           rows={tasks || []}
           columns={columns}
+          localeText={dataGridZhCN.components.MuiDataGrid.defaultProps.localeText}
           loading={isLoading}
           initialState={{
             pagination: {
@@ -258,14 +271,14 @@ const Operations: React.FC = () => {
 
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {selectedTask ? 'Assign Task' : 'Create New Task'}
+          {selectedTask ? '分配任务' : '创建新任务'}
         </DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Task Type"
+                label="任务类型"
                 value={formData.kind || ''}
                 onChange={(e) => setFormData({ ...formData, kind: e.target.value })}
                 disabled={!!selectedTask}
@@ -274,48 +287,48 @@ const Operations: React.FC = () => {
             </Grid>
             <Grid item xs={12}>
               <FormControl fullWidth>
-                <InputLabel>Assignee</InputLabel>
+                <InputLabel>负责人</InputLabel>
                 <Select
                   value={formData.assignee || ''}
                   onChange={(e) => setFormData({ ...formData, assignee: e.target.value })}
-                  label="Assignee"
+                  label="负责人"
                 >
                   {users && users.length > 0 ? (
                     users.map((user: User) => (
                       <MenuItem key={user.id} value={user.full_name || user.username}>
-                        {user.full_name || user.username} ({user.role})
+                        {user.full_name || user.username}（{translateRole(user.role)}）
                       </MenuItem>
                     ))
                   ) : (
-                    <MenuItem value="">No users available</MenuItem>
+                    <MenuItem value="">暂无可用用户</MenuItem>
                   )}
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12}>
               <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
+                <InputLabel>状态</InputLabel>
                 <Select
                   value={formData.status || ''}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                  label="Status"
+                  label="状态"
                 >
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="in_progress">In Progress</MenuItem>
-                  <MenuItem value="completed">Completed</MenuItem>
+                  <MenuItem value="pending">待处理</MenuItem>
+                  <MenuItem value="in_progress">进行中</MenuItem>
+                  <MenuItem value="completed">已完成</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
           </Grid>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleClose}>取消</Button>
           <Button
             onClick={handleSubmit}
             variant="contained"
             disabled={assignMutation.isPending}
           >
-            {selectedTask ? 'Assign' : 'Create'}
+            {selectedTask ? '分配' : '创建'}
           </Button>
         </DialogActions>
       </Dialog>

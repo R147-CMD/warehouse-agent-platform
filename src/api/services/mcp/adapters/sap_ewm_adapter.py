@@ -97,9 +97,7 @@ class SAPEWMMCPAdapter(MCPAdapter):
 
     async def disconnect(self) -> bool:
         if self.sap_config.connection_id in self.wms_service.adapters:
-            await self.wms_service.remove_wms_connection(
-                self.sap_config.connection_id
-            )
+            await self.wms_service.remove_wms_connection(self.sap_config.connection_id)
         self.connected = False
         self._initialized = False
         return True
@@ -140,35 +138,51 @@ class SAPEWMMCPAdapter(MCPAdapter):
                     "requires_approval": False,
                 },
             ),
-            "sap_ewm_assign_warehouse_order": MCPTool(
-                name="sap_ewm_assign_warehouse_order",
-                description="Assign an SAP EWM warehouse order to an authorized EWM resource",
-                tool_type=MCPToolType.FUNCTION,
-                parameters=AssignWarehouseOrderArgs.model_json_schema(),
-                handler=self._assign_warehouse_order,
-                metadata={
-                    "read_only": False,
-                    "mutating": True,
-                    "requires_approval": True,
-                },
-            ),
-            "sap_ewm_confirm_warehouse_task": MCPTool(
-                name="sap_ewm_confirm_warehouse_task",
-                description="Confirm an SAP EWM warehouse task exact after physical verification",
-                tool_type=MCPToolType.FUNCTION,
-                parameters=ConfirmWarehouseTaskArgs.model_json_schema(),
-                handler=self._confirm_warehouse_task,
-                metadata={
-                    "read_only": False,
-                    "mutating": True,
-                    "requires_approval": True,
-                },
-            ),
         }
+        if os.getenv("SAP_EWM_EXPOSE_LEGACY_WRITE_TOOLS", "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }:
+            self.tools.update(
+                {
+                    "sap_ewm_assign_warehouse_order": MCPTool(
+                        name="sap_ewm_assign_warehouse_order",
+                        description=(
+                            "Legacy: assign an SAP EWM warehouse order behind the "
+                            "legacy approval gateway"
+                        ),
+                        tool_type=MCPToolType.FUNCTION,
+                        parameters=AssignWarehouseOrderArgs.model_json_schema(),
+                        handler=self._assign_warehouse_order,
+                        metadata={
+                            "read_only": False,
+                            "mutating": True,
+                            "requires_approval": True,
+                            "legacy_only": True,
+                        },
+                    ),
+                    "sap_ewm_confirm_warehouse_task": MCPTool(
+                        name="sap_ewm_confirm_warehouse_task",
+                        description=(
+                            "Legacy: confirm an SAP EWM warehouse task behind the "
+                            "legacy approval gateway"
+                        ),
+                        tool_type=MCPToolType.FUNCTION,
+                        parameters=ConfirmWarehouseTaskArgs.model_json_schema(),
+                        handler=self._confirm_warehouse_task,
+                        metadata={
+                            "read_only": False,
+                            "mutating": True,
+                            "requires_approval": True,
+                            "legacy_only": True,
+                        },
+                    ),
+                }
+            )
 
-    async def _get_physical_stock(
-        self, arguments: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def _get_physical_stock(self, arguments: dict[str, Any]) -> dict[str, Any]:
         args = GetPhysicalStockArgs.model_validate(arguments)
         request_id = self.request_id_factory()
         result = await self.wms_service.get_physical_stock(
@@ -181,9 +195,7 @@ class SAPEWMMCPAdapter(MCPAdapter):
         )
         return self._success(result, request_id)
 
-    async def _list_orders_and_tasks(
-        self, arguments: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def _list_orders_and_tasks(self, arguments: dict[str, Any]) -> dict[str, Any]:
         args = ListOrdersAndTasksArgs.model_validate(arguments)
         request_id = self.request_id_factory()
         result = await self.wms_service.list_orders_and_tasks(
@@ -254,9 +266,7 @@ async def get_sap_ewm_mcp_adapter() -> SAPEWMMCPAdapter | None:
 
     sap_config = SAPEWMConfig.from_env()
     wms_service = await get_wms_service()
-    adapter = SAPEWMMCPAdapter(
-        SAPEWMMCPAdapterConfig(), sap_config, wms_service
-    )
+    adapter = SAPEWMMCPAdapter(SAPEWMMCPAdapterConfig(), sap_config, wms_service)
     if not await adapter.initialize():
         raise SAPEWMError(
             SAPEWMErrorCode.SAP_UNAVAILABLE,

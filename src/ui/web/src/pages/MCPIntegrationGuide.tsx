@@ -52,107 +52,107 @@ const MCPIntegrationGuide: React.FC = () => {
 
   const mcpPhases = [
     {
-      phase: "Phase 1: Foundation",
-      status: "✅ Complete",
-      description: "Core MCP infrastructure and basic tool discovery",
+      phase: "阶段 1：基础建设",
+      status: "✅ 已完成",
+      description: "核心 MCP 基础设施和基础工具发现",
       components: [
-        "MCP Server Implementation",
-        "MCP Client Implementation", 
-        "MCP-Enabled Base Classes",
-        "ERP Adapter Migration",
-        "Comprehensive Testing Framework",
-        "Complete Documentation"
+        "MCP 服务端实现",
+        "MCP 客户端实现", 
+        "支持 MCP 的基类",
+        "ERP 适配器迁移",
+        "完整测试框架",
+        "完整文档"
       ]
     },
     {
-      phase: "Phase 2: Agent Integration", 
-      status: "✅ Complete",
-      description: "Dynamic tool discovery and agent integration",
+      phase: "阶段 2：智能体集成", 
+      status: "✅ 已完成",
+      description: "动态工具发现与智能体集成",
       components: [
-        "Dynamic Tool Discovery",
-        "MCP-Enabled Agents",
-        "Dynamic Tool Binding",
-        "MCP-Based Routing",
-        "Tool Validation"
+        "动态工具发现",
+        "支持 MCP 的智能体",
+        "动态工具绑定",
+        "基于 MCP 的路由",
+        "工具验证"
       ]
     },
     {
-      phase: "Phase 3: Full Migration",
-      status: "✅ Complete", 
-      description: "Complete adapter migration and production deployment",
+      phase: "阶段 3：全面迁移",
+      status: "✅ 已完成", 
+      description: "完成适配器迁移和生产部署",
       components: [
-        "Complete Adapter Migration",
-        "Service Discovery & Registry",
-        "MCP Monitoring & Management",
-        "End-to-End Testing",
-        "Deployment Configurations",
-        "Security Integration"
+        "完成适配器迁移",
+        "服务发现与注册中心",
+        "MCP 监控与管理",
+        "端到端测试",
+        "部署配置",
+        "安全集成"
       ]
     }
   ];
 
   const mcpComponents = [
     {
-      name: "MCP Server",
-      description: "Tool registration, discovery, and execution with full protocol compliance",
-      features: ["Tool Registration", "Protocol Compliance", "Error Handling", "Health Monitoring"],
-      status: "✅ Production Ready"
+      name: "MCP 服务端",
+      description: "完全符合协议的工具注册、发现与执行",
+      features: ["工具注册", "协议合规", "错误处理", "健康监控"],
+      status: "✅ 生产就绪"
     },
     {
-      name: "MCP Client", 
-      description: "Multi-server communication with HTTP and WebSocket support",
-      features: ["Multi-Server Communication", "HTTP/WebSocket Support", "Resource Access", "Prompt Management"],
-      status: "✅ Production Ready"
+      name: "MCP 客户端", 
+      description: "支持 HTTP 和 WebSocket 的多服务器通信",
+      features: ["多服务器通信", "HTTP/WebSocket 支持", "资源访问", "提示词管理"],
+      status: "✅ 生产就绪"
     },
     {
-      name: "Tool Discovery Service",
-      description: "Automatic tool discovery and registration system with intelligent search",
-      features: ["Dynamic Registration", "Intelligent Search", "Tool Metadata", "Health Checks"],
-      status: "✅ Production Ready"
+      name: "工具发现服务",
+      description: "具备智能搜索能力的自动工具发现与注册系统",
+      features: ["动态注册", "智能搜索", "工具元数据", "健康检查"],
+      status: "✅ 生产就绪"
     },
     {
-      name: "Tool Binding Service",
-      description: "Intelligent tool binding and execution framework with multiple strategies",
-      features: ["Context-Aware Binding", "Multiple Strategies", "Execution Planning", "Performance Optimization"],
-      status: "✅ Production Ready"
+      name: "工具绑定服务",
+      description: "支持多种策略的智能工具绑定与执行框架",
+      features: ["上下文感知绑定", "多种策略", "执行规划", "性能优化"],
+      status: "✅ 生产就绪"
     },
     {
-      name: "Tool Routing Service",
-      description: "Advanced routing and tool selection logic with context awareness",
-      features: ["Performance Routing", "Accuracy Routing", "Cost Routing", "Latency Routing"],
-      status: "✅ Production Ready"
+      name: "工具路由服务",
+      description: "具备上下文感知能力的高级路由与工具选择逻辑",
+      features: ["性能路由", "精度路由", "成本路由", "延迟路由"],
+      status: "✅ 生产就绪"
     },
     {
-      name: "Service Discovery Registry",
-      description: "Centralized service discovery and health monitoring",
-      features: ["Service Registry", "Health Monitoring", "Load Balancing", "Failover"],
-      status: "✅ Production Ready"
+      name: "服务发现注册中心",
+      description: "集中式服务发现与健康监控",
+      features: ["服务注册", "健康监控", "负载均衡", "故障转移"],
+      status: "✅ 生产就绪"
     }
   ];
 
   const apiEndpoints = [
     {
-      category: "Tool Discovery",
+      category: "工具发现",
       endpoints: [
-        { method: "GET", path: "/api/v1/mcp/tools", description: "Discover available tools across all adapters" },
-        { method: "GET", path: "/api/v1/mcp/tools/{adapter_id}", description: "Get tools for specific adapter" },
-        { method: "POST", path: "/api/v1/mcp/tools/register", description: "Register new tool with MCP server" }
+        { method: "GET", path: "/api/v1/mcp/tools", description: "发现所有适配器中的可用工具" },
+        { method: "GET", path: "/api/v1/mcp/tools/{adapter_id}", description: "获取指定适配器的工具" },
+        { method: "POST", path: "/api/v1/mcp/tools/register", description: "向 MCP 服务端注册新工具" }
       ]
     },
     {
-      category: "Tool Execution",
+      category: "工具执行",
       endpoints: [
-        { method: "POST", path: "/api/v1/mcp/execute", description: "Execute MCP tool with parameters" },
-        { method: "POST", path: "/api/v1/mcp/execute/batch", description: "Execute multiple tools in batch" },
-        { method: "GET", path: "/api/v1/mcp/execute/{execution_id}", description: "Get execution status and results" }
+        { method: "POST", path: "/api/v1/mcp/execute", description: "使用参数执行 MCP 工具" },
+        { method: "POST", path: "/api/v1/mcp/execute/batch", description: "批量执行多个工具" },
+        { method: "GET", path: "/api/v1/mcp/execute/{execution_id}", description: "获取执行状态和结果" }
       ]
     },
     {
-      category: "Service Management",
+      category: "服务管理",
       endpoints: [
-        { method: "GET", path: "/api/v1/mcp/status", description: "Get MCP system status and health" },
-        { method: "GET", path: "/api/v1/mcp/adapters", description: "List all registered adapters" },
-        { method: "POST", path: "/api/v1/mcp/adapters/register", description: "Register new MCP adapter" }
+        { method: "GET", path: "/api/v1/mcp/status", description: "获取 MCP 系统状态和健康信息" },
+        { method: "GET", path: "/api/v1/mcp/adapters", description: "列出所有已注册的适配器" },
+        { method: "POST", path: "/api/v1/mcp/adapters/register", description: "注册新的 MCP 适配器" }
       ]
     }
   ];
@@ -162,37 +162,37 @@ const MCPIntegrationGuide: React.FC = () => {
       {/* Breadcrumbs */}
       <Breadcrumbs sx={{ mb: 2 }}>
         <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/documentation')}>
-          Documentation
+          文档
         </Button>
-        <Typography color="text.primary">MCP Integration Guide</Typography>
+        <Typography color="text.primary">MCP 集成指南</Typography>
       </Breadcrumbs>
 
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          MCP Integration Guide
+          MCP 集成指南
         </Typography>
         <Typography variant="h5" component="h2" gutterBottom color="text.secondary">
-          Complete Model Context Protocol Framework Documentation
+          完整的模型上下文协议框架文档
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          Comprehensive guide to the Model Context Protocol (MCP) implementation in the Multi-Agent-Intelligent-Warehouse. 
-          This framework enables seamless communication between AI agents and external systems through dynamic tool discovery and execution.
+          多智能体智慧仓储系统中模型上下文协议（MCP）实现的完整指南。
+          该框架通过动态工具发现与执行，实现 AI 智能体和外部系统之间的无缝通信。
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
-          <Chip label="Phase 3 Complete" color="success" />
-          <Chip label="Production Ready" color="success" />
-          <Chip label="Dynamic Tool Discovery" color="primary" />
-          <Chip label="Multi-Server Communication" color="secondary" />
-          <Chip label="Advanced Routing" color="info" />
+          <Chip label="阶段 3 已完成" color="success" />
+          <Chip label="生产就绪" color="success" />
+          <Chip label="动态工具发现" color="primary" />
+          <Chip label="多服务器通信" color="secondary" />
+          <Chip label="高级路由" color="info" />
         </Box>
       </Box>
 
       {/* Status Alert */}
       <Alert severity="success" sx={{ mb: 4 }}>
-        <AlertTitle>🎉 MCP Framework Complete</AlertTitle>
-        The Model Context Protocol integration has been successfully completed across all 3 phases. 
-        The system now provides dynamic tool discovery, intelligent execution, and comprehensive monitoring capabilities.
+        <AlertTitle>🎉 MCP 框架已完成</AlertTitle>
+        模型上下文协议集成的全部 3 个阶段均已顺利完成。
+        系统现已具备动态工具发现、智能执行和全面监控能力。
       </Alert>
 
       {/* Overview */}
@@ -200,17 +200,17 @@ const MCPIntegrationGuide: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ArchitectureIcon color="primary" />
-            MCP Framework Overview
+            MCP 框架概览
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Box sx={{ mb: 3 }}>
             <Typography variant="h5" gutterBottom>
-              What is MCP?
+              什么是 MCP？
             </Typography>
             <Typography variant="body1" sx={{ mb: 2 }}>
-              The Model Context Protocol (MCP) is a standardized protocol for tool discovery, execution, and communication 
-              between AI agents and external systems. It provides a unified interface for dynamic tool management and execution.
+              模型上下文协议（MCP）是一种用于 AI 智能体与外部系统之间进行工具发现、执行和通信的标准化协议。
+              它为动态工具管理与执行提供统一接口。
             </Typography>
           </Box>
 
@@ -227,7 +227,7 @@ const MCPIntegrationGuide: React.FC = () => {
                       {component.description}
                     </Typography>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>Key Features:</Typography>
+                      <Typography variant="subtitle2" gutterBottom>主要功能：</Typography>
                       <List dense>
                         {component.features.map((feature, featureIndex) => (
                           <ListItem key={featureIndex} sx={{ py: 0 }}>
@@ -257,7 +257,7 @@ const MCPIntegrationGuide: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <RocketIcon color="primary" />
-            Implementation Phases
+            实施阶段
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -273,7 +273,7 @@ const MCPIntegrationGuide: React.FC = () => {
                       {phase.description}
                     </Typography>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>Components:</Typography>
+                      <Typography variant="subtitle2" gutterBottom>组件：</Typography>
                       <List dense>
                         {phase.components.map((component, compIndex) => (
                           <ListItem key={compIndex} sx={{ py: 0 }}>
@@ -303,7 +303,7 @@ const MCPIntegrationGuide: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ApiIcon color="primary" />
-            MCP API Reference
+            MCP API 参考
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -349,7 +349,7 @@ const MCPIntegrationGuide: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CodeIcon color="primary" />
-            Usage Examples
+            使用示例
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -358,7 +358,7 @@ const MCPIntegrationGuide: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Tool Discovery
+                    工具发现
                   </Typography>
                   <Paper sx={{ p: 2, bgcolor: 'grey.100', fontFamily: 'monospace', fontSize: '0.875rem', mb: 2 }}>
 {`# Discover all available tools
@@ -386,7 +386,7 @@ GET /api/v1/mcp/tools
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Tool Execution
+                    工具执行
                   </Typography>
                   <Paper sx={{ p: 2, bgcolor: 'grey.100', fontFamily: 'monospace', fontSize: '0.875rem', mb: 2 }}>
 {`# Execute a tool
@@ -423,7 +423,7 @@ POST /api/v1/mcp/execute
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <SchoolIcon color="primary" />
-            Best Practices
+            最佳实践
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -432,31 +432,31 @@ POST /api/v1/mcp/execute
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    🚀 Performance Optimization
+                    🚀 性能优化
                   </Typography>
                   <List>
                     <ListItem>
                       <ListItemText 
-                        primary="Use Batch Execution" 
-                        secondary="Execute multiple tools in batch for better performance"
+                        primary="使用批量执行" 
+                        secondary="批量执行多个工具以获得更佳性能"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Implement Caching" 
-                        secondary="Cache tool results to reduce redundant executions"
+                        primary="实施缓存" 
+                        secondary="缓存工具结果以减少重复执行"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Monitor Tool Performance" 
-                        secondary="Track execution times and optimize slow tools"
+                        primary="监控工具性能" 
+                        secondary="跟踪执行时间并优化缓慢的工具"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Use Appropriate Routing" 
-                        secondary="Choose routing strategy based on use case (performance vs accuracy)"
+                        primary="使用合适的路由" 
+                        secondary="根据用例选择路由策略（性能或精度）"
                       />
                     </ListItem>
                   </List>
@@ -467,31 +467,31 @@ POST /api/v1/mcp/execute
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    🔒 Security Considerations
+                    🔒 安全注意事项
                   </Typography>
                   <List>
                     <ListItem>
                       <ListItemText 
-                        primary="Validate Tool Parameters" 
-                        secondary="Always validate input parameters before tool execution"
+                        primary="验证工具参数" 
+                        secondary="执行工具前始终验证输入参数"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Implement Access Control" 
-                        secondary="Control which tools can be executed by which users"
+                        primary="实施访问控制" 
+                        secondary="控制不同用户可以执行的工具"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Audit Tool Usage" 
-                        secondary="Log all tool executions for security auditing"
+                        primary="审计工具使用情况" 
+                        secondary="记录所有工具执行以便进行安全审计"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Handle Errors Gracefully" 
-                        secondary="Implement proper error handling and rollback mechanisms"
+                        primary="妥善处理错误" 
+                        secondary="实施适当的错误处理和回滚机制"
                       />
                     </ListItem>
                   </List>
@@ -505,7 +505,7 @@ POST /api/v1/mcp/execute
       {/* Footer */}
       <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
         <Typography variant="body2" color="text.secondary" align="center">
-          MCP Integration Guide - Multi-Agent-Intelligent-Warehouse
+          MCP 集成指南——多智能体智慧仓储系统
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
           <Button 
@@ -515,10 +515,10 @@ POST /api/v1/mcp/execute
             target="_blank"
             rel="noopener noreferrer"
           >
-            View Source
+            查看源代码
           </Button>
           <Button variant="outlined" startIcon={<DashboardIcon />}>
-            Live Demo
+            在线演示
           </Button>
         </Box>
       </Box>

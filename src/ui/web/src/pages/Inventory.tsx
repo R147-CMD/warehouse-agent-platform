@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { inventoryAPI, InventoryItem } from '../services/inventoryAPI';
 import { TabPanel } from '../components/common';
+import { formatZhDate, translateWarehouseLocation } from '../localization/zhCN';
 
 const InventoryPage: React.FC = () => {
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
@@ -91,7 +92,7 @@ const InventoryPage: React.FC = () => {
       });
       setBrands(Array.from(uniqueBrands).sort((a, b) => a.localeCompare(b)));
     } catch (err) {
-      setError('Failed to fetch inventory items');
+      setError('库存数据获取失败');
       // console.error('Error fetching inventory items:', err);
     } finally {
       setLoading(false);
@@ -107,10 +108,10 @@ const InventoryPage: React.FC = () => {
   };
 
   const getStockStatus = (item: InventoryItem) => {
-    if (item.quantity === 0) return { status: 'Out of Stock', color: 'error' as const };
-    if (item.quantity < item.reorder_point) return { status: 'Low Stock', color: 'warning' as const };
-    if (item.quantity < item.reorder_point * 1.5) return { status: 'Medium Stock', color: 'info' as const };
-    return { status: 'In Stock', color: 'success' as const };
+    if (item.quantity === 0) return { status: '缺货', color: 'error' as const };
+    if (item.quantity < item.reorder_point) return { status: '低库存', color: 'warning' as const };
+    if (item.quantity < item.reorder_point * 1.5) return { status: '库存中等', color: 'info' as const };
+    return { status: '库存充足', color: 'success' as const };
   };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -129,7 +130,7 @@ const InventoryPage: React.FC = () => {
     return (
       <Box p={3}>
         <Alert severity="error" action={
-          <IconButton color="inherit" size="small" onClick={fetchInventoryItems}>
+          <IconButton aria-label="重新加载库存" color="inherit" size="small" onClick={fetchInventoryItems}>
             <RefreshIcon />
           </IconButton>
         }>
@@ -144,9 +145,9 @@ const InventoryPage: React.FC = () => {
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" component="h1" gutterBottom>
           <InventoryIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-          Inventory Management
+          库存管理
         </Typography>
-        <IconButton onClick={fetchInventoryItems} color="primary">
+        <IconButton aria-label="刷新库存" onClick={fetchInventoryItems} color="primary">
           <RefreshIcon />
         </IconButton>
       </Box>
@@ -157,7 +158,7 @@ const InventoryPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Total Products
+                产品总数
               </Typography>
               <Typography variant="h4">
                 {inventoryItems.length}
@@ -169,7 +170,7 @@ const InventoryPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Low Stock Items
+                低库存产品
               </Typography>
               <Typography variant="h4" color="warning.main">
                 <Badge badgeContent={getLowStockItems().length} color="warning">
@@ -183,13 +184,13 @@ const InventoryPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Total Value
+                库存总值
               </Typography>
               <Typography variant="h4">
-                N/A
+                暂无
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Cost data not available
+                暂无成本数据
               </Typography>
             </CardContent>
           </Card>
@@ -198,7 +199,7 @@ const InventoryPage: React.FC = () => {
           <Card>
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
-                Brands
+                品牌数
               </Typography>
               <Typography variant="h4">
                 {brands.length - 1}
@@ -215,7 +216,7 @@ const InventoryPage: React.FC = () => {
             <Grid item xs={12} sm={6} md={4}>
               <TextField
                 fullWidth
-                placeholder="Search products..."
+                placeholder="搜索产品..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
@@ -229,15 +230,15 @@ const InventoryPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} sm={6} md={4}>
               <FormControl fullWidth>
-                <InputLabel>Brand</InputLabel>
+                <InputLabel>品牌</InputLabel>
                 <Select
                   value={brandFilter}
-                  label="Brand"
+                  label="品牌"
                   onChange={(e) => setBrandFilter(e.target.value)}
                 >
                   {brands.map((brand) => (
                     <MenuItem key={brand} value={brand}>
-                      {brand === 'all' ? 'All Brands' : brand}
+                      {brand === 'all' ? '全部品牌' : brand}
                     </MenuItem>
                   ))}
                 </Select>
@@ -245,7 +246,7 @@ const InventoryPage: React.FC = () => {
             </Grid>
             <Grid item xs={12} sm={12} md={4}>
               <Typography variant="body2" color="textSecondary">
-                Showing {filteredItems.length} of {inventoryItems.length} products
+                共 {inventoryItems.length} 个产品，当前显示 {filteredItems.length} 个
               </Typography>
             </Grid>
           </Grid>
@@ -254,12 +255,12 @@ const InventoryPage: React.FC = () => {
 
       {/* Tabs */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tabValue} onChange={handleTabChange} aria-label="inventory tabs">
-          <Tab label="All Products" />
+        <Tabs value={tabValue} onChange={handleTabChange} aria-label="库存分类标签页">
+          <Tab label="全部产品" />
           <Tab 
             label={
               <Badge badgeContent={getLowStockItems().length} color="warning">
-                Low Stock
+                低库存
               </Badge>
             } 
           />
@@ -301,16 +302,16 @@ interface InventoryTableProps {
 
 const InventoryTable: React.FC<Readonly<InventoryTableProps>> = ({ items }) => {
   const getStockStatus = (item: InventoryItem) => {
-    if (item.quantity === 0) return { status: 'Out of Stock', color: 'error' as const };
-    if (item.quantity < item.reorder_point) return { status: 'Low Stock', color: 'warning' as const };
-    if (item.quantity < item.reorder_point * 1.5) return { status: 'Medium Stock', color: 'info' as const };
-    return { status: 'In Stock', color: 'success' as const };
+    if (item.quantity === 0) return { status: '缺货', color: 'error' as const };
+    if (item.quantity < item.reorder_point) return { status: '低库存', color: 'warning' as const };
+    if (item.quantity < item.reorder_point * 1.5) return { status: '库存中等', color: 'info' as const };
+    return { status: '库存充足', color: 'success' as const };
   };
 
   if (items.length === 0) {
     return (
       <Alert severity="info">
-        No inventory items found matching the current filters.
+        未找到符合当前筛选条件的库存产品。
       </Alert>
     );
   }
@@ -321,12 +322,12 @@ const InventoryTable: React.FC<Readonly<InventoryTableProps>> = ({ items }) => {
         <TableHead>
           <TableRow>
             <TableCell>SKU</TableCell>
-            <TableCell>Product Name</TableCell>
-            <TableCell>Quantity</TableCell>
-            <TableCell>Location</TableCell>
-            <TableCell>Reorder Point</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Last Updated</TableCell>
+            <TableCell>产品名称</TableCell>
+            <TableCell>数量</TableCell>
+            <TableCell>库位</TableCell>
+            <TableCell>补货点</TableCell>
+            <TableCell>状态</TableCell>
+            <TableCell>最后更新</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -351,7 +352,7 @@ const InventoryTable: React.FC<Readonly<InventoryTableProps>> = ({ items }) => {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" color="textSecondary">
-                    {item.location}
+                    {translateWarehouseLocation(item.location)}
                   </Typography>
                 </TableCell>
                 <TableCell>
@@ -368,7 +369,7 @@ const InventoryTable: React.FC<Readonly<InventoryTableProps>> = ({ items }) => {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" color="textSecondary">
-                    {new Date(item.updated_at).toLocaleDateString()}
+                    {formatZhDate(item.updated_at)}
                   </Typography>
                 </TableCell>
               </TableRow>

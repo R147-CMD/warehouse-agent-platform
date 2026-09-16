@@ -22,6 +22,7 @@ import {
 } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { equipmentAPI, safetyAPI } from '../services/api';
+import { translateAssetType, translateStatus } from '../localization/zhCN';
 
 const Analytics: React.FC = () => {
   const { data: equipmentAssets } = useQuery({ queryKey: ['equipment'], queryFn: equipmentAPI.getAllAssets });
@@ -33,7 +34,7 @@ const Analytics: React.FC = () => {
     
     // Group equipment by type
     const equipmentByType = equipmentAssets.reduce((acc, asset) => {
-      const type = asset.type || 'Unknown';
+      const type = asset.type || '未知';
       if (!acc[type]) {
         acc[type] = 0;
       }
@@ -54,7 +55,7 @@ const Analytics: React.FC = () => {
     if (!equipmentAssets) return [];
     
     const statusCounts = equipmentAssets.reduce((acc, asset) => {
-      const status = asset.status || 'Unknown';
+      const status = asset.status || '未知';
       if (!acc[status]) {
         acc[status] = 0;
       }
@@ -71,10 +72,10 @@ const Analytics: React.FC = () => {
 
 
   const incidentSeverityData = [
-    { severity: 'Low', count: incidents?.filter(i => i.severity === 'low').length || 0 },
-    { severity: 'Medium', count: incidents?.filter(i => i.severity === 'medium').length || 0 },
-    { severity: 'High', count: incidents?.filter(i => i.severity === 'high').length || 0 },
-    { severity: 'Critical', count: incidents?.filter(i => i.severity === 'critical').length || 0 },
+    { severity: '低', count: incidents?.filter(i => i.severity === 'low').length || 0 },
+    { severity: '中', count: incidents?.filter(i => i.severity === 'medium').length || 0 },
+    { severity: '高', count: incidents?.filter(i => i.severity === 'high').length || 0 },
+    { severity: '严重', count: incidents?.filter(i => i.severity === 'critical').length || 0 },
   ];
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
@@ -82,7 +83,7 @@ const Analytics: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Analytics Dashboard
+        分析仪表板
       </Typography>
 
       <Grid container spacing={3}>
@@ -90,19 +91,19 @@ const Analytics: React.FC = () => {
         <Grid item xs={12} md={8}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Equipment Assets by Type
+              按类型统计设备资产
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={equipmentTrendData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="type" />
+                <XAxis dataKey="type" tickFormatter={(value) => translateAssetType(value)} />
                 <YAxis />
                 <Tooltip 
-                  formatter={(value, name) => [value, 'Count']}
-                  labelFormatter={(label) => `Type: ${label}`}
+                  formatter={(value) => [value, '数量']}
+                  labelFormatter={(label) => `类型：${translateAssetType(label)}`}
                 />
                 <Legend />
-                <Bar dataKey="count" fill="#8884d8" name="Equipment Count" />
+                <Bar dataKey="count" fill="#8884d8" name="设备数量" />
               </BarChart>
             </ResponsiveContainer>
           </Paper>
@@ -112,7 +113,7 @@ const Analytics: React.FC = () => {
         <Grid item xs={12} md={4}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Equipment Status
+              设备状态
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -121,7 +122,7 @@ const Analytics: React.FC = () => {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ status, percent }) => `${status} ${(percent * 100).toFixed(0)}%`}
+                  label={({ status, percent }) => `${translateStatus(status)} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="count"
@@ -130,7 +131,10 @@ const Analytics: React.FC = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  formatter={(value) => [value, '数量']}
+                  labelFormatter={(label) => translateStatus(String(label))}
+                />
               </PieChart>
             </ResponsiveContainer>
           </Paper>
@@ -140,7 +144,7 @@ const Analytics: React.FC = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Equipment Type Breakdown
+              设备类型分布
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -149,7 +153,7 @@ const Analytics: React.FC = () => {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ type, percent }) => `${type} ${(percent * 100).toFixed(0)}%`}
+                  label={({ type, percent }) => `${translateAssetType(type)} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="count"
@@ -158,7 +162,10 @@ const Analytics: React.FC = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip
+                  formatter={(value) => [value, '数量']}
+                  labelFormatter={(label) => translateAssetType(String(label))}
+                />
               </PieChart>
             </ResponsiveContainer>
           </Paper>
@@ -168,15 +175,15 @@ const Analytics: React.FC = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Incident Severity Distribution
+              安全事件严重程度分布
             </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={incidentSeverityData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="severity" />
                 <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#8884d8" />
+                <Tooltip formatter={(value) => [value, '事件数量']} />
+                <Bar dataKey="count" fill="#8884d8" name="事件数量" />
               </BarChart>
             </ResponsiveContainer>
           </Paper>
@@ -186,14 +193,14 @@ const Analytics: React.FC = () => {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" gutterBottom>
-              Equipment Key Metrics
+              设备关键指标
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <Card>
                   <CardContent>
                     <Typography color="textSecondary" gutterBottom>
-                      Total Equipment Assets
+                      设备资产总数
                     </Typography>
                     <Typography variant="h4">
                       {equipmentAssets?.length || 0}
@@ -205,7 +212,7 @@ const Analytics: React.FC = () => {
                 <Card>
                   <CardContent>
                     <Typography color="textSecondary" gutterBottom>
-                      Available Equipment
+                      可用设备
                     </Typography>
                     <Typography variant="h4">
                       {equipmentAssets?.filter(asset => asset.status === 'available').length || 0}
@@ -217,7 +224,7 @@ const Analytics: React.FC = () => {
                 <Card>
                   <CardContent>
                     <Typography color="textSecondary" gutterBottom>
-                      Assigned Equipment
+                      已分配设备
                     </Typography>
                     <Typography variant="h4">
                       {equipmentAssets?.filter(asset => asset.status === 'assigned').length || 0}
@@ -229,7 +236,7 @@ const Analytics: React.FC = () => {
                 <Card>
                   <CardContent>
                     <Typography color="textSecondary" gutterBottom>
-                      Maintenance Needed
+                      需要维护
                     </Typography>
                     <Typography variant="h4">
                       {equipmentAssets?.filter(asset => 

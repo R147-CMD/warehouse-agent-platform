@@ -1,0 +1,5 @@
+{"id":"tool-normal-001","category":"normal","true_label":"inventory.read","predicted_label":"inventory.read"}
+{"id":"tool-boundary-001","category":"boundary","true_label":"sap.task.query","predicted_label":"sap.task.query"}
+{"id":"tool-no-answer-001","category":"no_answer","true_label":"clarify","predicted_label":"clarify"}
+{"id":"tool-unauthorized-001","category":"unauthorized","true_label":"blocked","predicted_label":"blocked"}
+{"id":"tool-failure-001","category":"failure","true_label":"retry","predicted_label":"retry"}

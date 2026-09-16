@@ -1,0 +1,5 @@
+{"id":"citation-normal-001","category":"normal","claims":["c1"],"supported_claims":["c1"],"citations":[{"claim_id":"c1","evidence_id":"e1"}],"claim_evidence":{"c1":["e1"]}}
+{"id":"citation-boundary-001","category":"boundary","claims":["c1","c2"],"supported_claims":["c1"],"citations":[{"claim_id":"c1","evidence_id":"e1"}],"claim_evidence":{"c1":["e1"],"c2":["e2"]}}
+{"id":"citation-no-answer-001","category":"no_answer","claims":["c1"],"supported_claims":[],"citations":[],"claim_evidence":{"c1":[]}}
+{"id":"citation-unauthorized-001","category":"unauthorized","claims":["c1"],"supported_claims":["c1"],"citations":[{"claim_id":"c1","evidence_id":"e-private"}],"claim_evidence":{"c1":["e-private"]}}
+{"id":"citation-failure-001","category":"failure","claims":["c1"],"supported_claims":["c1"],"citations":[{"claim_id":"c1","evidence_id":"wrong"}],"claim_evidence":{"c1":["e1"]}}

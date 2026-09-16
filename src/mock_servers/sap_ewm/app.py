@@ -23,20 +23,18 @@ from .odata import (
 from .repository import MockRepository
 from .security import MockSecurity, SESSION_COOKIE
 
-
 STOCK_ROOT = (
     "/sap/opu/odata4/sap/api_whse_physstockprod/srvd_a2x/"
     "sap/whsephysicalstockproducts/0001"
 )
 ORDER_ROOT = (
-    "/sap/opu/odata4/sap/api_warehouse_order_task_2/srvd_a2x/"
-    "sap/warehouseorder/0001"
+    "/sap/opu/odata4/sap/api_warehouse_order_task_2/srvd_a2x/" "sap/warehouseorder/0001"
 )
 
 METADATA_XML = """<?xml version="1.0" encoding="utf-8"?>
 <edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
   <edmx:DataServices>
-    <Schema Namespace="SAP.EWM.Mock" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+    <Schema Namespace="SAP.EWM.Mock" Alias="SAP__self" xmlns="http://docs.oasis-open.org/odata/ns/edm">
       <EntityType Name="WarehousePhysicalStockProduct">
         <Key><PropertyRef Name="StockItemUUID" /></Key>
         <Property Name="EWMWarehouse" Type="Edm.String" Nullable="false" />
@@ -74,6 +72,13 @@ METADATA_XML = """<?xml version="1.0" encoding="utf-8"?>
         <Property Name="DestinationStorageBin" Type="Edm.String" />
         <Property Name="ExecutingResource" Type="Edm.String" />
       </EntityType>
+      <Action Name="AssignWarehouseOrder" IsBound="true">
+        <Parameter Name="binding" Type="SAP.EWM.Mock.WarehouseOrder" Nullable="false" />
+        <Parameter Name="EWMResource" Type="Edm.String" Nullable="false" />
+      </Action>
+      <Action Name="ConfirmWarehouseTaskExact" IsBound="true">
+        <Parameter Name="binding" Type="SAP.EWM.Mock.WarehouseTask" Nullable="false" />
+      </Action>
       <EntityContainer Name="Container">
         <EntitySet Name="WarehousePhysicalStockProducts" EntityType="SAP.EWM.Mock.WarehousePhysicalStockProduct" />
         <EntitySet Name="WarehouseOrder" EntityType="SAP.EWM.Mock.WarehouseOrder" />
@@ -101,9 +106,7 @@ def create_app(
     )
 
     @app.exception_handler(ODataRequestError)
-    async def handle_odata_error(
-        _request: Request, error: ODataRequestError
-    ):
+    async def handle_odata_error(_request: Request, error: ODataRequestError):
         return odata_error_response(error)
 
     @app.middleware("http")
@@ -290,9 +293,7 @@ def create_app(
         await _finish_apply_then_timeout(fault)
         return Response(status_code=204)
 
-    @app.post(
-        task_key + "/SAP__self.ConfirmWarehouseTaskExact", status_code=204
-    )
+    @app.post(task_key + "/SAP__self.ConfirmWarehouseTaskExact", status_code=204)
     async def confirm_warehouse_task_exact(
         request: Request,
         warehouse: str,

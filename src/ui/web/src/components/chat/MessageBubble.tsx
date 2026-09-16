@@ -7,6 +7,7 @@ import {
   Card,
   CardContent,
   Button,
+  CircularProgress,
   LinearProgress,
   Tooltip,
 } from '@mui/material';
@@ -19,8 +20,9 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
 } from '@mui/icons-material';
+import { Link as RouterLink } from 'react-router-dom';
 import ReasoningChainVisualization from './ReasoningChainVisualization';
-import { ReasoningChain, ReasoningStep } from '../../services/api';
+import { PendingApproval, ReasoningChain, ReasoningStep } from '../../services/api';
 
 interface MessageBubbleProps {
   message: {
@@ -30,14 +32,10 @@ interface MessageBubbleProps {
     sender: 'user' | 'assistant';
     timestamp: Date;
     route?: string;
+    run_id?: string | null;
     confidence?: number;
     structured_data?: any;
-    proposals?: Array<{
-      action: string;
-      params: any;
-      guardrails: { pass: boolean; notes: string[] };
-      audit_id: string;
-    }>;
+    proposals?: PendingApproval[];
     clarifying?: {
       text: string;
       options: string[];
@@ -53,19 +51,43 @@ interface MessageBubbleProps {
     reasoning_chain?: ReasoningChain;
     reasoning_steps?: ReasoningStep[];
   };
-  onActionApprove: (auditId: string, action: string) => void;
-  onActionReject: (auditId: string, action: string) => void;
+  canApprove: boolean;
+  busyApprovalIds: ReadonlySet<string>;
+  onActionApprove: (approvalId: string, action: string) => Promise<void>;
+  onActionReject: (approvalId: string, action: string) => Promise<void>;
   onQuickReply: (option: string) => void;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
+  canApprove,
+  busyApprovalIds,
   onActionApprove,
   onActionReject,
   onQuickReply,
 }) => {
   const [expanded, setExpanded] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
+
+  const formatDateTime = (value: string) => {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? '未知'
+      : date.toLocaleString('zh-CN', { hour12: false });
+  };
+
+  const getApprovalStatusLabel = (status: PendingApproval['status']) => {
+    const labels: Record<PendingApproval['status'], string> = {
+      pending: '待审批',
+      approved: '已批准',
+      executing: '执行中',
+      executed: '已执行',
+      rejected: '已拒绝',
+      expired: '已过期',
+      failed: '执行失败',
+    };
+    return labels[status];
+  };
 
   const getAgentIcon = (route?: string) => {
     switch (route) {
@@ -82,6 +104,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       case 'operations': return '#2196F3';
       case 'safety': return '#FF9800';
       default: return '#9C27B0';
+    }
+  };
+
+  const getAgentLabel = (route?: string) => {
+    switch (route) {
+      case 'equipment': return '设备智能体';
+      case 'operations': return '运营智能体';
+      case 'safety': return '安全智能体';
+      case 'system': return '系统';
+      case 'general': return '助手';
+      default: return route || '助手';
     }
   };
 
@@ -108,18 +141,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         <Card sx={{ mt: 1, backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', boxShadow: 1 }}>
           <CardContent>
             <Typography variant="h6" sx={{ color: 'text.primary', mb: 1, fontWeight: 500 }}>
-              Equipment Information
+              设备信息
             </Typography>
             <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
               {typeof message.structured_data.natural_language === 'string' 
                 ? message.structured_data.natural_language 
-                : 'No description available'}
+                : '暂无说明'}
             </Typography>
             
             {message.structured_data.data && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" sx={{ color: 'text.primary', mb: 1, fontWeight: 500 }}>
-                  Data Summary:
+                  数据摘要：
                 </Typography>
                 <Box sx={{ backgroundColor: 'background.default', p: 1, borderRadius: 1, fontFamily: 'monospace', fontSize: '10px', border: '1px solid', borderColor: 'divider' }}>
                   <pre style={{ color: 'text.primary', margin: 0, whiteSpace: 'pre-wrap' }}>
@@ -132,7 +165,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             {message.structured_data.recommendations && message.structured_data.recommendations.length > 0 && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" sx={{ color: 'text.primary', mb: 1, fontWeight: 500 }}>
-                  Recommendations:
+                  建议：
                 </Typography>
                 {message.structured_data.recommendations.map((rec: string, index: number) => (
                   <Typography key={index} variant="caption" sx={{ color: 'primary.main', display: 'block' }}>
@@ -145,7 +178,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             {message.structured_data.confidence && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" sx={{ color: 'text.primary', mb: 1, fontWeight: 500 }}>
-                  Confidence: {(message.structured_data.confidence * 100).toFixed(1)}%
+                  置信度：{(message.structured_data.confidence * 100).toFixed(1)}%
                 </Typography>
                 <LinearProgress
                   variant="determinate"
@@ -209,7 +242,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         <Card sx={{ mt: 1, backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', boxShadow: 1 }}>
           <CardContent>
             <Typography variant="h6" sx={{ color: 'text.primary', mb: 1, fontWeight: 500 }}>
-              Structured Data
+              结构化数据
             </Typography>
             <Box sx={{ backgroundColor: 'background.default', p: 1, borderRadius: 1, fontFamily: 'monospace', fontSize: '10px', border: '1px solid', borderColor: 'divider' }}>
               <pre style={{ color: 'inherit', margin: 0, whiteSpace: 'pre-wrap' }}>
@@ -229,74 +262,94 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
     return (
       <Box sx={{ mt: 1 }}>
-        {message.proposals.map((proposal, index) => (
-          <Card key={index} sx={{ mt: 1, backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', boxShadow: 1 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 500 }}>
-                  {proposal.action.replace(/_/g, ' ').toUpperCase()}
+        {message.proposals.map((proposal) => {
+          const busy = busyApprovalIds.has(proposal.approval_id);
+          return (
+            <Card key={proposal.approval_id} sx={{ mt: 1, backgroundColor: 'background.paper', border: '1px solid', borderColor: 'divider', boxShadow: 1 }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="h6" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                    操作：{proposal.action || '未命名操作'}
+                  </Typography>
+                  <Chip
+                    label={getApprovalStatusLabel(proposal.status)}
+                    size="small"
+                    sx={{
+                      backgroundColor: proposal.status === 'pending' ? 'warning.main' : 'grey.700',
+                      color: '#ffffff',
+                    }}
+                  />
+                </Box>
+
+              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
+                工具：{proposal.tool_name || '未知'}
+              </Typography>
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="body2" sx={{ color: 'text.primary', fontWeight: 500 }}>
+                  参数：
                 </Typography>
-                <Chip
-                  label={proposal.guardrails.pass ? 'PASS' : 'FAIL'}
-                  size="small"
-                  sx={{
-                    backgroundColor: proposal.guardrails.pass ? 'success.main' : 'error.main',
-                    color: '#ffffff',
-                  }}
-                />
+                <Box sx={{ mt: 0.5, p: 1, borderRadius: 1, backgroundColor: 'background.default', overflowX: 'auto' }}>
+                  <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: '12px' }}>
+                    {JSON.stringify(proposal.arguments, null, 2)}
+                  </pre>
+                </Box>
               </Box>
-              
-              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
-                Parameters: {JSON.stringify(proposal.params, null, 2)}
+              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                风险等级：{proposal.risk_level === 'high' ? '高' : '未知'}
+              </Typography>
+              {proposal.risk_reasons.length > 0 && (
+                <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                  风险原因：{proposal.risk_reasons.join('；')}
+                </Typography>
+              )}
+              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 0.5 }}>
+                请求人：{proposal.requester_username || '未知'}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1.5 }}>
+                到期时间：{formatDateTime(proposal.expires_at)}
               </Typography>
 
-              {proposal.guardrails.notes.length > 0 && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" sx={{ color: 'text.primary', mb: 1, fontWeight: 500 }}>
-                    Guardrails:
-                  </Typography>
-                  {proposal.guardrails.notes.map((note, noteIndex) => (
-                    <Chip
-                      key={noteIndex}
-                      label={note}
-                      size="small"
-                      sx={{ mr: 1, mb: 1, backgroundColor: 'grey.700', color: 'text.primary' }}
-                    />
-                  ))}
-                </Box>
-              )}
-
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              {canApprove && proposal.status === 'pending' && (
+                <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button
                   variant="contained"
                   size="small"
-                  startIcon={<CheckCircleIcon />}
-                  onClick={() => onActionApprove(proposal.audit_id, proposal.action)}
+                  startIcon={busy ? <CircularProgress size={14} color="inherit" /> : <CheckCircleIcon />}
+                  onClick={() => void onActionApprove(proposal.approval_id, proposal.action)}
+                  disabled={busy}
                   sx={{
                     backgroundColor: 'primary.main',
                     color: 'primary.contrastText',
                     '&:hover': { backgroundColor: 'primary.light' },
                   }}
                 >
-                  Approve
+                  批准执行
                 </Button>
                 <Button
                   variant="outlined"
                   size="small"
                   startIcon={<CancelIcon />}
-                  onClick={() => onActionReject(proposal.audit_id, proposal.action)}
+                  onClick={() => void onActionReject(proposal.approval_id, proposal.action)}
+                  disabled={busy}
                   sx={{
                     borderColor: 'error.main',
                     color: 'error.main',
                     '&:hover': { borderColor: 'error.light', backgroundColor: 'rgba(248, 81, 73, 0.1)' },
                   }}
                 >
-                  Reject
+                  拒绝
                 </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        ))}
+                </Box>
+              )}
+              {!canApprove && proposal.status === 'pending' && (
+                <Typography variant="body2" sx={{ color: 'warning.main', fontWeight: 500 }}>
+                  等待经理审批
+                </Typography>
+              )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </Box>
     );
   };
@@ -387,7 +440,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         {!isUser && (
           <Avatar
             src={imageError ? undefined : "/assistant-avatar.png"}
-            alt="Assistant Avatar"
+            alt="助手头像"
             sx={{
               width: 32,
               height: 32,
@@ -423,11 +476,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           {/* Message Header */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
             <Typography variant="body2" sx={{ color: isUser ? 'primary.contrastText' : 'text.secondary', fontWeight: 500 }}>
-              {isUser ? 'You' : `${message.route || 'Assistant'}`}
+              {isUser ? '您' : getAgentLabel(message.route)}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               {message.confidence && (
-                <Tooltip title={`Confidence: ${(message.confidence * 100).toFixed(1)}%`}>
+                <Tooltip title={`置信度：${(message.confidence * 100).toFixed(1)}%`}>
                   <Chip
                     label={`${getConfidenceIcon(message.confidence)} ${(message.confidence * 100).toFixed(0)}%`}
                     size="small"
@@ -449,6 +502,23 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           <Typography variant="body1" sx={{ color: isUser ? 'primary.contrastText' : 'text.primary', mb: 1 }}>
             {message.content}
           </Typography>
+
+          {!isUser && message.run_id && (
+            <Button
+              component={RouterLink}
+              to={`/runs?run_id=${encodeURIComponent(message.run_id)}`}
+              size="small"
+              sx={{
+                mt: 0.5,
+                mb: 1,
+                color: 'primary.main',
+                px: 0,
+                justifyContent: 'flex-start',
+              }}
+            >
+              查看任务记录
+            </Button>
+          )}
 
           {/* Confidence Bar */}
           {message.confidence && (
@@ -500,14 +570,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 endIcon={expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 sx={{ color: 'primary.main' }}
               >
-                Evidence ({message.evidence.length})
+                证据（{message.evidence.length}）
               </Button>
               {expanded && (
                 <Box sx={{ mt: 1 }}>
                   {message.evidence.map((evidence, index) => (
                     <Chip
                       key={index}
-                      label={`${evidence.type.toUpperCase()}: ${evidence.table || evidence.id} (${evidence.score?.toFixed(2) || evidence.rows} rows)`}
+                      label={`${evidence.type.toUpperCase()}：${evidence.table || evidence.id}（${evidence.score?.toFixed(2) || evidence.rows} 行）`}
                       size="small"
                       sx={{
                         mr: 1,

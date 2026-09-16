@@ -42,73 +42,73 @@ const APIReference: React.FC = () => {
 
   const apiCategories = [
     {
-      name: "Core Chat",
-      description: "Main chat interface and agent routing",
+      name: "核心聊天",
+      description: "主聊天界面与智能体路由",
       endpoints: [
-        { method: "POST", path: "/api/v1/chat", description: "Main chat interface with agent routing", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/health", description: "System health check", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/metrics", description: "Prometheus metrics", status: "✅ Working" }
+        { method: "POST", path: "/api/v1/chat", description: "带智能体路由的主聊天界面", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/health", description: "系统健康检查", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/metrics", description: "Prometheus 指标", status: "✅ 正常" }
       ]
     },
     {
-      name: "Agent Operations",
-      description: "Specialized agent operations and tool execution",
+      name: "智能体操作",
+      description: "专业智能体操作与工具执行",
       endpoints: [
-        { method: "GET", path: "/api/v1/equipment/assignments", description: "Get equipment assignments", status: "✅ Working" },
-        { method: "POST", path: "/api/v1/operations/waves", description: "Create pick waves", status: "✅ Working" },
-        { method: "POST", path: "/api/v1/safety/incidents", description: "Log safety incidents", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/equipment/status", description: "Get equipment status", status: "✅ Working" },
-        { method: "POST", path: "/api/v1/operations/tasks", description: "Assign tasks to workers", status: "✅ Working" }
+        { method: "GET", path: "/api/v1/equipment/assignments", description: "获取设备分配", status: "✅ 正常" },
+        { method: "POST", path: "/api/v1/operations/waves", description: "创建拣货波次", status: "✅ 正常" },
+        { method: "POST", path: "/api/v1/safety/incidents", description: "记录安全事件", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/equipment/status", description: "获取设备状态", status: "✅ 正常" },
+        { method: "POST", path: "/api/v1/operations/tasks", description: "向工作人员分配任务", status: "✅ 正常" }
       ]
     },
     {
-      name: "MCP Framework",
-      description: "Model Context Protocol tool discovery and execution",
+      name: "MCP 框架",
+      description: "模型上下文协议的工具发现与执行",
       endpoints: [
-        { method: "GET", path: "/api/v1/mcp/tools", description: "Discover available tools", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/mcp/status", description: "MCP system status", status: "✅ Working" },
-        { method: "POST", path: "/api/v1/mcp/execute", description: "Execute MCP tools", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/mcp/adapters", description: "List registered adapters", status: "✅ Working" }
+        { method: "GET", path: "/api/v1/mcp/tools", description: "发现可用工具", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/mcp/status", description: "MCP 系统状态", status: "✅ 正常" },
+        { method: "POST", path: "/api/v1/mcp/execute", description: "执行 MCP 工具", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/mcp/adapters", description: "列出已注册的适配器", status: "✅ 正常" }
       ]
     },
     {
-      name: "Reasoning Engine",
-      description: "Advanced reasoning capabilities and analysis",
+      name: "推理引擎",
+      description: "高级推理能力与分析",
       endpoints: [
-        { method: "POST", path: "/api/v1/reasoning/analyze", description: "Deep reasoning analysis", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/reasoning/types", description: "Available reasoning types", status: "✅ Working" },
-        { method: "POST", path: "/api/v1/reasoning/chat-with-reasoning", description: "Chat with reasoning", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/reasoning/insights", description: "Get reasoning insights", status: "⚠️ Partial" }
+        { method: "POST", path: "/api/v1/reasoning/analyze", description: "深度推理分析", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/reasoning/types", description: "可用的推理类型", status: "✅ 正常" },
+        { method: "POST", path: "/api/v1/reasoning/chat-with-reasoning", description: "带推理的聊天", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/reasoning/insights", description: "获取推理洞察", status: "⚠️ 部分可用" }
       ]
     },
     {
-      name: "Authentication",
-      description: "User authentication and authorization",
+      name: "身份验证",
+      description: "用户身份验证与授权",
       endpoints: [
-        { method: "POST", path: "/api/v1/auth/login", description: "User login", status: "✅ Working" },
-        { method: "POST", path: "/api/v1/auth/logout", description: "User logout", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/auth/profile", description: "Get user profile", status: "✅ Working" },
-        { method: "POST", path: "/api/v1/auth/refresh", description: "Refresh JWT token", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/auth/users/public", description: "Get list of users for dropdown selection (public, no auth required)", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/auth/users", description: "Get all users (admin only)", status: "✅ Working" }
+        { method: "POST", path: "/api/v1/auth/login", description: "用户登录", status: "✅ 正常" },
+        { method: "POST", path: "/api/v1/auth/logout", description: "用户退出", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/auth/profile", description: "获取用户资料", status: "✅ 正常" },
+        { method: "POST", path: "/api/v1/auth/refresh", description: "刷新 JWT 令牌", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/auth/users/public", description: "获取用于下拉选择的用户列表（公开，无需身份验证）", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/auth/users", description: "获取所有用户（仅限管理员）", status: "✅ 正常" }
       ]
     },
     {
-      name: "Monitoring",
-      description: "System monitoring and observability",
+      name: "监控",
+      description: "系统监控与可观测性",
       endpoints: [
-        { method: "GET", path: "/api/v1/monitoring/health", description: "Detailed health check", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/monitoring/metrics", description: "System metrics", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/monitoring/logs", description: "System logs", status: "✅ Working" },
-        { method: "GET", path: "/api/v1/monitoring/alerts", description: "Active alerts", status: "✅ Working" }
+        { method: "GET", path: "/api/v1/monitoring/health", description: "详细健康检查", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/monitoring/metrics", description: "系统指标", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/monitoring/logs", description: "系统日志", status: "✅ 正常" },
+        { method: "GET", path: "/api/v1/monitoring/alerts", description: "活动告警", status: "✅ 正常" }
       ]
     }
   ];
 
   const requestExamples = [
     {
-      title: "Chat Request",
-      description: "Send a message to the chat interface",
+      title: "聊天请求",
+      description: "向聊天界面发送消息",
       method: "POST",
       path: "/api/v1/chat",
       request: {
@@ -141,8 +141,8 @@ const APIReference: React.FC = () => {
       }
     },
     {
-      title: "Tool Discovery",
-      description: "Discover available MCP tools",
+      title: "工具发现",
+      description: "发现可用的 MCP 工具",
       method: "GET",
       path: "/api/v1/mcp/tools",
       request: null,
@@ -176,8 +176,8 @@ const APIReference: React.FC = () => {
       }
     },
     {
-      title: "Reasoning Analysis",
-      description: "Perform deep reasoning analysis",
+      title: "推理分析",
+      description: "执行深度推理分析",
       method: "POST",
       path: "/api/v1/reasoning/analyze",
       request: {
@@ -213,14 +213,14 @@ const APIReference: React.FC = () => {
   ];
 
   const statusCodes = [
-    { code: 200, description: "Success", meaning: "Request completed successfully" },
-    { code: 201, description: "Created", meaning: "Resource created successfully" },
-    { code: 400, description: "Bad Request", meaning: "Invalid request parameters" },
-    { code: 401, description: "Unauthorized", meaning: "Authentication required" },
-    { code: 403, description: "Forbidden", meaning: "Insufficient permissions" },
-    { code: 404, description: "Not Found", meaning: "Resource not found" },
-    { code: 422, description: "Unprocessable Entity", meaning: "Validation error" },
-    { code: 500, description: "Internal Server Error", meaning: "Server error occurred" }
+    { code: 200, description: "成功", meaning: "请求已成功完成" },
+    { code: 201, description: "已创建", meaning: "资源已成功创建" },
+    { code: 400, description: "错误请求", meaning: "请求参数无效" },
+    { code: 401, description: "未授权", meaning: "需要身份验证" },
+    { code: 403, description: "禁止访问", meaning: "权限不足" },
+    { code: 404, description: "未找到", meaning: "未找到资源" },
+    { code: 422, description: "无法处理的实体", meaning: "验证错误" },
+    { code: 500, description: "服务器内部错误", meaning: "服务器发生错误" }
   ];
 
   return (
@@ -228,37 +228,37 @@ const APIReference: React.FC = () => {
       {/* Breadcrumbs */}
       <Breadcrumbs sx={{ mb: 2 }}>
         <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/documentation')}>
-          Documentation
+          文档
         </Button>
-        <Typography color="text.primary">API Reference</Typography>
+        <Typography color="text.primary">API 参考</Typography>
       </Breadcrumbs>
 
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          API Reference
+          API 参考
         </Typography>
         <Typography variant="h5" component="h2" gutterBottom color="text.secondary">
-          Comprehensive API Documentation
+          完整的 API 文档
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          Complete reference for all API endpoints in the Multi-Agent-Intelligent-Warehouse. 
-          This documentation covers authentication, agent operations, MCP framework, reasoning engine, and monitoring APIs.
+          多智能体智慧仓储系统所有 API 端点的完整参考。
+          本文档涵盖身份验证、智能体操作、MCP 框架、推理引擎和监控 API。
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
           <Chip label="REST API" color="primary" />
           <Chip label="OpenAPI/Swagger" color="secondary" />
-          <Chip label="JWT Authentication" color="info" />
-          <Chip label="Real-time" color="warning" />
-          <Chip label="Production Ready" color="success" />
+          <Chip label="JWT 身份验证" color="info" />
+          <Chip label="实时" color="warning" />
+          <Chip label="生产就绪" color="success" />
         </Box>
       </Box>
 
       {/* Status Alert */}
       <Alert severity="success" sx={{ mb: 4 }}>
-        <AlertTitle>✅ All Core APIs Working</AlertTitle>
-        All essential API endpoints are operational and tested. The system provides comprehensive REST API coverage 
-        with proper authentication, error handling, and documentation.
+        <AlertTitle>✅ 所有核心 API 均正常运行</AlertTitle>
+        所有关键 API 端点均已投入运行并通过测试。系统提供完整的 REST API 覆盖，
+        并具备完善的身份验证、错误处理和文档。
       </Alert>
 
       {/* Base URL */}
@@ -267,15 +267,15 @@ const APIReference: React.FC = () => {
         expanded={expandedSection}
         onChange={handleChange}
         icon={CloudIcon}
-        title="Base URL & Authentication"
+        title="基础 URL 与身份验证"
       >
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
-            <InfoCard title="🌐 Base URLs">
+            <InfoCard title="🌐 基础 URL">
               <List>
                 <ListItem>
                   <ListItemText 
-                    primary="Development (localhost only)" 
+                    primary="开发环境（仅 localhost）" 
                     secondary="http://localhost:8002"
                   />
                   {/* Security: HTTP protocol is acceptable for localhost in development/testing only.
@@ -286,13 +286,13 @@ const APIReference: React.FC = () => {
                 </ListItem>
                 <ListItem>
                   <ListItemText 
-                    primary="Staging" 
+                    primary="预发布环境" 
                     secondary="https://staging-api.warehouse-assistant.com"
                   />
                 </ListItem>
                 <ListItem>
                   <ListItemText 
-                    primary="Production" 
+                    primary="生产环境" 
                     secondary="https://api.warehouse-assistant.com"
                   />
                 </ListItem>
@@ -300,9 +300,9 @@ const APIReference: React.FC = () => {
             </InfoCard>
           </Grid>
           <Grid item xs={12} md={6}>
-            <InfoCard title="🔐 Authentication">
+            <InfoCard title="🔐 身份验证">
               <Typography variant="body2" sx={{ mb: 2 }}>
-                All API requests require JWT authentication via Authorization header:
+                所有 API 请求都需要通过 Authorization 标头进行 JWT 身份验证：
               </Typography>
               <CodeBlock>
 {`Authorization: Bearer <jwt_token>
@@ -323,7 +323,7 @@ curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
         expanded={expandedSection}
         onChange={handleChange}
         icon={ApiIcon}
-        title="API Endpoints"
+        title="API 端点"
       >
         <Grid container spacing={3}>
           {apiCategories.map((category, index) => (
@@ -359,7 +359,7 @@ curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
         expanded={expandedSection}
         onChange={handleChange}
         icon={CodeIcon}
-        title="Request Examples"
+        title="请求示例"
       >
         <Grid container spacing={3}>
           {requestExamples.map((example, index) => (
@@ -368,7 +368,7 @@ curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <Typography variant="subtitle2" gutterBottom>
-                      Request ({example.method} {example.path})
+                      请求（{example.method} {example.path}）
                     </Typography>
                     <CodeBlock>
                       {example.request ? JSON.stringify(example.request, null, 2) : 'No request body'}
@@ -376,7 +376,7 @@ curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
                   </Grid>
                   <Grid item xs={12} md={6}>
                     <Typography variant="subtitle2" gutterBottom>
-                      Response
+                      响应
                     </Typography>
                     <CodeBlock>
                       {JSON.stringify(example.response, null, 2)}
@@ -395,15 +395,15 @@ curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
         expanded={expandedSection}
         onChange={handleChange}
         icon={CheckCircleIcon}
-        title="HTTP Status Codes"
+        title="HTTP 状态码"
       >
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Code</TableCell>
-                <TableCell>Description</TableCell>
-                <TableCell>Meaning</TableCell>
+                <TableCell>代码</TableCell>
+                <TableCell>说明</TableCell>
+                <TableCell>含义</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -431,11 +431,11 @@ curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
         expanded={expandedSection}
         onChange={handleChange}
         icon={BugReportIcon}
-        title="Error Handling"
+        title="错误处理"
       >
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
-            <InfoCard title="🚨 Error Response Format">
+            <InfoCard title="🚨 错误响应格式">
               <CodeBlock sx={{ mb: 2 }}>
 {`{
   "error": {
@@ -453,36 +453,36 @@ curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
             </InfoCard>
           </Grid>
           <Grid item xs={12} md={6}>
-            <InfoCard title="🔧 Common Error Codes">
+            <InfoCard title="🔧 常见错误代码">
               <List dense>
                 <ListItem>
                   <ListItemText 
                     primary="VALIDATION_ERROR" 
-                    secondary="Request validation failed"
+                    secondary="请求验证失败"
                   />
                 </ListItem>
                 <ListItem>
                   <ListItemText 
                     primary="AUTHENTICATION_REQUIRED" 
-                    secondary="Valid JWT token required"
+                    secondary="需要有效的 JWT 令牌"
                   />
                 </ListItem>
                 <ListItem>
                   <ListItemText 
                     primary="INSUFFICIENT_PERMISSIONS" 
-                    secondary="User lacks required permissions"
+                    secondary="用户缺少所需权限"
                   />
                 </ListItem>
                 <ListItem>
                   <ListItemText 
                     primary="RESOURCE_NOT_FOUND" 
-                    secondary="Requested resource doesn't exist"
+                    secondary="请求的资源不存在"
                   />
                 </ListItem>
                 <ListItem>
                   <ListItemText 
                     primary="RATE_LIMIT_EXCEEDED" 
-                    secondary="Too many requests"
+                    secondary="请求过多"
                   />
                 </ListItem>
               </List>
@@ -494,7 +494,7 @@ curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
       {/* Footer */}
       <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
         <Typography variant="body2" color="text.secondary" align="center">
-          API Reference - Multi-Agent-Intelligent-Warehouse
+          API 参考——多智能体智慧仓储系统
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
           <Button 
@@ -504,10 +504,10 @@ curl -H "Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
             target="_blank"
             rel="noopener noreferrer"
           >
-            View Source
+            查看源代码
           </Button>
           <Button variant="outlined" startIcon={<DashboardIcon />}>
-            Live Demo
+            在线演示
           </Button>
         </Box>
       </Box>

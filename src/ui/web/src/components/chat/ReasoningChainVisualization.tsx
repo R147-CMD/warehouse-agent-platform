@@ -104,8 +104,17 @@ const ReasoningChainVisualization: React.FC<ReasoningChainVisualizationProps> = 
     `${(value * 100).toFixed(decimals)}%`;
 
   // Helper to format reasoning type label
-  const formatReasoningType = (type: string) => 
-    type.replace(/_/g, ' ').toUpperCase();
+  const formatReasoningType = (type: string) => {
+    const labels: Record<string, string> = {
+      chain_of_thought: '思维链',
+      multi_hop: '多跳推理',
+      scenario_analysis: '情景分析',
+      causal: '因果推理',
+      pattern_recognition: '模式识别',
+      unknown: '未知类型',
+    };
+    return labels[normalizeType(type)] || type.replace(/_/g, ' ').toUpperCase();
+  };
 
   // Render a single reasoning step
   const renderStep = (step: ReasoningStep, index: number, useTimelineIcon: boolean = false) => (
@@ -122,7 +131,7 @@ const ReasoningChainVisualization: React.FC<ReasoningChainVisualizationProps> = 
             <TimelineIcon sx={{ color: getReasoningTypeColor(step.step_type), fontSize: 16 }} />
           ) : null}
           <Typography variant="caption" sx={{ color: '#76B900', fontWeight: 'bold' }}>
-            Step {index + 1}
+            步骤 {index + 1}
           </Typography>
           <Chip
             label={formatReasoningType(step.step_type)}
@@ -130,7 +139,7 @@ const ReasoningChainVisualization: React.FC<ReasoningChainVisualizationProps> = 
             sx={CHIP_STYLES.type(getReasoningTypeColor(step.step_type), '9px')}
           />
           <Box sx={{ flex: 1 }} />
-          <Tooltip title={`Confidence: ${formatPercentage(step.confidence, 1)}`}>
+          <Tooltip title={`置信度：${formatPercentage(step.confidence, 1)}`}>
             <Chip
               label={formatPercentage(step.confidence)}
               size="small"
@@ -171,7 +180,7 @@ const ReasoningChainVisualization: React.FC<ReasoningChainVisualizationProps> = 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <CheckCircleIcon sx={{ color: '#76B900' }} />
             <Typography variant="body2" sx={{ color: '#76B900', fontWeight: 'bold' }}>
-              Final Conclusion
+              最终结论
             </Typography>
           </Box>
           <Typography variant="body2" sx={{ color: '#333333' }}>
@@ -192,7 +201,7 @@ const ReasoningChainVisualization: React.FC<ReasoningChainVisualizationProps> = 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <PsychologyIcon sx={{ color: getReasoningTypeColor(chain.reasoning_type) }} />
               <Typography variant="body2" sx={{ flex: 1, color: '#333333', fontWeight: 'bold' }}>
-                Reasoning Chain ({chain.steps?.length || 0} steps)
+                推理链（{chain.steps?.length || 0} 个步骤）
               </Typography>
               <Chip
                 label={formatReasoningType(chain.reasoning_type)}
@@ -225,7 +234,7 @@ const ReasoningChainVisualization: React.FC<ReasoningChainVisualizationProps> = 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
           <PsychologyIcon sx={{ color: getReasoningTypeColor(chain.reasoning_type) }} />
           <Typography variant="h6" sx={{ color: '#333333', flex: 1, fontWeight: 500 }}>
-            Reasoning Chain
+            推理链
           </Typography>
           <Chip
             label={formatReasoningType(chain.reasoning_type)}
@@ -233,7 +242,7 @@ const ReasoningChainVisualization: React.FC<ReasoningChainVisualizationProps> = 
             sx={CHIP_STYLES.type(getReasoningTypeColor(chain.reasoning_type))}
           />
           {chain.overall_confidence && (
-            <Tooltip title={`Overall Confidence: ${formatPercentage(chain.overall_confidence, 1)}`}>
+            <Tooltip title={`总体置信度：${formatPercentage(chain.overall_confidence, 1)}`}>
               <Chip
                 label={formatPercentage(chain.overall_confidence)}
                 size="small"
@@ -246,7 +255,7 @@ const ReasoningChainVisualization: React.FC<ReasoningChainVisualizationProps> = 
         {chain.query && (
           <Box sx={{ mb: 2, p: 1, backgroundColor: '#ffffff', borderRadius: 1, border: '1px solid #e0e0e0' }}>
             <Typography variant="caption" sx={{ color: '#666666' }}>
-              Query:
+              查询：
             </Typography>
             <Typography variant="body2" sx={{ color: '#333333', mt: 0.5 }}>
               {chain.query}
@@ -256,7 +265,7 @@ const ReasoningChainVisualization: React.FC<ReasoningChainVisualizationProps> = 
 
         <Box sx={{ mb: 2 }}>
           <Typography variant="body2" sx={{ color: '#666666', mb: 1, fontWeight: 500 }}>
-            Reasoning Steps ({chain.steps?.length || 0}):
+            推理步骤（{chain.steps?.length || 0}）：
           </Typography>
           {chain.steps?.map((step, index) => renderStep(step, index, true))}
         </Box>
@@ -268,5 +277,4 @@ const ReasoningChainVisualization: React.FC<ReasoningChainVisualizationProps> = 
 };
 
 export default ReasoningChainVisualization;
-
 

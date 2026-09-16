@@ -30,6 +30,8 @@ from datetime import datetime, timedelta
 import json
 import uuid
 
+from src.api.services.approval.gateway import get_approval_gateway
+
 from .server import MCPServer, MCPTool, MCPToolType
 from .client import MCPClient, MCPConnectionType
 from .base import MCPAdapter, MCPManager, AdapterType
@@ -664,7 +666,22 @@ class ToolDiscoveryService:
             logger.error(f"Error getting available tools: {e}")
             return []
 
-    async def execute_tool(self, tool_key: str, arguments: Dict[str, Any]) -> Any:
+    def requires_approval(self, tool_key: str) -> bool:
+        """Return whether the discovered tool needs human approval."""
+        if tool_key not in self.discovered_tools:
+            raise ValueError(f"Tool '{tool_key}' not found")
+
+        return get_approval_gateway().requires_approval(
+            self.discovered_tools[tool_key]
+        )
+
+    async def execute_tool(
+        self,
+        tool_key: str,
+        arguments: Dict[str, Any],
+        *,
+        action_index: int = 0,
+    ) -> Any:
         """Execute a discovered tool with security validation."""
         if tool_key not in self.discovered_tools:
             raise ValueError(f"Tool '{tool_key}' not found")
@@ -705,26 +722,35 @@ class ToolDiscoveryService:
         if not source_info:
             raise ValueError(f"Source '{tool.source}' not found")
 
-        start_time = datetime.utcnow()
+        async def execute_source() -> Any:
+            start_time = datetime.utcnow()
+            try:
+                if tool.source_type == "mcp_server":
+                    result = await source_info["source"].execute_tool(
+                        tool.name, arguments
+                    )
+                elif tool.source_type == "mcp_adapter":
+                    result = await source_info["source"].execute_tool(
+                        tool.name, arguments
+                    )
+                else:
+                    raise ValueError(
+                        f"Unsupported source type: {tool.source_type}"
+                    )
+            except Exception:
+                await self._update_usage_stats(tool_key, False, start_time)
+                raise
 
-        try:
-            # Execute tool based on source type
-            if tool.source_type == "mcp_server":
-                result = await source_info["source"].execute_tool(tool.name, arguments)
-            elif tool.source_type == "mcp_adapter":
-                result = await source_info["source"].execute_tool(tool.name, arguments)
-            else:
-                raise ValueError(f"Unsupported source type: {tool.source_type}")
-
-            # Update usage stats
             await self._update_usage_stats(tool_key, True, start_time)
-
             return result
 
-        except Exception as e:
-            # Update usage stats
-            await self._update_usage_stats(tool_key, False, start_time)
-            raise
+        return await get_approval_gateway().execute(
+            tool_key=tool_key,
+            tool=tool,
+            arguments=arguments,
+            action_index=action_index,
+            executor=execute_source,
+        )
 
     async def _update_usage_stats(
         self, tool_key: str, success: bool, start_time: datetime

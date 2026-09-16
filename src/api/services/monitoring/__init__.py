@@ -16,6 +16,16 @@
 """Performance monitoring services."""
 
 from src.api.services.monitoring.performance_monitor import get_performance_monitor, PerformanceMonitor
+from .audit_v2 import AuditWriter
+from .metrics_v2 import AgentMetricsV2
+from .tracing_v2 import TraceSpan, current_trace, trace_span
 
-__all__ = ["get_performance_monitor", "PerformanceMonitor"]
-
+__all__ = [
+    "get_performance_monitor",
+    "PerformanceMonitor",
+    "AuditWriter",
+    "AgentMetricsV2",
+    "TraceSpan",
+    "current_trace",
+    "trace_span",
+]

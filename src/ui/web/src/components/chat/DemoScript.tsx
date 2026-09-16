@@ -36,105 +36,105 @@ const DemoScript: React.FC<DemoScriptProps> = ({ onScenarioSelect }) => {
   const demoFlows = [
     {
       id: 'work_order_flow',
-      title: 'Work Order → Wave → Equipment Dispatch',
-      description: 'Operations + EAO Agent collaboration',
+      title: '工单 → 波次 → 设备调度',
+      description: '运营智能体与 EAO 智能体协作',
       icon: <AssignmentIcon />,
       steps: [
         {
-          label: 'User Request',
-          description: 'User: "Create a wave for Orders 1001–1010 in Zone A and dispatch a forklift."',
-          expected: 'Route → Operations (0.88)',
+          label: '用户请求',
+          description: '用户：“为 A 区的订单 1001–1010 创建波次并调度一辆叉车。”',
+          expected: '路由 → 运营（0.88）',
         },
         {
-          label: 'Data Retrieval',
-          description: 'Retrieval → top-12→6; SQL for order lines (38ms)',
-          expected: 'Evidence: Order lines, zone layout',
+          label: '数据检索',
+          description: '检索 → top-12→6；通过 SQL 查询订单行（38ms）',
+          expected: '证据：订单行、区域布局',
         },
         {
-          label: 'Proposed Actions',
-          description: 'generate_pick_wave (params shown, SLA gain + travel time)',
-          expected: 'Action card with Approve/Reject',
+          label: '建议操作',
+          description: 'generate_pick_wave（显示参数、SLA 收益与行程时间）',
+          expected: '带“批准/拒绝”按钮的操作卡片',
         },
         {
-          label: 'Equipment Assignment',
+          label: '设备分配',
           description: 'assign_equipment(asset_id=FL-07, zone=A)',
-          expected: 'Equipment assignment card',
+          expected: '设备分配卡片',
         },
         {
-          label: 'User Approval',
-          description: 'User clicks Approve (Tier 1)',
-          expected: 'Success toast + audit IDs',
+          label: '用户批准',
+          description: '用户点击“批准”（一级）',
+          expected: '成功提示与审计 ID',
         },
         {
-          label: 'Results',
-          description: 'WMS wave id + equipment assignment',
-          expected: 'action_result with links',
+          label: '结果',
+          description: 'WMS 波次 ID 与设备分配',
+          expected: '包含链接的 action_result',
         },
       ],
     },
     {
       id: 'equipment_status_flow',
-      title: 'Equipment Status Check & Assignment',
-      description: 'Equipment/SQL path with asset management',
+      title: '设备状态检查与分配',
+      description: '结合资产管理的设备/SQL 路径',
       icon: <InventoryIcon />,
       steps: [
         {
-          label: 'User Request',
-          description: 'User: "Show me the status of all forklifts and their availability"',
-          expected: 'Route: Equipment (0.95)',
+          label: '用户请求',
+          description: '用户：“显示所有叉车的状态和可用性”',
+          expected: '路由：设备（0.95）',
         },
         {
-          label: 'Equipment Query',
-          description: 'Execute equipment status query with filters',
-          expected: 'SQL inspector shows query + results',
+          label: '设备查询',
+          description: '使用筛选条件执行设备状态查询',
+          expected: 'SQL 检查器显示查询和结果',
         },
         {
-          label: 'Results Table',
-          description: 'Table card: Equipment status breakdown',
-          expected: 'Structured data table with asset details',
+          label: '结果表格',
+          description: '表格卡片：设备状态明细',
+          expected: '包含资产详情的结构化数据表',
         },
         {
-          label: 'Assignment Proposal',
-          description: 'Proposed action assign_equipment for available forklifts',
-          expected: 'Action card with equipment parameters',
+          label: '分配建议',
+          description: '为可用叉车建议执行 assign_equipment',
+          expected: '包含设备参数的操作卡片',
         },
         {
-          label: 'Approval',
-          description: 'Approve → action_result with assignment details',
-          expected: 'Success confirmation with asset ID',
+          label: '批准',
+          description: '批准 → 包含分配详情的 action_result',
+          expected: '包含资产 ID 的成功确认',
         },
       ],
     },
     {
       id: 'safety_incident_flow',
-      title: 'Safety Incident Response',
-      description: 'Safety + EAO Agent collaboration',
+      title: '安全事故响应',
+      description: '安全智能体与 EAO 智能体协作',
       icon: <SecurityIcon />,
       steps: [
         {
-          label: 'Incident Report',
-          description: 'User: "Machine over-temp event at Dock D2."',
-          expected: 'Route: Safety (0.95)',
+          label: '事故报告',
+          description: '用户：“D2 月台发生机器过温事件。”',
+          expected: '路由：安全（0.95）',
         },
         {
-          label: 'Proposed Actions',
+          label: '建议操作',
           description: 'broadcast_alert(zone=D2), lockout_tagout_request(asset_id=DL-4), start_checklist(forklift_pre_op)',
-          expected: 'Multiple action cards',
+          expected: '多个操作卡片',
         },
         {
-          label: 'User Decisions',
-          description: 'Approve first two; reject third',
-          expected: 'Selective approval/rejection',
+          label: '用户决策',
+          description: '批准前两项，拒绝第三项',
+          expected: '选择性批准/拒绝',
         },
         {
-          label: 'Evidence Panel',
-          description: 'Policy spans + telemetry rows (Timescale)',
-          expected: 'Evidence with source links',
+          label: '证据面板',
+          description: '政策片段与遥测数据行（Timescale）',
+          expected: '带来源链接的证据',
         },
         {
-          label: 'Summary',
-          description: 'Final message summarizes actions, links to tickets, next steps',
-          expected: 'Comprehensive action summary',
+          label: '摘要',
+          description: '最终消息汇总操作、工单链接和后续步骤',
+          expected: '完整操作摘要',
         },
       ],
     },
@@ -174,7 +174,7 @@ const DemoScript: React.FC<DemoScriptProps> = ({ onScenarioSelect }) => {
   return (
     <Box sx={{ p: 2, backgroundColor: 'background.default', height: '100%', overflow: 'auto' }}>
       <Typography variant="h6" sx={{ color: 'text.primary', mb: 3, textAlign: 'center', fontWeight: 500 }}>
-        Demo Scripts
+        演示脚本
       </Typography>
 
       {demoFlows.map((flow, flowIndex) => (
@@ -194,7 +194,7 @@ const DemoScript: React.FC<DemoScriptProps> = ({ onScenarioSelect }) => {
                 {currentFlow === flow.id && (
                   <Box sx={{ mt: 1 }}>
                     <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 500 }}>
-                      Progress: {completedSteps.length} / {flow.steps.length} steps completed
+                      进度：已完成 {completedSteps.length} / {flow.steps.length} 个步骤
                     </Typography>
                     <Box sx={{ width: '100%', height: 4, backgroundColor: 'grey.700', borderRadius: 2, mt: 0.5 }}>
                       <Box 
@@ -229,7 +229,7 @@ const DemoScript: React.FC<DemoScriptProps> = ({ onScenarioSelect }) => {
                       },
                     }}
                   >
-                    Reset
+                    重置
                   </Button>
                 )}
                 <Button
@@ -242,7 +242,7 @@ const DemoScript: React.FC<DemoScriptProps> = ({ onScenarioSelect }) => {
                     '&:hover': { backgroundColor: '#5a8f00' },
                   }}
                 >
-                  {currentFlow === flow.id ? 'Restart' : 'Start'}
+                  {currentFlow === flow.id ? '重新开始' : '开始'}
                 </Button>
               </Box>
             </Box>
@@ -310,7 +310,7 @@ const DemoScript: React.FC<DemoScriptProps> = ({ onScenarioSelect }) => {
                             },
                           }}
                         >
-                          {isCompleted ? '✓ Completed' : 'Mark Complete'}
+                          {isCompleted ? '✓ 已完成' : '标记为完成'}
                         </Button>
                       )}
                     </StepContent>
@@ -325,7 +325,7 @@ const DemoScript: React.FC<DemoScriptProps> = ({ onScenarioSelect }) => {
       <Card sx={{ backgroundColor: '#fafafa', border: '1px solid #e0e0e0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
         <CardContent>
           <Typography variant="h6" sx={{ color: '#333333', mb: 2, fontSize: '16px', fontWeight: 500 }}>
-            Demo Tips
+            演示提示
           </Typography>
           <List dense>
             <ListItem>
@@ -333,7 +333,7 @@ const DemoScript: React.FC<DemoScriptProps> = ({ onScenarioSelect }) => {
                 <CheckIcon sx={{ color: '#76B900', fontSize: '16px' }} />
               </ListItemIcon>
               <ListItemText
-                primary="Choose WH-01, Role Manager"
+                primary="选择 WH-01，角色设为经理"
                 primaryTypographyProps={{ fontSize: '12px', color: '#333333' }}
               />
             </ListItem>
@@ -342,7 +342,7 @@ const DemoScript: React.FC<DemoScriptProps> = ({ onScenarioSelect }) => {
                 <CheckIcon sx={{ color: '#76B900', fontSize: '16px' }} />
               </ListItemIcon>
               <ListItemText
-                primary="Toggle Show Internals for detailed view"
+                primary="开启“显示内部信息”以查看详情"
                 primaryTypographyProps={{ fontSize: '12px', color: '#333333' }}
               />
             </ListItem>
@@ -351,7 +351,7 @@ const DemoScript: React.FC<DemoScriptProps> = ({ onScenarioSelect }) => {
                 <CheckIcon sx={{ color: '#76B900', fontSize: '16px' }} />
               </ListItemIcon>
               <ListItemText
-                primary="Check Evidence & Tool timeline in right panel"
+                primary="在右侧面板查看证据和工具时间线"
                 primaryTypographyProps={{ fontSize: '12px', color: '#333333' }}
               />
             </ListItem>
@@ -360,7 +360,7 @@ const DemoScript: React.FC<DemoScriptProps> = ({ onScenarioSelect }) => {
                 <CheckIcon sx={{ color: '#76B900', fontSize: '16px' }} />
               </ListItemIcon>
               <ListItemText
-                primary="Use quick replies for clarifying questions"
+                primary="使用快捷回复回答澄清问题"
                 primaryTypographyProps={{ fontSize: '12px', color: '#333333' }}
               />
             </ListItem>

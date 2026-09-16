@@ -7,10 +7,10 @@ const MCPTestPage: React.FC = () => {
     <Container maxWidth="xl" sx={{ py: 3 }}>
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" component="h1" gutterBottom>
-          MCP Testing Dashboard
+          MCP 测试仪表板
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Test and explore the Model Context Protocol (MCP) framework integration
+          测试并探索模型上下文协议（MCP）框架集成
         </Typography>
       </Box>
       

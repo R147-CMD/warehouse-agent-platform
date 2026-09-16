@@ -28,11 +28,12 @@ import {
   Info as InfoIcon,
   Close as CloseIcon 
 } from '@mui/icons-material';
-import { 
+import {
   versionAPI, 
   VersionInfo, 
   DetailedVersionInfo
 } from '../services/version';
+import { formatZhDateTime } from '../localization/zhCN';
 
 interface VersionFooterProps {
   /** Whether to show the version footer */
@@ -42,6 +43,20 @@ interface VersionFooterProps {
   /** Whether to show detailed version info on click */
   showDetails?: boolean;
 }
+
+const formatVersionValue = (value?: string | null): string =>
+  !value || value.toLowerCase() === 'unknown' ? '未知' : value;
+
+const formatEnvironment = (value?: string | null): string => {
+  const normalized = value?.toLowerCase();
+  const labels: Record<string, string> = {
+    development: '开发环境',
+    production: '生产环境',
+    staging: '预发布环境',
+    test: '测试环境',
+  };
+  return normalized ? labels[normalized] ?? value! : '未知';
+};
 
 export const VersionFooter: React.FC<VersionFooterProps> = ({
   show = true,
@@ -129,7 +144,7 @@ export const VersionFooter: React.FC<VersionFooterProps> = ({
     return (
       <Box sx={getPositionStyles()}>
         <Typography variant="caption" sx={{ color: '#ff6b6b', fontSize: '10px' }}>
-          Version: Error
+          版本：错误
         </Typography>
       </Box>
     );
@@ -143,9 +158,9 @@ export const VersionFooter: React.FC<VersionFooterProps> = ({
             v{versionInfo.version}
           </Typography>
           
-          <Tooltip title={`Git SHA: ${versionInfo.git_sha}`}>
+          <Tooltip title={`Git SHA：${formatVersionValue(versionInfo.git_sha)}`}>
             <Chip 
-              label={versionInfo.git_sha} 
+              label={formatVersionValue(versionInfo.git_sha)} 
               size="small" 
               sx={{ 
                 backgroundColor: '#333', 
@@ -160,7 +175,7 @@ export const VersionFooter: React.FC<VersionFooterProps> = ({
           </Tooltip>
 
           {showDetails && (
-            <Tooltip title="View detailed version info">
+            <Tooltip title="查看详细版本信息">
               <IconButton
                 size="small"
                 onClick={handleDetailsClick}
@@ -188,7 +203,7 @@ export const VersionFooter: React.FC<VersionFooterProps> = ({
       >
         <DialogTitle>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Version Information</Typography>
+            <Typography variant="h6">版本信息</Typography>
             <IconButton onClick={() => setDetailsOpen(false)} size="small">
               <CloseIcon />
             </IconButton>
@@ -201,49 +216,49 @@ export const VersionFooter: React.FC<VersionFooterProps> = ({
               <Table size="small">
                 <TableBody>
                   <TableRow>
-                    <TableCell><strong>Version</strong></TableCell>
+                    <TableCell><strong>版本</strong></TableCell>
                     <TableCell>{detailedInfo.version}</TableCell>
                   </TableRow>
                   <TableRow>
                     <TableCell><strong>Git SHA</strong></TableCell>
-                    <TableCell>{detailedInfo.git_sha}</TableCell>
+                    <TableCell>{formatVersionValue(detailedInfo.git_sha)}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell><strong>Git Branch</strong></TableCell>
-                    <TableCell>{detailedInfo.git_branch}</TableCell>
+                    <TableCell><strong>Git 分支</strong></TableCell>
+                    <TableCell>{formatVersionValue(detailedInfo.git_branch)}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell><strong>Build Time</strong></TableCell>
-                    <TableCell>{new Date(detailedInfo.build_time).toLocaleString()}</TableCell>
+                    <TableCell><strong>构建时间</strong></TableCell>
+                    <TableCell>{formatZhDateTime(detailedInfo.build_time)}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell><strong>Commit Count</strong></TableCell>
+                    <TableCell><strong>提交次数</strong></TableCell>
                     <TableCell>{detailedInfo.commit_count}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell><strong>Environment</strong></TableCell>
+                    <TableCell><strong>运行环境</strong></TableCell>
                     <TableCell>
                       <Chip 
-                        label={detailedInfo.environment} 
+                        label={formatEnvironment(detailedInfo.environment)} 
                         size="small"
                         color={detailedInfo.environment.toLowerCase().includes('prod') ? 'success' : 'default'}
                       />
                     </TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell><strong>Docker Image</strong></TableCell>
-                    <TableCell>{detailedInfo.docker_image}</TableCell>
+                    <TableCell><strong>Docker 镜像</strong></TableCell>
+                    <TableCell>{formatVersionValue(detailedInfo.docker_image)}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell><strong>Build Host</strong></TableCell>
-                    <TableCell>{detailedInfo.build_host}</TableCell>
+                    <TableCell><strong>构建主机</strong></TableCell>
+                    <TableCell>{formatVersionValue(detailedInfo.build_host)}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell><strong>Build User</strong></TableCell>
-                    <TableCell>{detailedInfo.build_user}</TableCell>
+                    <TableCell><strong>构建用户</strong></TableCell>
+                    <TableCell>{formatVersionValue(detailedInfo.build_user)}</TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell><strong>Python Version</strong></TableCell>
+                    <TableCell><strong>Python 版本</strong></TableCell>
                     <TableCell>{detailedInfo.python_version}</TableCell>
                   </TableRow>
                 </TableBody>
@@ -253,7 +268,7 @@ export const VersionFooter: React.FC<VersionFooterProps> = ({
         </DialogContent>
         
         <DialogActions>
-          <Button onClick={() => setDetailsOpen(false)}>Close</Button>
+          <Button onClick={() => setDetailsOpen(false)}>关闭</Button>
         </DialogActions>
       </Dialog>
     </>

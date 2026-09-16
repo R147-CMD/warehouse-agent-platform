@@ -31,6 +31,8 @@ import {
   Settings as SettingsIcon,
   Article as DocumentationIcon,
   Description as DocumentIcon,
+  AssignmentTurnedIn as AssignmentTurnedInIcon,
+  Inventory2 as BrandIcon,
   Logout,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -43,16 +45,17 @@ interface LayoutProps {
 }
 
 const menuItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-  { text: 'Chat Assistant', icon: <ChatIcon />, path: '/chat' },
-  { text: 'Equipment & Assets', icon: <EquipmentIcon />, path: '/equipment' },
-  { text: 'Forecasting', icon: <ForecastingIcon />, path: '/forecasting' },
-  { text: 'Operations', icon: <OperationsIcon />, path: '/operations' },
-  { text: 'Safety', icon: <SafetyIcon />, path: '/safety' },
-  { text: 'Document Extraction', icon: <DocumentIcon />, path: '/documents' },
-  { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
-  { text: 'Documentation', icon: <DocumentationIcon />, path: '/documentation' },
-  { text: 'MCP Testing', icon: <SettingsIcon />, path: '/mcp-test' },
+  { text: '仪表盘', icon: <DashboardIcon />, path: '/' },
+  { text: '智能助手', icon: <ChatIcon />, path: '/chat' },
+  { text: '任务中心', icon: <AssignmentTurnedInIcon />, path: '/runs' },
+  { text: '设备与资产', icon: <EquipmentIcon />, path: '/equipment' },
+  { text: '预测分析', icon: <ForecastingIcon />, path: '/forecasting' },
+  { text: '运营管理', icon: <OperationsIcon />, path: '/operations' },
+  { text: '安全管理', icon: <SafetyIcon />, path: '/safety' },
+  { text: '文档提取', icon: <DocumentIcon />, path: '/documents' },
+  { text: '数据分析', icon: <AnalyticsIcon />, path: '/analytics' },
+  { text: '使用文档', icon: <DocumentationIcon />, path: '/documentation' },
+  { text: 'MCP 测试', icon: <SettingsIcon />, path: '/mcp-test' },
 ];
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
@@ -99,19 +102,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, width: '100%' }}>
           <Box
-            component="img"
-            src="/nvidia-logo.svg"
-            alt="NVIDIA"
+            aria-hidden="true"
             sx={{
-              height: 28,
-              width: 'auto',
-              display: { xs: 'none', sm: 'block' },
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 30,
+              height: 30,
+              borderRadius: 1.5,
+              backgroundColor: 'primary.main',
+              color: 'primary.contrastText',
+              fontSize: '1.1rem',
+              flexShrink: 0,
+              display: { xs: 'none', sm: 'inline-flex' },
             }}
-            onError={(e: any) => {
-              // Fallback if logo doesn't exist
-              e.target.style.display = 'none';
-            }}
-          />
+          >
+            <BrandIcon fontSize="small" />
+          </Box>
           <Typography 
             variant="h6" 
             noWrap 
@@ -123,7 +129,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               letterSpacing: '0.01em',
             }}
           >
-            Warehouse Assistant
+            仓智智能运营平台
           </Typography>
         </Box>
       </Toolbar>
@@ -187,7 +193,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <Toolbar sx={{ minHeight: '64px !important', px: 3 }}>
           <IconButton
             color="inherit"
-            aria-label="open drawer"
+            aria-label="打开导航菜单"
             edge="start"
             onClick={handleDrawerToggle}
             sx={{ 
@@ -200,18 +206,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </IconButton>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexGrow: 1 }}>
             <Box
-              component="img"
-              src="/nvlogo.png"
-              alt="NVIDIA"
+              aria-hidden="true"
               sx={{
-                height: 24,
-                width: 'auto',
-                display: { xs: 'none', sm: 'block' },
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 28,
+                height: 28,
+                borderRadius: 1.5,
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                flexShrink: 0,
+                display: { xs: 'none', sm: 'inline-flex' },
               }}
-              onError={(e: any) => {
-                e.target.style.display = 'none';
-              }}
-            />
+            >
+              <BrandIcon fontSize="small" />
+            </Box>
             <Typography 
               variant="h6" 
               noWrap 
@@ -223,7 +232,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 letterSpacing: '0.01em',
               }}
             >
-              Multi-Agent-Intelligent-Warehouse (MAIW)
+              仓智智能仓储运营平台
             </Typography>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -240,7 +249,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </Typography>
             <IconButton
               size="small"
-              aria-label="account of current user"
+              aria-label="当前用户账户"
               aria-controls="user-menu"
               aria-haspopup="true"
               onClick={handleUserMenuOpen}
@@ -282,7 +291,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <ListItemIcon>
                   <Logout fontSize="small" />
                 </ListItemIcon>
-                <Typography variant="body2">Logout</Typography>
+                <Typography variant="body2">退出登录</Typography>
               </MenuItem>
             </Menu>
           </Box>
@@ -291,7 +300,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <Box
         component="nav"
         sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}
-        aria-label="mailbox folders"
+        aria-label="主导航"
       >
         <Drawer
           variant="temporary"

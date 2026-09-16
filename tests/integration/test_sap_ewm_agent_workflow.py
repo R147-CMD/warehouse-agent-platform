@@ -176,6 +176,7 @@ def _context(request_id: str) -> ApprovalExecutionContext:
 
 @pytest.mark.asyncio
 async def test_sap_read_write_approval_and_replay_boundary(monkeypatch) -> None:
+    monkeypatch.setenv("SAP_EWM_EXPOSE_LEGACY_WRITE_TOOLS", "true")
     import src.api.services.approval.gateway as gateway_module
     import src.api.services.mcp.tool_discovery as discovery_module
 
@@ -444,6 +445,7 @@ class SAPAgentWorkflowHarness:
     async def create(
         cls, running_mock: RunningSAPMock, monkeypatch
     ) -> "SAPAgentWorkflowHarness":
+        monkeypatch.setenv("SAP_EWM_EXPOSE_LEGACY_WRITE_TOOLS", "true")
         import src.api.services.mcp.tool_discovery as discovery_module
 
         config = _live_config(running_mock)

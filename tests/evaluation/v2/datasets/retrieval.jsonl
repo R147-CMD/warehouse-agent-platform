@@ -1,0 +1,5 @@
+{"id":"retrieval-normal-001","category":"normal","retrieved":["doc-1","doc-2","doc-9"],"relevant":["doc-1","doc-2"]}
+{"id":"retrieval-boundary-001","category":"boundary","retrieved":["doc-9","doc-3","doc-4"],"relevant":["doc-3"]}
+{"id":"retrieval-no-answer-001","category":"no_answer","retrieved":[],"relevant":[]}
+{"id":"retrieval-unauthorized-001","category":"unauthorized","retrieved":["doc-public"],"relevant":["doc-public"]}
+{"id":"retrieval-failure-001","category":"failure","retrieved":["doc-fallback"],"relevant":["doc-target"]}

@@ -111,6 +111,37 @@ const RightPanel: React.FC<RightPanelProps> = ({
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'executed': return '已执行';
+      case 'approved': return '已批准';
+      case 'proposed': return '待批准';
+      case 'rejected': return '已拒绝';
+      default: return status;
+    }
+  };
+
+  const getEvidenceTypeLabel = (type: string) => {
+    switch (type) {
+      case 'sql': return 'SQL';
+      case 'doc': return '文档';
+      case 'structured': return '结构化数据';
+      case 'procedure': return '流程';
+      default: return type.toUpperCase();
+    }
+  };
+
+  const getContextLabel = (key: string) => {
+    const labels: Record<string, string> = {
+      order: '订单',
+      work_order: '工单',
+      sku: 'SKU',
+      asset_id: '资产 ID',
+      zone: '区域',
+    };
+    return labels[key] || key.replace('_', ' ').toUpperCase();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -136,9 +167,9 @@ const RightPanel: React.FC<RightPanelProps> = ({
         }}
       >
         <Typography variant="h6" sx={{ color: '#ffffff', fontSize: '16px' }}>
-          Evidence & Context
+          证据与上下文
         </Typography>
-        <IconButton onClick={onClose} size="small" sx={{ color: '#666666' }}>
+        <IconButton aria-label="关闭面板" onClick={onClose} size="small" sx={{ color: '#666666' }}>
           <CloseIcon />
         </IconButton>
       </Box>
@@ -167,11 +198,11 @@ const RightPanel: React.FC<RightPanelProps> = ({
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <PsychologyIcon sx={{ color: '#76B900', fontSize: 20 }} />
                 <Typography variant="body2" sx={{ color: '#ffffff', fontWeight: 'bold' }}>
-                  Reasoning Chain
+                  推理链
                 </Typography>
                 {reasoningChain && (
                   <Chip
-                    label={`${reasoningChain.steps?.length || 0} steps`}
+                    label={`${reasoningChain.steps?.length || 0} 个步骤`}
                     size="small"
                     sx={{
                       backgroundColor: 'primary.main',
@@ -207,7 +238,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
           <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#76B900' }} />}>
             <Typography sx={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1 }}>
               <TableChartIcon sx={{ color: '#76B900' }} />
-              Evidence ({evidence.length})
+              证据（{evidence.length}）
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
@@ -216,7 +247,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                 // Safely extract all properties with fallbacks
                 const itemType = typeof item?.type === 'string' ? item.type : 'unknown';
                 const itemScore = typeof item?.score === 'number' ? item.score : 0;
-                const itemContent = typeof item?.content === 'string' ? item.content : 'No content';
+                const itemContent = typeof item?.content === 'string' ? item.content : '暂无内容';
                 const itemTable = typeof item?.table === 'string' ? item.table : '';
                 const itemId = typeof item?.id === 'string' ? item.id : '';
                 const itemRows = typeof item?.rows === 'number' ? item.rows : null;
@@ -233,7 +264,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                       <CardContent sx={{ p: 1.5 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                           <Chip
-                            label={itemType.toUpperCase()}
+                            label={getEvidenceTypeLabel(itemType)}
                             size="small"
                             sx={{
                               backgroundColor: itemType === 'sql' ? '#2196F3' : 
@@ -251,7 +282,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                         </Box>
                         
                         <Typography variant="body2" sx={{ color: '#ffffff', mb: 1 }}>
-                          {itemTable || itemId || 'Structured Data'}
+                          {itemTable || itemId || '结构化数据'}
                         </Typography>
                         
                         <Typography variant="caption" sx={{ color: '#cccccc', display: 'block', mb: 1 }}>
@@ -262,15 +293,15 @@ const RightPanel: React.FC<RightPanelProps> = ({
                         {itemType === 'procedure' && itemData && (
                           <Box sx={{ mb: 1 }}>
                             <Typography variant="caption" sx={{ color: '#4CAF50', display: 'block', mb: 0.5, fontWeight: 'bold' }}>
-                              {itemData.name || 'Safety Procedure'}
+                              {itemData.name || '安全流程'}
                             </Typography>
                             <Typography variant="caption" sx={{ color: '#ffffff', display: 'block', mb: 0.5 }}>
-                              Category: {itemData.category || 'N/A'} | Priority: {itemData.priority || 'N/A'}
+                              类别：{itemData.category || '不适用'} | 优先级：{itemData.priority || '不适用'}
                             </Typography>
                             {itemData.steps && Array.isArray(itemData.steps) && (
                               <Box sx={{ mb: 1 }}>
                                 <Typography variant="caption" sx={{ color: '#76B900', display: 'block', mb: 0.5 }}>
-                                  Key Steps:
+                                  关键步骤：
                                 </Typography>
                                 {itemData.steps.slice(0, 3).map((step: any, stepIndex: number) => (
                                   <Typography key={stepIndex} variant="caption" sx={{ color: '#ffffff', display: 'block', fontSize: '10px' }}>
@@ -279,7 +310,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                                 ))}
                                 {itemData.steps.length > 3 && (
                                   <Typography variant="caption" sx={{ color: '#cccccc', display: 'block', fontSize: '10px', fontStyle: 'italic' }}>
-                                    ... and {itemData.steps.length - 3} more steps
+                                    ... 以及另外 {itemData.steps.length - 3} 个步骤
                                   </Typography>
                                 )}
                               </Box>
@@ -291,7 +322,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                         {recommendations.length > 0 && (
                           <Box sx={{ mb: 1 }}>
                             <Typography variant="caption" sx={{ color: '#76B900', display: 'block', mb: 0.5 }}>
-                              Recommendations:
+                              建议：
                             </Typography>
                             {recommendations.map((rec: any, recIndex: number) => (
                               <Typography key={recIndex} variant="caption" sx={{ color: '#ffffff', display: 'block', fontSize: '10px' }}>
@@ -305,7 +336,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                         {actionsTaken.length > 0 && (
                           <Box sx={{ mb: 1 }}>
                             <Typography variant="caption" sx={{ color: '#FF9800', display: 'block', mb: 0.5 }}>
-                              Actions Taken:
+                              已执行操作：
                             </Typography>
                             {actionsTaken.map((action: any, actionIndex: number) => (
                               <Typography key={actionIndex} variant="caption" sx={{ color: '#ffffff', display: 'block', fontSize: '10px' }}>
@@ -318,7 +349,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                           {itemRows && (
                             <Chip
-                              label={`${itemRows} rows`}
+                              label={`${itemRows} 行`}
                               size="small"
                               sx={{ backgroundColor: '#333333', color: '#ffffff', fontSize: '10px' }}
                             />
@@ -371,7 +402,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
             <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#76B900' }} />}>
               <Typography sx={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CodeIcon sx={{ color: '#2196F3' }} />
-                SQL Inspector
+                SQL 检查器
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -383,20 +414,20 @@ const RightPanel: React.FC<RightPanelProps> = ({
                   
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="caption" sx={{ color: '#666666' }}>
-                      Parameters: {JSON.stringify(sqlQuery.parameters)}
+                      参数：{JSON.stringify(sqlQuery.parameters)}
                     </Typography>
                   </Box>
 
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="caption" sx={{ color: '#666666' }}>
-                      Execution Time: {sqlQuery.execution_time}ms
+                      执行时间：{sqlQuery.execution_time}ms
                     </Typography>
                   </Box>
 
                   {sqlQuery.result_sample.length > 0 && (
                     <Box>
                       <Typography variant="caption" sx={{ color: '#666666', mb: 1, display: 'block' }}>
-                        Result Sample:
+                        结果示例：
                       </Typography>
                       <Box sx={{ backgroundColor: 'background.default', p: 1, borderRadius: 1, fontFamily: 'monospace', fontSize: '10px', border: '1px solid', borderColor: 'divider', color: 'text.primary' }}>
                         {JSON.stringify(sqlQuery.result_sample, null, 2)}
@@ -424,7 +455,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
             <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#76B900' }} />}>
               <Typography sx={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1 }}>
                 <SecurityIcon sx={{ color: '#9C27B0' }} />
-                Planner Decision
+                规划器决策
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -432,7 +463,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                 <CardContent sx={{ p: 1.5 }}>
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="body2" sx={{ color: '#ffffff', mb: 1 }}>
-                      Intent: {plannerDecision.intent}
+                      意图：{plannerDecision.intent}
                     </Typography>
                     <LinearProgress
                       variant="determinate"
@@ -447,7 +478,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                       }}
                     />
                     <Typography variant="caption" sx={{ color: '#666666' }}>
-                      Confidence: {(plannerDecision.confidence * 100).toFixed(1)}%
+                      置信度：{(plannerDecision.confidence * 100).toFixed(1)}%
                     </Typography>
                   </Box>
                   
@@ -475,7 +506,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
             <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#76B900' }} />}>
               <Typography sx={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1 }}>
                 <TimelineIcon sx={{ color: '#FF9800' }} />
-                Active Context
+                当前上下文
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -484,7 +515,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                   {Object.entries(activeContext).map(([key, value]) => (
                     <Box key={key} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                       <Typography variant="body2" sx={{ color: '#666666' }}>
-                        {key.replace('_', ' ').toUpperCase()}:
+                        {getContextLabel(key)}：
                       </Typography>
                       <Typography variant="body2" sx={{ color: '#ffffff' }}>
                         {typeof value === 'string' ? value : JSON.stringify(value)}
@@ -512,7 +543,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
             <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#76B900' }} />}>
               <Typography sx={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1 }}>
                 <TimelineIcon sx={{ color: '#76B900' }} />
-                Tool Timeline ({toolTimeline.length})
+                工具时间线（{toolTimeline.length}）
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -527,7 +558,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                           </Typography>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <Chip
-                              label={`${getStatusIcon(tool.status)} ${tool.status}`}
+                              label={`${getStatusIcon(tool.status)} ${getStatusLabel(tool.status)}`}
                               size="small"
                               sx={{
                                 backgroundColor: getStatusColor(tool.status),
@@ -543,13 +574,13 @@ const RightPanel: React.FC<RightPanelProps> = ({
                         </Typography>
                         
                         <Typography variant="caption" sx={{ color: '#76B900', display: 'block', mt: 1 }}>
-                          Audit ID: {tool.audit_id}
+                          审计 ID：{tool.audit_id}
                         </Typography>
 
                         {tool.result && (
                           <Box sx={{ mt: 1, backgroundColor: 'background.default', p: 1, borderRadius: 1, border: '1px solid', borderColor: 'divider' }}>
                             <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                              Result:
+                              结果：
                             </Typography>
                             <Typography variant="caption" sx={{ color: 'text.primary', fontFamily: 'monospace', fontSize: '10px' }}>
                               {JSON.stringify(tool.result, null, 2)}
@@ -579,12 +610,12 @@ const RightPanel: React.FC<RightPanelProps> = ({
           <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ color: '#76B900' }} />}>
             <Typography sx={{ color: '#ffffff', display: 'flex', alignItems: 'center', gap: 1 }}>
               <SettingsIcon sx={{ color: '#76B900' }} />
-              MCP Testing
+              MCP 测试
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
             <Typography variant="body2" sx={{ color: '#cccccc', mb: 2 }}>
-              Test MCP tool discovery and execution
+              测试 MCP 工具发现与执行
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               <Button
@@ -597,7 +628,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
                   '&:hover': { borderColor: '#76B900', backgroundColor: 'rgba(118, 185, 0, 0.1)' }
                 }}
               >
-                Open MCP Panel
+                打开 MCP 面板
               </Button>
             </Box>
           </AccordionDetails>

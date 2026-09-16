@@ -43,8 +43,8 @@ const Login: React.FC = () => {
     try {
       await login(formData.username, formData.password);
       navigate('/');
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+    } catch {
+      setError('登录失败，请检查用户名和密码，或稍后重试。');
     } finally {
       setLoading(false);
     }
@@ -63,10 +63,10 @@ const Login: React.FC = () => {
       <Card sx={{ maxWidth: 400, width: '100%', mx: 2 }}>
         <CardContent sx={{ p: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom align="center">
-            Multi-Agent-Intelligent-Warehouse
+            仓智智能仓储运营平台
           </Typography>
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-            Sign in to access the multi-agent intelligent warehouse system
+            登录后访问智能仓储运营与协同管理平台
           </Typography>
 
           {error && (
@@ -91,7 +91,7 @@ const Login: React.FC = () => {
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Username"
+              label="用户名"
               name="username"
               value={formData.username}
               onChange={handleInputChange}
@@ -102,7 +102,7 @@ const Login: React.FC = () => {
             />
             <TextField
               fullWidth
-              label="Password"
+              label="密码"
               name="password"
               type="password"
               value={formData.password}
@@ -134,7 +134,7 @@ const Login: React.FC = () => {
                 },
               }}
             >
-              {loading ? <CircularProgress size={24} sx={{ color: '#8B949E' }} /> : 'Sign In'}
+              {loading ? <CircularProgress size={24} sx={{ color: '#8B949E' }} /> : '登录'}
             </Button>
           </form>
 
@@ -155,7 +155,7 @@ const Login: React.FC = () => {
                 mb: 0.5,
               }}
             >
-              <strong style={{ color: '#E6EDF3' }}>Demo Credentials:</strong>
+              <strong style={{ color: '#E6EDF3' }}>演示账号：</strong>
             </Typography>
             <Typography 
               variant="body2" 
@@ -164,7 +164,7 @@ const Login: React.FC = () => {
                 fontSize: '0.875rem',
               }}
             >
-              Username: admin
+              用户名：admin
             </Typography>
             <Typography 
               variant="body2" 
@@ -173,7 +173,7 @@ const Login: React.FC = () => {
                 fontSize: '0.875rem',
               }}
             >
-              Password: (set via DEFAULT_ADMIN_PASSWORD env var)
+              密码：由 DEFAULT_ADMIN_PASSWORD 环境变量设置
             </Typography>
           </Box>
         </CardContent>

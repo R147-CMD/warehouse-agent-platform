@@ -1,11 +1,11 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import App from './App';
-import { nvidiaTheme } from './theme/nvidiaTheme';
+import { warehouseTheme } from './theme/nvidiaTheme';
 
 jest.mock('./services/api', () => ({
   __esModule: true,
@@ -17,6 +17,8 @@ jest.mock('./services/api', () => ({
   },
 }));
 
+jest.mock('./components/VersionFooter', () => () => null);
+
 function renderWithProviders(ui: React.ReactElement, initialEntries = ['/login']) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -25,7 +27,7 @@ function renderWithProviders(ui: React.ReactElement, initialEntries = ['/login']
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={nvidiaTheme}>
+      <ThemeProvider theme={warehouseTheme}>
         <CssBaseline />
         <MemoryRouter
           future={{
@@ -42,6 +44,15 @@ function renderWithProviders(ui: React.ReactElement, initialEntries = ['/login']
 }
 
 describe('App Component', () => {
+  test('登录页显示中文界面', () => {
+    renderWithProviders(<App />, ['/login']);
+
+    expect(screen.getByRole('heading', { name: '仓智智能仓储运营平台' })).toBeInTheDocument();
+    expect(screen.getByLabelText(/用户名/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/密码/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '登录' })).toBeInTheDocument();
+  });
+
   test('renders without crashing', () => {
     renderWithProviders(<App />);
     expect(document.body).toBeInTheDocument();

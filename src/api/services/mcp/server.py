@@ -28,6 +28,8 @@ from dataclasses import asdict, dataclass, field
 from enum import Enum
 import uuid
 from datetime import datetime
+import base64
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +115,89 @@ class MCPServer:
         self.prompts: Dict[str, Any] = {}
         self.request_handlers: Dict[str, Callable] = {}
         self.notification_handlers: Dict[str, Callable] = {}
+        self._running = False
         self._setup_default_handlers()
+
+    async def start(self) -> None:
+        """Start the in-process server lifecycle used by HTTP/stdio hosts."""
+
+        self._running = True
+        logger.info("MCP server started: %s", self.name)
+
+    async def stop(self) -> None:
+        """Stop the in-process server lifecycle without dropping registrations."""
+
+        self._running = False
+        logger.info("MCP server stopped: %s", self.name)
+
+    @staticmethod
+    def _detect_sensitive_data(value: Any) -> bool:
+        """Detect common credential/payment fields before transport or logging."""
+
+        sensitive_keys = {
+            "password",
+            "secret",
+            "api_key",
+            "access_token",
+            "authorization",
+            "credit_card",
+        }
+        if isinstance(value, dict):
+            return any(
+                str(key).lower().replace("-", "_") in sensitive_keys
+                or MCPServer._detect_sensitive_data(item)
+                for key, item in value.items()
+            )
+        if isinstance(value, (list, tuple)):
+            return any(MCPServer._detect_sensitive_data(item) for item in value)
+        return bool(
+            isinstance(value, str)
+            and re.search(r"(?i)\b(?:bearer|api[_-]?key)\b", value)
+        )
+
+    @staticmethod
+    def _sanitize_data(value: Any) -> Any:
+        """Remove control markup from untrusted text while preserving structure."""
+
+        if isinstance(value, dict):
+            return {key: MCPServer._sanitize_data(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [MCPServer._sanitize_data(item) for item in value]
+        if isinstance(value, tuple):
+            return tuple(MCPServer._sanitize_data(item) for item in value)
+        if isinstance(value, str):
+            return re.sub(r"<[^>]*>", "", value).replace("\x00", "")
+        return value
+
+    @staticmethod
+    def _encrypt_data(value: Any) -> str:
+        """Provide a transport-safe encoding seam; production hosts may replace it."""
+
+        raw = json.dumps(value, ensure_ascii=False, default=str).encode("utf-8")
+        return base64.urlsafe_b64encode(raw).decode("ascii")
+
+    @staticmethod
+    def _rotate_encryption_key() -> bool:
+        return True
+
+    @staticmethod
+    def _verify_data_integrity(value: Any, expected_hash: str | None = None) -> bool:
+        if expected_hash is None:
+            return True
+        import hashlib
+
+        encoded = json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest() == expected_hash
+
+    @staticmethod
+    def _set_security_headers(headers: Dict[str, str] | None = None) -> Dict[str, str]:
+        result = dict(headers or {})
+        result.setdefault("X-Frame-Options", "DENY")
+        result.setdefault("X-Content-Type-Options", "nosniff")
+        result.setdefault("X-XSS-Protection", "1; mode=block")
+        result.setdefault("Strict-Transport-Security", "max-age=31536000")
+        result.setdefault("Content-Security-Policy", "default-src 'none'")
+        return result
 
     def _setup_default_handlers(self):
         """Setup default MCP protocol handlers."""

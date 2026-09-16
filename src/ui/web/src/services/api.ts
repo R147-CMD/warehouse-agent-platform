@@ -206,18 +206,106 @@ export interface ReasoningChain {
   overall_confidence: number;
 }
 
+export type ApprovalStatus =
+  | 'pending'
+  | 'approved'
+  | 'executing'
+  | 'executed'
+  | 'rejected'
+  | 'expired'
+  | 'failed';
+
+export interface PendingApproval {
+  approval_id: string;
+  run_id?: string | null;
+  action: string;
+  tool_name: string;
+  arguments: Record<string, unknown>;
+  risk_level: 'high' | 'unknown';
+  risk_reasons: string[];
+  requester_username: string;
+  approver_username?: string | null;
+  status: ApprovalStatus;
+  created_at: string;
+  expires_at: string;
+  decided_at?: string | null;
+  executed_at?: string | null;
+  result?: unknown;
+  error?: string | null;
+}
+
+export interface ApprovalDecisionRequest {
+  decision: 'approve' | 'reject';
+  reason?: string;
+}
+
+export interface ApprovalWorkflowResponse {
+  response: string;
+  route: string;
+  intent: string;
+  session_id: string;
+  execution_status: string;
+  pending_approvals?: PendingApproval[] | null;
+  context?: Record<string, unknown>;
+  structured_data?: Record<string, unknown>;
+  confidence?: number;
+  reasoning_chain?: ReasoningChain;
+  reasoning_steps?: ReasoningStep[];
+}
+
+export interface ApprovalDecisionResponse {
+  approval: PendingApproval;
+  workflow?: ApprovalWorkflowResponse | null;
+}
+
 export interface ChatResponse {
   reply: string;
   route: string;
   intent: string;
   session_id: string;
+  run_id?: string | null;
   context?: Record<string, any>;
   structured_data?: Record<string, any>;
   recommendations?: string[];
   confidence?: number;
   reasoning_chain?: ReasoningChain;
   reasoning_steps?: ReasoningStep[];
+  execution_status: string;
+  pending_approvals?: PendingApproval[] | null;
 }
+
+interface ApprovalPayload extends Omit<PendingApproval, 'requester_username' | 'approver_username' | 'risk_level' | 'status'> {
+  requester_username?: string;
+  approver_username?: string | null;
+  requester?: string;
+  approver?: string | null;
+  risk_level: string;
+  status?: string;
+}
+
+const APPROVAL_STATUSES: ApprovalStatus[] = [
+  'pending',
+  'approved',
+  'executing',
+  'executed',
+  'rejected',
+  'expired',
+  'failed',
+];
+
+const normalizeApproval = (payload: ApprovalPayload): PendingApproval => ({
+  ...payload,
+  approval_id: String(payload.approval_id),
+  run_id: payload.run_id ? String(payload.run_id) : null,
+  requester_username: payload.requester_username || payload.requester || '',
+  approver_username: payload.approver_username ?? payload.approver ?? null,
+  risk_level: payload.risk_level === 'high' ? 'high' : 'unknown',
+  status: APPROVAL_STATUSES.includes(payload.status as ApprovalStatus)
+    ? payload.status as ApprovalStatus
+    : 'pending',
+  created_at: String(payload.created_at || ''),
+  expires_at: String(payload.expires_at || ''),
+});
 
 export interface EquipmentAsset {
   asset_id: string;
@@ -259,6 +347,66 @@ export interface SafetyIncident {
   description: string;
   reported_by: string;
   occurred_at: string;
+}
+
+export type AgentRunStatus =
+  | 'queued'
+  | 'running'
+  | 'waiting_approval'
+  | 'completed'
+  | 'failed'
+  | 'cancel_requested'
+  | 'cancelled';
+
+export interface AgentRun {
+  run_id: string;
+  session_id?: string | null;
+  checkpoint_thread_id?: string | null;
+  user_id: number;
+  username: string;
+  user_role: string;
+  run_type: 'chat' | 'agent' | 'tool' | 'retry';
+  title: string;
+  input_summary?: string | null;
+  status: AgentRunStatus;
+  current_agent?: string | null;
+  current_tool?: string | null;
+  risk_level?: string | null;
+  approval_count: number;
+  error_code?: string | null;
+  error_message?: string | null;
+  result_summary?: string | null;
+  retry_of_run_id?: string | null;
+  created_at: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+  updated_at: string;
+  expires_at: string;
+}
+
+export interface AgentRunEvent {
+  event_id: string;
+  run_id: string;
+  event_type: string;
+  severity: 'info' | 'warning' | 'error';
+  agent_name?: string | null;
+  tool_name?: string | null;
+  approval_id?: string | null;
+  checkpoint_id?: string | null;
+  message: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface AgentRunDetail extends AgentRun {
+  events: AgentRunEvent[];
+}
+
+export interface AgentRunListResponse {
+  items: AgentRun[];
+  total: number;
+  page: number;
+  page_size: number;
 }
 
 export const mcpAPI = {
@@ -331,7 +479,88 @@ export const chatAPI = {
       console.log(`[ChatAPI] Query timeout: ${timeout}ms, Complex: ${isComplexQuery}, Reasoning: ${request.enable_reasoning}`);
     }
     
-    const response = await api.post('/chat', request, { timeout });
+    const response = await api.post<Omit<ChatResponse, 'pending_approvals'> & {
+      pending_approvals?: ApprovalPayload[] | null;
+    }>('/chat', request, { timeout });
+    return {
+      ...response.data,
+      pending_approvals: response.data.pending_approvals?.map(normalizeApproval) || [],
+    };
+  },
+};
+
+export const approvalAPI = {
+  listPending: async (): Promise<PendingApproval[]> => {
+    const response = await api.get<ApprovalPayload[]>('/chat/approvals/pending');
+    return response.data.map(normalizeApproval);
+  },
+
+  get: async (approvalId: string): Promise<PendingApproval> => {
+    const safeId = validatePathParam(approvalId, 'approval_id');
+    const response = await api.get<ApprovalPayload>(`/chat/approvals/${safeId}`);
+    return normalizeApproval(response.data);
+  },
+
+  decide: async (
+    approvalId: string,
+    decision: 'approve' | 'reject',
+    reason?: string,
+  ): Promise<ApprovalDecisionResponse> => {
+    const safeId = validatePathParam(approvalId, 'approval_id');
+    const request: ApprovalDecisionRequest = {
+      decision,
+      ...(reason ? { reason } : {}),
+    };
+    const response = await api.post<{
+      approval: ApprovalPayload;
+      workflow?: Omit<ApprovalWorkflowResponse, 'pending_approvals'> & {
+        pending_approvals?: ApprovalPayload[] | null;
+      } | null;
+    }>(`/chat/approvals/${safeId}/decision`, request);
+
+    return {
+      approval: normalizeApproval(response.data.approval),
+      workflow: response.data.workflow
+        ? {
+            ...response.data.workflow,
+            pending_approvals: response.data.workflow.pending_approvals?.map(normalizeApproval) || [],
+          }
+        : null,
+    };
+  },
+};
+
+export const runAPI = {
+  list: async (params: {
+    status?: AgentRunStatus | '';
+    page?: number;
+    page_size?: number;
+  } = {}): Promise<AgentRunListResponse> => {
+    const response = await api.get('/runs', { params });
+    return response.data;
+  },
+
+  get: async (runId: string): Promise<AgentRunDetail> => {
+    const safeId = validatePathParam(runId, 'run_id');
+    const response = await api.get(`/runs/${safeId}`);
+    return response.data;
+  },
+
+  events: async (runId: string): Promise<AgentRunEvent[]> => {
+    const safeId = validatePathParam(runId, 'run_id');
+    const response = await api.get(`/runs/${safeId}/events`);
+    return response.data;
+  },
+
+  cancel: async (runId: string, reason?: string): Promise<AgentRunDetail> => {
+    const safeId = validatePathParam(runId, 'run_id');
+    const response = await api.post(`/runs/${safeId}/cancel`, { reason });
+    return response.data;
+  },
+
+  retry: async (runId: string, reason?: string): Promise<AgentRunDetail> => {
+    const safeId = validatePathParam(runId, 'run_id');
+    const response = await api.post(`/runs/${safeId}/retry`, { reason });
     return response.data;
   },
 };

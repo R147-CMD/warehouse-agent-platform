@@ -11,6 +11,7 @@ import {
   Chip,
   Tabs,
   Tab,
+  Button,
 } from '@mui/material';
 import {
   Inventory as InventoryIcon,
@@ -19,11 +20,14 @@ import {
   History as HistoryIcon,
   TrendingUp as TrendingUpIcon,
   Warning as WarningIcon,
+  AddComment as AddCommentIcon,
 } from '@mui/icons-material';
 import DemoScript from './DemoScript';
 
 interface LeftRailProps {
   onScenarioSelect: (scenario: string) => void;
+  onNewConversation: () => void;
+  approvalQueue?: React.ReactNode;
   recentTasks: Array<{
     id: string;
     title: string;
@@ -32,14 +36,19 @@ interface LeftRailProps {
   }>;
 }
 
-const LeftRail: React.FC<LeftRailProps> = ({ onScenarioSelect, recentTasks }) => {
+const LeftRail: React.FC<LeftRailProps> = ({
+  onScenarioSelect,
+  onNewConversation,
+  approvalQueue,
+  recentTasks,
+}) => {
   const [activeTab, setActiveTab] = useState(0);
   const scenarios = [
-    { id: 'create_pick_wave', label: 'Create Pick Wave', icon: <InventoryIcon /> },
-    { id: 'dispatch_forklift', label: 'Dispatch Forklift', icon: <AssignmentIcon /> },
-    { id: 'log_incident', label: 'Log Incident', icon: <SecurityIcon /> },
-    { id: 'check_assets', label: 'Check Equipment Assets', icon: <TrendingUpIcon /> },
-    { id: 'safety_check', label: 'Safety Check', icon: <WarningIcon /> },
+    { id: 'create_pick_wave', label: '创建拣货波次', icon: <InventoryIcon /> },
+    { id: 'dispatch_forklift', label: '调度叉车', icon: <AssignmentIcon /> },
+    { id: 'log_incident', label: '记录事故', icon: <SecurityIcon /> },
+    { id: 'check_assets', label: '检查设备资产', icon: <TrendingUpIcon /> },
+    { id: 'safety_check', label: '安全检查', icon: <WarningIcon /> },
   ];
 
   const getStatusColor = (status: string) => {
@@ -48,6 +57,15 @@ const LeftRail: React.FC<LeftRailProps> = ({ onScenarioSelect, recentTasks }) =>
       case 'pending': return '#ff9800';
       case 'failed': return '#f44336';
       default: return '#666666';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'completed': return '已完成';
+      case 'pending': return '待处理';
+      case 'failed': return '失败';
+      default: return status;
     }
   };
 
@@ -63,6 +81,36 @@ const LeftRail: React.FC<LeftRailProps> = ({ onScenarioSelect, recentTasks }) =>
         flexDirection: 'column',
       }}
     >
+      <Box sx={{ p: 2, pb: 1 }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<AddCommentIcon />}
+          onClick={onNewConversation}
+          aria-label="新建会话"
+          sx={{
+            justifyContent: 'flex-start',
+            color: 'primary.main',
+            borderColor: 'primary.main',
+            '&:hover': {
+              borderColor: 'primary.light',
+              backgroundColor: 'rgba(118, 185, 0, 0.08)',
+            },
+          }}
+        >
+          新建会话
+        </Button>
+      </Box>
+
+      {approvalQueue && (
+        <Box sx={{ px: 2, pb: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography variant="h6" sx={{ color: 'text.primary', mb: 1, fontSize: '14px', fontWeight: 500 }}>
+            待审批
+          </Typography>
+          {approvalQueue}
+        </Box>
+      )}
+
       {/* Tabs */}
       <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
         <Tabs
@@ -79,8 +127,8 @@ const LeftRail: React.FC<LeftRailProps> = ({ onScenarioSelect, recentTasks }) =>
             },
           }}
         >
-          <Tab label="Quick Actions" />
-          <Tab label="Demo Scripts" />
+          <Tab label="快捷操作" />
+          <Tab label="演示脚本" />
         </Tabs>
       </Box>
 
@@ -89,7 +137,7 @@ const LeftRail: React.FC<LeftRailProps> = ({ onScenarioSelect, recentTasks }) =>
         {activeTab === 0 && (
           <Box sx={{ p: 2, height: '100%', overflow: 'auto' }}>
             <Typography variant="h6" sx={{ color: 'text.primary', mb: 2, fontSize: '14px', fontWeight: 500 }}>
-              Quick Actions
+              快捷操作
             </Typography>
             <List dense>
               {scenarios.map((scenario) => (
@@ -119,12 +167,12 @@ const LeftRail: React.FC<LeftRailProps> = ({ onScenarioSelect, recentTasks }) =>
             <Divider sx={{ my: 2 }} />
 
             <Typography variant="h6" sx={{ color: 'text.primary', mb: 2, fontSize: '14px', fontWeight: 500 }}>
-              Recent Tasks
+              最近任务
             </Typography>
             <List dense>
               {recentTasks.length === 0 ? (
                 <Typography variant="body2" sx={{ color: 'text.secondary', fontStyle: 'italic' }}>
-                  No recent tasks
+                  暂无最近任务
                 </Typography>
               ) : (
                 recentTasks.map((task) => (
@@ -143,7 +191,7 @@ const LeftRail: React.FC<LeftRailProps> = ({ onScenarioSelect, recentTasks }) =>
                         secondary={
                           <Typography variant="caption" sx={{ color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
                             <Chip
-                              label={task.status}
+                              label={getStatusLabel(task.status)}
                               size="small"
                               sx={{
                                 backgroundColor: getStatusColor(task.status),
@@ -152,7 +200,7 @@ const LeftRail: React.FC<LeftRailProps> = ({ onScenarioSelect, recentTasks }) =>
                                 height: '16px',
                               }}
                             />
-                            {task.timestamp.toLocaleTimeString()}
+                            {task.timestamp.toLocaleTimeString('zh-CN', { hour12: false })}
                           </Typography>
                         }
                         primaryTypographyProps={{

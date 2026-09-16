@@ -169,11 +169,38 @@ class SAPEWMAdapter(BaseWMSAdapter):
 
         return SAPOrderTaskResult(orders=orders, next_cursor=next_cursor)
 
+    async def get_warehouse_order(
+        self, warehouse_order: str, correlation_id: str | None = None
+    ) -> SAPWarehouseOrder:
+        """Read one order for execution verification without exposing OData fields."""
+
+        self._require_connected()
+        return self._map_order(
+            await self._get_order_entity(warehouse_order, correlation_id)
+        )
+
+    async def get_warehouse_task(
+        self,
+        warehouse_task: str,
+        warehouse_task_item: str = "0",
+        correlation_id: str | None = None,
+    ) -> SAPWarehouseTask:
+        """Read one task for execution verification without exposing OData fields."""
+
+        self._require_connected()
+        return self._map_task(
+            await self._get_task_entity(
+                warehouse_task, warehouse_task_item, correlation_id
+            )
+        )
+
     async def assign_warehouse_order(
         self,
         warehouse_order: str,
         resource: str,
         correlation_id: str | None = None,
+        *,
+        expected_etag: str | None = None,
     ) -> SAPWriteResult:
         self._require_connected()
         order = await self._get_order_entity(warehouse_order, correlation_id)
@@ -184,13 +211,20 @@ class SAPEWMAdapter(BaseWMSAdapter):
                 status="ASSIGNED",
                 outcome_confirmed_by_readback=True,
             )
+        current_etag = _etag(order)
+        if expected_etag is not None and current_etag != expected_etag:
+            raise SAPEWMError(
+                SAPEWMErrorCode.SAP_ETAG_CONFLICT,
+                "SAP warehouse order changed after approval",
+                status_code=412,
+            )
 
         try:
             await self.client.post_action(
                 "orders",
                 self._order_path(warehouse_order) + "/SAP__self.AssignWarehouseOrder",
                 {"EWMResource": resource},
-                _etag(order),
+                expected_etag or current_etag,
                 correlation_id,
             )
         except SAPEWMError as exc:
@@ -222,6 +256,8 @@ class SAPEWMAdapter(BaseWMSAdapter):
         warehouse_task: str,
         warehouse_task_item: str = "0",
         correlation_id: str | None = None,
+        *,
+        expected_etag: str | None = None,
     ) -> SAPWriteResult:
         self._require_connected()
         task = await self._get_task_entity(
@@ -234,6 +270,13 @@ class SAPEWMAdapter(BaseWMSAdapter):
                 status="CONFIRMED",
                 outcome_confirmed_by_readback=True,
             )
+        current_etag = _etag(task)
+        if expected_etag is not None and current_etag != expected_etag:
+            raise SAPEWMError(
+                SAPEWMErrorCode.SAP_ETAG_CONFLICT,
+                "SAP warehouse task changed after approval",
+                status_code=412,
+            )
 
         try:
             await self.client.post_action(
@@ -241,7 +284,7 @@ class SAPEWMAdapter(BaseWMSAdapter):
                 self._task_path(warehouse_task, warehouse_task_item)
                 + "/SAP__self.ConfirmWarehouseTaskExact",
                 {},
-                _etag(task),
+                expected_etag or current_etag,
                 correlation_id,
             )
         except SAPEWMError as exc:

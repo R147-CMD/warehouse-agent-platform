@@ -16,11 +16,15 @@
 """Security services for API protection."""
 
 from .rate_limiter import get_rate_limiter, RateLimiter
+from .prompt_context_builder import PromptContextBuilder, SegmentedPrompt
+from .trust_labels import RedactionReport, TrustLabel, redact_with_report
 
-__all__ = ["get_rate_limiter", "RateLimiter"]
-
-
-
-
-
-
+__all__ = [
+    "get_rate_limiter",
+    "RateLimiter",
+    "PromptContextBuilder",
+    "SegmentedPrompt",
+    "RedactionReport",
+    "TrustLabel",
+    "redact_with_report",
+]

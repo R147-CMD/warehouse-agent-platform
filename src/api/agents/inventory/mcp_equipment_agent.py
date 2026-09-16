@@ -37,6 +37,7 @@ from src.api.services.mcp.tool_discovery import (
     ToolCategory,
 )
 from src.api.services.mcp.base import MCPManager
+from src.api.services.approval import ApprovalRejectedError
 
 # Import SecurityViolationError if available, otherwise define a placeholder
 try:
@@ -674,6 +675,21 @@ Return only valid JSON.""",
             logger.warning("Tool execution plan is empty - no tools to execute")
             return results
 
+        for action_index, step in enumerate(execution_plan):
+            step["approval_action_index"] = action_index
+
+        try:
+            requires_serial_execution = any(
+                self.tool_discovery.requires_approval(step["tool_id"])
+                for step in execution_plan
+            )
+        except Exception as e:
+            logger.warning(
+                "Could not determine tool approval requirements; "
+                f"executing plan serially: {e}"
+            )
+            requires_serial_execution = True
+
         async def execute_single_tool_with_retry(
             step: Dict[str, Any], max_retries: int = 3
         ) -> tuple:
@@ -697,7 +713,11 @@ Return only valid JSON.""",
                     tool_timeout = 15.0  # 15 second timeout per tool execution
                     try:
                         result = await asyncio.wait_for(
-                            self.tool_discovery.execute_tool(tool_id, arguments),
+                            self.tool_discovery.execute_tool(
+                                tool_id,
+                                arguments,
+                                action_index=step["approval_action_index"],
+                            ),
                             timeout=tool_timeout
                         )
                     except asyncio.TimeoutError:
@@ -733,6 +753,23 @@ Return only valid JSON.""",
                     
                     logger.info(f"Successfully executed tool {tool_name} after {attempt + 1} attempt(s)")
                     return (tool_id, result_dict)
+
+                except ApprovalRejectedError as e:
+                    logger.info(
+                        f"Tool {tool_name} was rejected during approval (not retrying)"
+                    )
+                    return (
+                        tool_id,
+                        {
+                            "tool_name": tool_name,
+                            "success": False,
+                            "approval_status": "rejected",
+                            "error": str(e),
+                            "execution_time": datetime.utcnow().isoformat(),
+                            "attempts": attempt + 1,
+                            "required": required,
+                        },
+                    )
 
                 except asyncio.TimeoutError as e:
                     last_error = e
@@ -820,11 +857,19 @@ Return only valid JSON.""",
             
             return (tool_id, result_dict)
 
-        # Execute all tools in parallel
-        execution_tasks = [
-            execute_single_tool_with_retry(step) for step in execution_plan
-        ]
-        execution_results = await asyncio.gather(*execution_tasks, return_exceptions=True)
+        if requires_serial_execution:
+            execution_results = []
+            for step in execution_plan:
+                execution_results.append(
+                    await execute_single_tool_with_retry(step)
+                )
+        else:
+            execution_tasks = [
+                execute_single_tool_with_retry(step) for step in execution_plan
+            ]
+            execution_results = await asyncio.gather(
+                *execution_tasks, return_exceptions=True
+            )
         
         # Process results
         successful_count = 0
@@ -848,7 +893,8 @@ Return only valid JSON.""",
                     failed_required.append(result_dict.get("tool_name", tool_id))
 
         logger.info(
-            f"Executed {len(execution_plan)} tools in parallel: "
+            f"Executed {len(execution_plan)} tools "
+            f"{'serially' if requires_serial_execution else 'in parallel'}: "
             f"{successful_count} successful, {failed_count} failed. "
             f"Failed required tools: {failed_required if failed_required else 'none'}"
         )

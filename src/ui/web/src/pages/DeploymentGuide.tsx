@@ -57,110 +57,110 @@ const DeploymentGuide: React.FC = () => {
 
   const deploymentEnvironments = [
     {
-      name: "Development",
-      description: "Local development environment",
+      name: "开发环境",
+      description: "本地开发环境",
       requirements: {
-        cpu: "2 cores",
+        cpu: "2 核",
         ram: "4GB",
         storage: "20GB SSD",
         network: "100 Mbps"
       },
-      services: ["PostgreSQL", "Redis", "Milvus", "NVIDIA NIMs"],
-      status: "✅ Ready"
+      services: ["PostgreSQL", "Redis", "Milvus", "模型服务"],
+      status: "✅ 就绪"
     },
     {
-      name: "Staging",
-      description: "Pre-production testing environment",
+      name: "预发布环境",
+      description: "生产前测试环境",
       requirements: {
-        cpu: "4 cores",
+        cpu: "4 核",
         ram: "8GB",
         storage: "50GB SSD",
         network: "1 Gbps"
       },
-      services: ["PostgreSQL", "Redis", "Milvus", "NVIDIA NIMs", "Prometheus", "Grafana"],
-      status: "✅ Ready"
+      services: ["PostgreSQL", "Redis", "Milvus", "模型服务", "Prometheus", "Grafana"],
+      status: "✅ 就绪"
     },
     {
-      name: "Production",
-      description: "Production environment with high availability",
+      name: "生产环境",
+      description: "具备高可用性的生产环境",
       requirements: {
-        cpu: "8+ cores",
+        cpu: "8 核以上",
         ram: "16GB+",
         storage: "100GB+ SSD",
         network: "10 Gbps"
       },
-      services: ["PostgreSQL Cluster", "Redis Cluster", "Milvus Cluster", "NVIDIA NIMs", "Full Monitoring Stack", "Load Balancer"],
-      status: "🔄 In Progress"
+      services: ["PostgreSQL 集群", "Redis 集群", "Milvus 集群", "模型服务", "完整监控栈", "负载均衡器"],
+      status: "🔄 进行中"
     }
   ];
 
   const deploymentMethods = [
     {
       name: "Docker Compose",
-      description: "Simple containerized deployment for development and small production",
-      pros: ["Easy setup", "Single command deployment", "Good for development"],
-      cons: ["Single node only", "Limited scalability", "No high availability"],
+      description: "适用于开发和小型生产环境的简单容器化部署",
+      pros: ["易于设置", "单命令部署", "适合开发"],
+      cons: ["仅支持单节点", "扩展性有限", "不具备高可用性"],
       commands: [
         "docker compose up -d",
         "docker compose logs -f",
         "docker compose down"
       ],
-      status: "✅ Available"
+      status: "✅ 可用"
     },
   ];
 
   const deploymentSteps = [
     {
-      label: "Prerequisites",
-      description: "Install required software and dependencies",
+      label: "前提条件",
+      description: "安装所需软件和依赖项",
       content: [
-        "Install Docker and Docker Compose",
-        "Set up NVIDIA GPU drivers (for Milvus)",
-        "Configure NVIDIA API keys"
+        "安装 Docker 和 Docker Compose",
+        "设置 GPU 驱动程序（用于 Milvus）",
+        "配置模型服务 API 密钥"
       ]
     },
     {
-      label: "Configuration",
-      description: "Configure environment variables and settings",
+      label: "配置",
+      description: "配置环境变量和设置",
       content: [
-        "Copy .env.example to .env",
-        "Set database credentials",
-        "Configure NVIDIA API keys",
-        "Set up monitoring endpoints",
-        "Configure security settings"
+        "将 .env.example 复制为 .env",
+        "设置数据库凭据",
+        "配置模型服务 API 密钥",
+        "设置监控端点",
+        "配置安全设置"
       ]
     },
     {
-      label: "Database Setup",
-      description: "Initialize databases and run migrations",
+      label: "数据库设置",
+      description: "初始化数据库并运行迁移",
       content: [
-        "Start PostgreSQL/TimescaleDB",
-        "Run database migrations",
-        "Initialize Milvus collections",
-        "Set up Redis configuration",
-        "Verify database connections"
+        "启动 PostgreSQL/TimescaleDB",
+        "运行数据库迁移",
+        "初始化 Milvus 集合",
+        "设置 Redis 配置",
+        "验证数据库连接"
       ]
     },
     {
-      label: "Service Deployment",
-      description: "Deploy application services",
+      label: "服务部署",
+      description: "部署应用服务",
       content: [
-        "Deploy core services (API, agents)",
-        "Deploy MCP framework",
-        "Deploy monitoring stack",
-        "Deploy frontend application",
-        "Verify all services are running"
+        "部署核心服务（API、智能体）",
+        "部署 MCP 框架",
+        "部署监控栈",
+        "部署前端应用",
+        "验证所有服务均在运行"
       ]
     },
     {
-      label: "Health Checks",
-      description: "Verify deployment and run health checks",
+      label: "健康检查",
+      description: "验证部署并运行健康检查",
       content: [
-        "Check API health endpoints",
-        "Verify agent functionality",
-        "Test MCP tool discovery",
-        "Check monitoring dashboards",
-        "Run integration tests"
+        "检查 API 健康端点",
+        "验证智能体功能",
+        "测试 MCP 工具发现",
+        "检查监控仪表板",
+        "运行集成测试"
       ]
     }
   ];
@@ -168,31 +168,31 @@ const DeploymentGuide: React.FC = () => {
   const monitoringSetup = [
     {
       service: "Prometheus",
-      description: "Metrics collection and storage",
+      description: "指标收集与存储",
       port: 9090,
       config: "monitoring/prometheus/prometheus.yml",
-      status: "✅ Configured"
+      status: "✅ 已配置"
     },
     {
       service: "Grafana",
-      description: "Visualization and dashboards",
+      description: "可视化与仪表板",
       port: 3000,
       config: "monitoring/grafana/dashboards/",
-      status: "✅ Configured"
+      status: "✅ 已配置"
     },
     {
       service: "Alertmanager",
-      description: "Alert routing and notifications",
+      description: "告警路由与通知",
       port: 9093,
       config: "monitoring/alertmanager/alertmanager.yml",
-      status: "✅ Configured"
+      status: "✅ 已配置"
     },
     {
       service: "Node Exporter",
-      description: "System metrics collection",
+      description: "系统指标收集",
       port: 9100,
-      config: "Built-in",
-      status: "✅ Configured"
+      config: "内置",
+      status: "✅ 已配置"
     }
   ];
 
@@ -201,35 +201,35 @@ const DeploymentGuide: React.FC = () => {
       {/* Breadcrumbs */}
       <Breadcrumbs sx={{ mb: 2 }}>
         <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/documentation')}>
-          Documentation
+          文档
         </Button>
-        <Typography color="text.primary">Deployment Guide</Typography>
+        <Typography color="text.primary">部署指南</Typography>
       </Breadcrumbs>
 
       {/* Header */}
       <Box sx={{ mb: 4 }}>
         <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          Deployment Guide
+          部署指南
         </Typography>
         <Typography variant="h5" component="h2" gutterBottom color="text.secondary">
-          Production Deployment Instructions
+          生产部署说明
         </Typography>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          Comprehensive guide for deploying the Multi-Agent-Intelligent-Warehouse across different environments. 
-          This guide covers Docker Compose deployment with monitoring and security configurations.
+          在不同环境中部署多智能体智慧仓储系统的完整指南。
+          本指南涵盖带监控和安全配置的 Docker Compose 部署。
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>
           <Chip label="Docker" color="primary" />
-          <Chip label="Production Ready" color="success" />
-          <Chip label="Monitoring" color="warning" />
+          <Chip label="生产就绪" color="success" />
+          <Chip label="监控" color="warning" />
         </Box>
       </Box>
 
       {/* Status Alert */}
       <Alert severity="info" sx={{ mb: 4 }}>
-        <AlertTitle>🚀 Multiple Deployment Options</AlertTitle>
-        The system supports multiple deployment methods from simple Docker Compose for development 
-        for production environments.
+        <AlertTitle>🚀 多种部署选项</AlertTitle>
+        系统支持多种部署方式，包括适用于开发环境的简单 Docker Compose 部署，
+        也可用于生产环境。
       </Alert>
 
       {/* Deployment Environments */}
@@ -237,7 +237,7 @@ const DeploymentGuide: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <CloudIcon color="primary" />
-            Deployment Environments
+            部署环境
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -253,7 +253,7 @@ const DeploymentGuide: React.FC = () => {
                       {env.description}
                     </Typography>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>Requirements:</Typography>
+                      <Typography variant="subtitle2" gutterBottom>要求：</Typography>
                       <List dense>
                         <ListItem sx={{ py: 0 }}>
                           <ListItemText primary={`CPU: ${env.requirements.cpu}`} primaryTypographyProps={{ variant: 'body2' }} />
@@ -262,15 +262,15 @@ const DeploymentGuide: React.FC = () => {
                           <ListItemText primary={`RAM: ${env.requirements.ram}`} primaryTypographyProps={{ variant: 'body2' }} />
                         </ListItem>
                         <ListItem sx={{ py: 0 }}>
-                          <ListItemText primary={`Storage: ${env.requirements.storage}`} primaryTypographyProps={{ variant: 'body2' }} />
+                          <ListItemText primary={`存储：${env.requirements.storage}`} primaryTypographyProps={{ variant: 'body2' }} />
                         </ListItem>
                         <ListItem sx={{ py: 0 }}>
-                          <ListItemText primary={`Network: ${env.requirements.network}`} primaryTypographyProps={{ variant: 'body2' }} />
+                          <ListItemText primary={`网络：${env.requirements.network}`} primaryTypographyProps={{ variant: 'body2' }} />
                         </ListItem>
                       </List>
                     </Box>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>Services:</Typography>
+                      <Typography variant="subtitle2" gutterBottom>服务：</Typography>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {env.services.map((service, serviceIndex) => (
                           <Chip key={serviceIndex} label={service} size="small" variant="outlined" />
@@ -295,7 +295,7 @@ const DeploymentGuide: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <BuildIcon color="primary" />
-            Deployment Methods
+            部署方式
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -311,7 +311,7 @@ const DeploymentGuide: React.FC = () => {
                       {method.description}
                     </Typography>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>Pros:</Typography>
+                      <Typography variant="subtitle2" gutterBottom>优点：</Typography>
                       <List dense>
                         {method.pros.map((pro, proIndex) => (
                           <ListItem key={proIndex} sx={{ py: 0 }}>
@@ -324,7 +324,7 @@ const DeploymentGuide: React.FC = () => {
                       </List>
                     </Box>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2" gutterBottom>Commands:</Typography>
+                      <Typography variant="subtitle2" gutterBottom>命令：</Typography>
                       {method.commands.map((command, cmdIndex) => (
                         <Paper key={cmdIndex} sx={{ p: 1, bgcolor: 'grey.100', fontFamily: 'monospace', fontSize: '0.75rem', mb: 1 }}>
                           {command}
@@ -349,7 +349,7 @@ const DeploymentGuide: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <RocketIcon color="primary" />
-            Step-by-Step Deployment
+            分步部署
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -383,7 +383,7 @@ const DeploymentGuide: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <DashboardIcon color="primary" />
-            Monitoring Setup
+            监控设置
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -401,13 +401,13 @@ const DeploymentGuide: React.FC = () => {
                     <List dense>
                       <ListItem sx={{ py: 0 }}>
                         <ListItemText 
-                          primary={`Port: ${service.port}`} 
+                          primary={`端口：${service.port}`} 
                           primaryTypographyProps={{ variant: 'body2' }}
                         />
                       </ListItem>
                       <ListItem sx={{ py: 0 }}>
                         <ListItemText 
-                          primary={`Config: ${service.config}`} 
+                          primary={`配置：${service.config}`} 
                           primaryTypographyProps={{ variant: 'body2' }}
                         />
                       </ListItem>
@@ -430,7 +430,7 @@ const DeploymentGuide: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <SecurityIcon color="primary" />
-            Security Configuration
+            安全配置
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -439,31 +439,31 @@ const DeploymentGuide: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    🔐 Authentication
+                    🔐 身份验证
                   </Typography>
                   <List>
                     <ListItem>
                       <ListItemText 
-                        primary="JWT Token Configuration" 
-                        secondary="Set secure JWT secret and expiration times"
+                        primary="JWT 令牌配置" 
+                        secondary="设置安全的 JWT 密钥和过期时间"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="OAuth2 Integration" 
-                        secondary="Configure OAuth2 providers for SSO"
+                        primary="OAuth2 集成" 
+                        secondary="为 SSO 配置 OAuth2 提供程序"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Role-Based Access Control" 
-                        secondary="Configure user roles and permissions"
+                        primary="基于角色的访问控制" 
+                        secondary="配置用户角色和权限"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="API Rate Limiting" 
-                        secondary="Implement rate limiting for API endpoints"
+                        primary="API 速率限制" 
+                        secondary="为 API 端点实施速率限制"
                       />
                     </ListItem>
                   </List>
@@ -474,31 +474,31 @@ const DeploymentGuide: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    🛡️ Network Security
+                    🛡️ 网络安全
                   </Typography>
                   <List>
                     <ListItem>
                       <ListItemText 
-                        primary="HTTPS Configuration" 
-                        secondary="Enable SSL/TLS for all communications"
+                        primary="HTTPS 配置" 
+                        secondary="为所有通信启用 SSL/TLS"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Firewall Rules" 
-                        secondary="Configure firewall rules for service access"
+                        primary="防火墙规则" 
+                        secondary="为服务访问配置防火墙规则"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Network Policies" 
-                        secondary="Implement network policies and firewall rules"
+                        primary="网络策略" 
+                        secondary="实施网络策略和防火墙规则"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Secrets Management" 
-                        secondary="Use Docker secrets or external secret management"
+                        primary="密钥管理" 
+                        secondary="使用 Docker secrets 或外部密钥管理"
                       />
                     </ListItem>
                   </List>
@@ -514,7 +514,7 @@ const DeploymentGuide: React.FC = () => {
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <BugReportIcon color="primary" />
-            Troubleshooting
+            故障排除
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
@@ -523,31 +523,31 @@ const DeploymentGuide: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    🚨 Common Issues
+                    🚨 常见问题
                   </Typography>
                   <List>
                     <ListItem>
                       <ListItemText 
-                        primary="Database Connection Failed" 
-                        secondary="Check PostgreSQL credentials and network connectivity"
+                        primary="数据库连接失败" 
+                        secondary="检查 PostgreSQL 凭据和网络连接"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="NVIDIA API Errors" 
-                        secondary="Verify API keys and quota limits"
+                        primary="模型服务 API 错误" 
+                        secondary="验证 API 密钥和配额限制"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="MCP Tool Discovery Fails" 
-                        secondary="Check adapter registration and tool definitions"
+                        primary="MCP 工具发现失败" 
+                        secondary="检查适配器注册和工具定义"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Memory Issues" 
-                        secondary="Increase container memory limits or optimize queries"
+                        primary="内存问题" 
+                        secondary="提高容器内存限制或优化查询"
                       />
                     </ListItem>
                   </List>
@@ -558,30 +558,30 @@ const DeploymentGuide: React.FC = () => {
               <Card variant="outlined">
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    🔧 Debug Commands
+                    🔧 调试命令
                   </Typography>
                   <List>
                     <ListItem>
                       <ListItemText 
-                        primary="Check Service Status" 
+                        primary="检查服务状态" 
                         secondary="docker compose ps or kubectl get pods"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="View Logs" 
+                        primary="查看日志" 
                         secondary="docker compose logs -f or kubectl logs -f"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Health Check" 
+                        primary="健康检查" 
                         secondary="curl http://localhost:8002/api/v1/health"
                       />
                     </ListItem>
                     <ListItem>
                       <ListItemText 
-                        primary="Database Check" 
+                        primary="数据库检查" 
                         secondary="psql -h localhost -p 5435 -U warehouse_user"
                       />
                     </ListItem>
@@ -596,7 +596,7 @@ const DeploymentGuide: React.FC = () => {
       {/* Footer */}
       <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
         <Typography variant="body2" color="text.secondary" align="center">
-          Deployment Guide - Multi-Agent-Intelligent-Warehouse
+          部署指南——多智能体智慧仓储系统
         </Typography>
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
           <Button 
@@ -606,10 +606,10 @@ const DeploymentGuide: React.FC = () => {
             target="_blank"
             rel="noopener noreferrer"
           >
-            View Source
+            查看源代码
           </Button>
           <Button variant="outlined" startIcon={<DashboardIcon />}>
-            Live Demo
+            在线演示
           </Button>
         </Box>
       </Box>

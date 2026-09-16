@@ -1,0 +1,5 @@
+{"id":"router-normal-001","category":"normal","true_label":"operations","predicted_label":"operations"}
+{"id":"router-boundary-001","category":"boundary","true_label":"equipment","predicted_label":"equipment"}
+{"id":"router-no-answer-001","category":"no_answer","true_label":"ambiguous","predicted_label":"ambiguous"}
+{"id":"router-unauthorized-001","category":"unauthorized","true_label":"safety","predicted_label":"safety"}
+{"id":"router-failure-001","category":"failure","true_label":"general","predicted_label":"general"}

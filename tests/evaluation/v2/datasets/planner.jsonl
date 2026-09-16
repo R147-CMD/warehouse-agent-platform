@@ -1,0 +1,5 @@
+{"id":"planner-normal-001","category":"normal","true_label":"single_task","predicted_label":"single_task"}
+{"id":"planner-boundary-001","category":"boundary","true_label":"parallel_plan","predicted_label":"parallel_plan"}
+{"id":"planner-no-answer-001","category":"no_answer","true_label":"clarify","predicted_label":"clarify"}
+{"id":"planner-unauthorized-001","category":"unauthorized","true_label":"deny","predicted_label":"deny"}
+{"id":"planner-failure-001","category":"failure","true_label":"repair","predicted_label":"repair"}

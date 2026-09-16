@@ -37,6 +37,7 @@ from src.api.services.mcp.tool_discovery import (
     ToolCategory,
 )
 from src.api.services.mcp.base import MCPManager
+from src.api.services.approval import ApprovalRejectedError
 from src.api.services.reasoning import (
     get_reasoning_engine,
     ReasoningType,
@@ -749,6 +750,21 @@ Return only valid JSON.""",
             logger.warning("Tool execution plan is empty - no tools to execute")
             return results
 
+        for action_index, step in enumerate(execution_plan):
+            step["approval_action_index"] = action_index
+
+        try:
+            requires_serial_execution = any(
+                self.tool_discovery.requires_approval(step["tool_id"])
+                for step in execution_plan
+            )
+        except Exception as e:
+            logger.warning(
+                "Could not determine tool approval requirements; "
+                f"executing plan serially: {e}"
+            )
+            requires_serial_execution = True
+
         async def execute_single_tool(step: Dict[str, Any]) -> tuple:
             """Execute a single tool and return (tool_id, result_dict)."""
             tool_id = step["tool_id"]
@@ -761,7 +777,11 @@ Return only valid JSON.""",
                 )
 
                 # Execute the tool
-                result = await self.tool_discovery.execute_tool(tool_id, arguments)
+                result = await self.tool_discovery.execute_tool(
+                    tool_id,
+                    arguments,
+                    action_index=step["approval_action_index"],
+                )
 
                 result_dict = {
                     "tool_name": tool_name,
@@ -783,6 +803,17 @@ Return only valid JSON.""",
                 
                 return (tool_id, result_dict)
 
+            except ApprovalRejectedError as e:
+                logger.info(f"Tool {tool_name} was rejected during approval")
+                result_dict = {
+                    "tool_name": tool_name,
+                    "success": False,
+                    "approval_status": "rejected",
+                    "error": str(e),
+                    "execution_time": datetime.utcnow().isoformat(),
+                }
+                return (tool_id, result_dict)
+
             except Exception as e:
                 logger.error(f"Error executing tool {tool_name}: {e}")
                 result_dict = {
@@ -793,9 +824,15 @@ Return only valid JSON.""",
                 }
                 return (tool_id, result_dict)
 
-        # Execute all tools in parallel
-        execution_tasks = [execute_single_tool(step) for step in execution_plan]
-        execution_results = await asyncio.gather(*execution_tasks, return_exceptions=True)
+        if requires_serial_execution:
+            execution_results = []
+            for step in execution_plan:
+                execution_results.append(await execute_single_tool(step))
+        else:
+            execution_tasks = [execute_single_tool(step) for step in execution_plan]
+            execution_results = await asyncio.gather(
+                *execution_tasks, return_exceptions=True
+            )
         
         # Process results
         for result in execution_results:
@@ -806,7 +843,11 @@ Return only valid JSON.""",
             tool_id, result_dict = result
             results[tool_id] = result_dict
 
-        logger.info(f"Executed {len(execution_plan)} tools in parallel, {len([r for r in results.values() if r.get('success')])} successful")
+        logger.info(
+            f"Executed {len(execution_plan)} tools "
+            f"{'serially' if requires_serial_execution else 'in parallel'}, "
+            f"{len([r for r in results.values() if r.get('success')])} successful"
+        )
         return results
 
     async def _generate_response_with_tools(
