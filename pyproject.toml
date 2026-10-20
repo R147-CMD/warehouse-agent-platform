@@ -26,7 +26,7 @@ dependencies = [
     "httpx>=0.27.0",
     "langchain>=0.1.11",  # Security: CVE-2024-28088 fixed in 0.1.11+. Note: We use langchain-core>=1.2.6 directly (includes CVE-2025-68664 fix)
     "langgraph>=1.0.5,<1.1.0",  # Security: CVE-2025-8709 fixed in 1.0.5+ (includes fix). Note: We use in-memory state (no SQLite checkpoint) as additional defense
-    "langgraph-checkpoint>=3.0.1,<4.0.0",  # Security: CVE-2025-64439 (RCE in JsonPlusSerializer) fixed in 3.0.0+. Note: We use in-memory state (no checkpoint backend), but pinning secure version for transitive dependencies
+    "langgraph-checkpoint>=3.0.1,<5.0.0",  # Security: CVE-2025-64439 (RCE in JsonPlusSerializer) fixed in 3.0.0+. Note: We use in-memory state (no checkpoint backend), but pinning secure version for transitive dependencies
     "langgraph-checkpoint-postgres>=3.0.1,<3.1.0",
     "psycopg[binary]>=3.2.0,<4.0.0",
     "psycopg-pool>=3.2.0,<4.0.0",
