@@ -24,7 +24,7 @@ langchain_experimental
 # Affected: langchain <= 0.1.10, langchain-core < 0.1.29
 # Note: This codebase uses langchain-core>=1.2.6 (safe, includes CVE-2025-68664 fix), but blocking
 # the old langchain package prevents accidental installation
-langchain<0.1.11
+langchain<0.3.31
 
 # LangGraph Checkpoint - RCE vulnerability in JsonPlusSerializer
 # CVE-2025-64439: Remote Code Execution in JsonPlusSerializer when deserializing payloads
